@@ -11,7 +11,7 @@ import swiglpk
 
 from ..core import LinearProblem, Solution, VariableBound
 from ..matrix import LPBuilder
-from .base import BaseSolver, SolverStats
+from .base import BaseSolver, SolverStats, SolverCapabilities
 
 
 class GLPKSolver(BaseSolver):

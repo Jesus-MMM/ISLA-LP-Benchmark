@@ -10,7 +10,7 @@ from gurobipy import GRB
 
 from ..matrix import LPBuilder
 from ..core import Solution, LinearProblem
-from .base import BaseSolver, SolverStats, register_solver
+from .base import BaseSolver, SolverStats, register_solver, SolverCapabilities
 
 
 @register_solver("gurobi")

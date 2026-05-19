@@ -10,7 +10,7 @@ import highspy
 
 from ..core import LinearProblem, Solution
 from ..matrix import LPBuilder
-from .base import BaseSolver, SolverStats
+from .base import BaseSolver, SolverStats, SolverCapabilities
 
 
 class HiGHSSolver(BaseSolver):

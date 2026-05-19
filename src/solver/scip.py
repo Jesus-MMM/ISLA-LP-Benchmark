@@ -9,8 +9,7 @@ from typing import Optional
 import pyscipopt as scip
 
 from ..core import LinearProblem, Solution
-from .base import BaseSolver, SolverStats
-
+from .base import BaseSolver, SolverStats, SolverCapabilities
 
 class SCIPSolver(BaseSolver):
     """SCIP Solver for linear and mixed-integer programming."""
@@ -20,6 +19,15 @@ class SCIPSolver(BaseSolver):
         self._solution: Optional[Solution] = None
         self._iterations = 0
         self._nodes = 0
+        
+        self.capabilities = SolverCapabilities(
+            lp=True,
+            milp=True,
+            qp=False,
+            duals=True,
+            warm_start=True,
+            sensitivity=False
+        )
     
     @property
     def solver_name(self) -> str:
