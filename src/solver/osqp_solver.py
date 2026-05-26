@@ -3,8 +3,6 @@ Solver OSQP para problemas de programacion lineal.
 Implementacion usando osqp (Operator Splitting QP Solver).
 """
 
-import time
-
 try:
     import osqp
     _is_solver_available = True
@@ -14,6 +12,7 @@ except ImportError:
 from typing import Optional
 
 from ..core import LinearProblem, Solution
+from ..matrix import MatrixConverter
 from .base import BaseSolver, SolverStats, SolverCapabilities
 
 
@@ -41,7 +40,7 @@ class OSQPSolver(BaseSolver):
         if _is_solver_available:
             try:
                 return osqp.__version__
-            except:
+            except Exception:
                 return "osqp"
         return "osqp (not installed)"
 
@@ -64,11 +63,7 @@ class OSQPSolver(BaseSolver):
                 variables={},
             )
 
-        start_time = time.perf_counter()
-
         try:
-            import numpy as np
-            from scipy import sparse
             import osqp
         except ImportError as e:
             return Solution(
@@ -85,59 +80,8 @@ class OSQPSolver(BaseSolver):
                     variables={},
                 )
 
+            data = MatrixConverter.to_osqp(problem)
             variables_list = list(problem.variables)
-            n = len(variables_list)
-
-            q = np.array(
-                [problem.objective.get(v, 0.0) for v in variables_list],
-                dtype=float,
-            )
-            if problem.sense.lower() == "max":
-                q = -q
-
-            A_rows = []
-            l_vals = []
-            u_vals = []
-            constraint_order = []
-
-            for constr in problem.constraints:
-                name = constr.name or f"R{problem.constraints.index(constr)}"
-                coeffs = [constr.coefficients.get(v, 0.0) for v in variables_list]
-                if constr.sense == "=":
-                    A_rows.append(coeffs)
-                    l_vals.append(constr.rhs)
-                    u_vals.append(constr.rhs)
-                elif constr.sense in ("<=", "<"):
-                    A_rows.append(coeffs)
-                    l_vals.append(-np.inf)
-                    u_vals.append(constr.rhs)
-                else:
-                    A_rows.append(coeffs)
-                    l_vals.append(constr.rhs)
-                    u_vals.append(np.inf)
-                constraint_order.append(name)
-
-            for var in variables_list:
-                bound = problem.bounds.get(var)
-                if bound:
-                    row = [0.0] * n
-                    row[variables_list.index(var)] = 1.0
-                    A_rows.append(row)
-                    lb = bound.lower if bound.lower is not None else -np.inf
-                    ub = bound.upper if bound.upper is not None else np.inf
-                    l_vals.append(lb)
-                    u_vals.append(ub)
-
-            if not A_rows:
-                A = sparse.csc_matrix((0, n))
-                l = np.array([])
-                u = np.array([])
-            else:
-                A = sparse.csc_matrix(np.array(A_rows, dtype=float))
-                l = np.array(l_vals, dtype=float)
-                u = np.array(u_vals, dtype=float)
-
-            P = sparse.csc_matrix((n, n))
 
             settings = {
                 "verbose": self.config.verbose,
@@ -149,10 +93,8 @@ class OSQPSolver(BaseSolver):
                 settings["time_limit"] = self.config.time_limit
 
             solver = osqp.OSQP()
-            solver.setup(P, q, A, l, u, **settings)
+            solver.setup(data["P"], data["q"], data["A"], data["l"], data["u"], **settings)
             res = solver.solve()
-
-            solve_time = time.perf_counter() - start_time
 
             info_status = res.info.status
             if info_status == "solved":
@@ -182,6 +124,7 @@ class OSQPSolver(BaseSolver):
                     objective_value = -objective_value
 
                 y = res.y
+                constraint_order = data["constraint_order"]
                 if y is not None:
                     dual_values = {}
                     for i, name in enumerate(constraint_order):
