@@ -1,4 +1,4 @@
-# Guia del Desarrollador - ISLA LP Benchmark v1.2.1
+# Guia del Desarrollador - ISLA LP Benchmark v1.4.0
 
 Esta guia es para **desarrolladores** que quieren extender o integrar el proyecto.
 
@@ -414,6 +414,49 @@ viz = BenchmarkVisualizer(runner)
 viz.plot_times_comparison(save_path="times.png")
 viz.plot_memory_comparison(save_path="memory.png")
 ```
+
+## Sistema de Logging
+
+El proyecto usa Python logging con nivel configurable via CLI (`--log-level`).
+
+### Configuracion por Defecto
+
+```python
+from src.utils.logging import get_logger, set_default_level, LogLevel
+
+# Obtener logger para el modulo actual
+logger = get_logger(__name__)
+
+# Cambiar nivel global
+set_default_level(LogLevel.DEBUG)
+
+# Uso en el modulo
+logger.debug("Mensaje detallado")
+logger.info("Proceso completado")
+logger.warning("Situacion inesperada")
+logger.error("Error recuperable")
+```
+
+### Uso en Solvers
+
+```python
+from src.utils.logging import get_logger
+
+logger = get_logger(__name__)
+
+try:
+    resultado = operacion_riesgosa()
+except Exception as e:
+    logger.debug(f"Error en operacion: {e}")
+    # Continuar con valor por defecto
+    resultado = None
+```
+
+### Buenas Practicas
+
+- Usar `get_logger(__name__)` en cada modulo (sigue la jerarquia del paquete)
+- NO usar `print()` ni `except: pass` — reemplazar con `logger.debug()`
+- El nivel `--log-level=DEBUG` activa toda la informacion de diagnostico
 
 ## Patrones Comunes
 

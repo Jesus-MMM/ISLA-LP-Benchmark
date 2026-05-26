@@ -11,11 +11,42 @@
 | 3. Benchmark orchestrator | Terminado | BenchmarkRunner con warmup, métricas |
 | 4. Export/Visualización | Terminado | CSV, JSON, PDF plots, Markdown |
 | 5. Reportes y Docs | Terminado | README actualizado |
-| 6. Containerization | Terminado | Dockerfile Alpine + docker-compose |
+| 6. Containerization | Terminado | Dockerfile Slim + docker-compose + CI workflow |
+| 7. Tests y CI/CD | Terminado | 246 tests, coverage 90%+, ruff lint |
+| 8. Logging profesional | Terminado | --log-level, except:pass eliminados |
 
 ---
 
 ## Historial de Cambios
+
+### v1.4.0 (2026-05-26)
+
+#### Infraestructura Docker
+- Migracion de `python:3.14-alpine` a `python:3.12-slim` con `coinor-cbc` preinstalado
+- `docker-compose.yml` simplificado con servicios `isla-lp`, `solve`, `benchmark`, `list-solvers`
+- Variable de entorno `GRB_LICENSE_FILE` para licencias comerciales
+- Workflow CI/CD de Docker (build + push a ghcr.io)
+
+#### CLI y Entrypoint
+- Entrypoint `isla` registrado en `pyproject.toml` (`[project.scripts]`)
+- Version del proyecto actualizada a 1.4.0
+
+### v1.3.0 (2026-05-26)
+
+#### Correcciones Criticas
+- Hotfixes: NameError en benchmark.py, imports rotos a sensitivity, exporter.py, validation.py
+- CI pipeline actualizado: matriz Python 3.12-3.13, `--cov-fail-under=90`
+- `gurobipy` agregado a requirements.txt
+
+#### Refactorizacion y Mejoras
+- Eliminados 18+ bloques `except: pass` reemplazados con logging profesional via `get_logger()`
+- Flag `--log-level` con soporte DEBUG/INFO/WARNING/ERROR/CRITICAL
+- Acceso a duales en HiGHS corregido (eliminada redundancia, agregada guarda de indice)
+- `casadi` movido a dependencias opcionales (`pip install isla-lp-benchmark[ipopt]`)
+- Semicolons `;` soportados como terminadores de linea en el parser LP
+
+#### Tests
+- Suite expandida de 10 a 246 tests. Coverage: core ~100%, parser ~92%
 
 ### v1.2.0 (2026-05-13)
 

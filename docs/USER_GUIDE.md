@@ -1,4 +1,4 @@
-# Guia de Usuario - ISLA LP Benchmark v1.2.1
+# Guia de Usuario - ISLA LP Benchmark v1.4.0
 
 Esta guia es para **usuarios finales** que quieren resolver y comparar problemas de Programacion Lineal.
 
@@ -14,7 +14,12 @@ ISLA LP Benchmark es una plataforma de benchmarking que permite:
 ### 1. Instalar Dependencias
 
 ```bash
+# Usando Poetry (recomendado)
 poetry install
+
+# Usando pip
+pip install -r requirements.txt
+pip install -e .
 ```
 
 ### 2. Listar Solvers Disponibles
@@ -69,6 +74,7 @@ python -m src.cli -b -a -T 30 problema.txt
 | `--output-dir` | `-O` | Directorio de salida |
 | `--pdf` | `-p` | Generar reporte PDF |
 | `--quiet` | `-q` | Suprimir salida no esencial |
+| `--log-level` | | Nivel de log: DEBUG/INFO/WARNING/ERROR/CRITICAL |
 
 ### Ejemplo de Salida
 
@@ -233,6 +239,7 @@ x >= 0; y >= 0
 | `--quiet` | `-q` | Suprimir salida no esencial |
 | `--verbose` | | Salida detallada |
 | `--output` | `-o` | Ruta de salida para archivos |
+| `--log-level` | | Nivel de log: DEBUG/INFO/WARNING/ERROR/CRITICAL |
 
 ### Informacion
 

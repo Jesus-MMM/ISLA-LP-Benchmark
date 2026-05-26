@@ -1,34 +1,34 @@
-# Comandos para Generar Reportes (v1.2.0)
+# Comandos para Generar Reportes (v1.4.0)
 
 ## 1. Reporte Individual (Single Report)
 
 ### Con Gurobi
 ```bash
-python -m src.cli.solve data/problem.txt --pdf --solver gurobi
+python -m src.cli data/problem.txt --pdf --solver gurobi
 ```
 **Salida:** `data/problem.pdf`
 
 ### Con CBC
 ```bash
-python -m src.cli.solve data/problem.txt --pdf --solver cbc
+python -m src.cli data/problem.txt --pdf --solver cbc
 ```
 **Salida:** `data/problem.pdf`
 
 ### Con SCIP
 ```bash
-python -m src.cli.solve data/problem.txt --pdf --solver scip
+python -m src.cli data/problem.txt --pdf --solver scip
 ```
 **Salida:** `data/problem.pdf`
 
 ### Con HiGHS
 ```bash
-python -m src.cli.solve data/problem.txt --pdf --solver highs
+python -m src.cli data/problem.txt --pdf --solver highs
 ```
 **Salida:** `data/problem.pdf`
 
 ### Automático (detecta solver disponible)
 ```bash
-python -m src.cli.solve data/problem.txt --pdf
+python -m src.cli data/problem.txt --pdf
 ```
 **Salida:** `data/problem.pdf`
 
@@ -38,13 +38,13 @@ python -m src.cli.solve data/problem.txt --pdf
 
 ### Con múltiples solvers
 ```bash
-python -m src.cli.solve data/problem.txt --multi --solvers gurobi cbc --pdf
+python -m src.cli data/problem.txt --multi --solvers gurobi cbc --pdf
 ```
 **Salida:** `data/problem_multi.pdf`
 
 ### Con todos los solvers disponibles
 ```bash
-python -m src.cli.solve data/problem.txt --multi --solvers gurobi cbc scip highs --pdf
+python -m src.cli data/problem.txt --multi --solvers gurobi cbc scip highs --pdf
 ```
 **Salida:** `data/problem_multi.pdf`
 
@@ -54,31 +54,31 @@ python -m src.cli.solve data/problem.txt --multi --solvers gurobi cbc scip highs
 
 ### Benchmark básico con PDF
 ```bash
-python -m src.cli.benchmark data/problem.txt --pdf --output data/benchmark_output
+python -m src.cli --benchmark --pdf data/problem.txt
 ```
 **Salida:** `data/benchmark_output/benchmark_report.pdf`
 
 ### Benchmark con múltiples problemas
 ```bash
-python -m src.cli.benchmark data/problem.txt data/milp_example.txt --pdf
+python -m src.cli --benchmark --pdf data/problem.txt data/milp_example.txt
 ```
 **Salida:** `data/benchmark_output/benchmark_report.pdf`
 
 ### Benchmark con solvers específicos
 ```bash
-python -m src.cli.benchmark data/problem.txt --solvers gurobi cbc scip --pdf --output data/benchmark_output
+python -m src.cli --benchmark --solvers gurobi cbc scip --pdf data/problem.txt
 ```
 **Salida:** `data/benchmark_output/benchmark_report.pdf`
 
-### Benchmark con exportación HTML (con gráficos)
+### Benchmark con límite de tiempo
 ```bash
-python -m src.cli.benchmark data/problem.txt --solvers gurobi highs --pdf --output data/benchmark_output
-# El HTML se genera automáticamente con las gráficas
+python -m src.cli --benchmark --all-solvers --timeout 30 --repetitions 3 data/problem.txt
 ```
-**Salidas:** 
-- `data/benchmark_output/benchmark_report.pdf`
-- `data/benchmark_output/benchmark_report.html`
-- `data/benchmark_output/plots/` (gráficas)
+
+### Benchmark con exportación CSV
+```bash
+python -m src.cli --benchmark --solvers gurobi highs --output-csv results.csv data/problem.txt
+```
 
 ---
 
@@ -86,112 +86,12 @@ python -m src.cli.benchmark data/problem.txt --solvers gurobi highs --pdf --outp
 
 ### Problema MILP (Programación Lineal Entera)
 ```bash
-python -m src.cli.solve data/milp_example.txt --pdf --solver gurobi
+python -m src.cli data/milp_example.txt --pdf --solver gurobi
 ```
 
 ### Benchmark de múltiples problemas
 ```bash
-python -m src.cli.benchmark data/problem.txt data/milp_example.txt --pdf
-```
-
-**Salida:** `data/problem.pdf`
-
-### Con CBC
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.solve data/problem.txt --pdf --solver cbc
-```
-**Salida:** `data/problem.pdf`
-
-### Con SCIP
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.solve data/problem.txt --pdf --solver scip
-```
-**Salida:** `data/problem.pdf`
-
-### Con HiGHS
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.solve data/problem.txt --pdf --solver highs
-```
-**Salida:** `data/problem.pdf`
-
-### Automático (detecta solver disponible)
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.solve data/problem.txt --pdf
-```
-**Salida:** `data/problem.pdf`
-
----
-
-## 2. Reporte Multi-Problema (Multi-Problem Report)
-
-### Con múltiples solvers
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.solve data/problem.txt --multi --solvers gurobi cbc --pdf
-```
-**Salida:** `data/problem_multi.pdf`
-
-### Con todos los solvers disponibles
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.solve data/problem.txt --multi --solvers gurobi cbc scip highs --pdf
-```
-**Salida:** `data/problem_multi.pdf`
-
----
-
-## 3. Reporte de Benchmark (Comparativo)
-
-### Benchmark básico con PDF
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.benchmark data/problem.txt --pdf --output data/benchmark_output
-```
-**Salida:** `data/benchmark_output/benchmark_report.pdf`
-
-### Benchmark con múltiples problemas
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.benchmark data/problem.txt data/milp_example.txt --pdf
-```
-**Salida:** `data/benchmark_output/benchmark_report.pdf`
-
-### Benchmark con solvers específicos
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.benchmark data/problem.txt --solvers gurobi cbc scip --pdf --output data/benchmark_output
-```
-**Salida:** `data/benchmark_output/benchmark_report.pdf`
-
-### Benchmark con exportación HTML (con gráficos)
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.benchmark data/problem.txt --solvers gurobi highs --pdf --output data/benchmark_output
-# El HTML se genera automáticamente con las gráficas
-```
-**Salidas:** 
-- `data/benchmark_output/benchmark_report.pdf`
-- `data/benchmark_output/benchmark_report.html`
-- `data/benchmark_output/plots/` (gráficas)
-
----
-
-## 4. Ejemplos de Uso con Diferentes Problemas
-
-### Problema MILP (Programación Lineal Entera)
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.solve data/milp_example.txt --pdf --solver gurobi
-```
-
-### Benchmark de múltiples problemas
-```bash
-cd "C:\Users\ACER\Documents\Proyectos - Software\ArcSoft\Gurobipy-simplex-general-solver"
-python -m src.cli.benchmark data/problem.txt data/milp_example.txt --pdf
+python -m src.cli --benchmark --pdf data/problem.txt data/milp_example.txt
 ```
 
 ---
@@ -261,7 +161,6 @@ python -m src.cli.benchmark data/problem.txt data/milp_example.txt --pdf
 - Los gráficos se centran respetando los márgenes
 - Formatos soportados: `.txt` (formato estándar LP), `.lp` (CPLEX/LP)
 - Solvers soportados: `gurobi`, `cbc`, `scip`, `highs`, `glpk`, `ecos`, `osqp`, `cvxopt`, `scs`, `ipopt`
-- Los reportes multi-problema comparan varios solvers en un solo PDF
-- El benchmark genera comparativas detalladas con gráficos separados por página
-- SCIP soporta MILP (variables enteras y binarias)
-- Gurobi es el solver más completo para MILP
+- Ejecutar `python -m src.cli --list-solvers` para ver solvers disponibles en el sistema
+- Usar `--log-level DEBUG` para ver información detallada de diagnóstico
+- Tras `pip install -e .`, usar `isla` como atajo: `isla data/problem.txt --pdf`
