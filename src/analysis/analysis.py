@@ -1146,9 +1146,10 @@ class LPAnalysis:
         
         pdf.set_font('Helvetica', '', 8)
         
-        max_bound_viol = getattr(self.solution, 'max_bound_viol', 0)
-        max_constr_viol = getattr(self.solution, 'max_constraint_viol', 0)
-        condition_num = getattr(self.solution, 'condition_number', None)
+        nq = self.solution.numerical_quality
+        max_bound_viol = nq.max_bound_viol if nq else 0
+        max_constr_viol = nq.max_constraint_viol if nq else 0
+        condition_num = nq.condition_number if nq else None
         
         metrics = [
             ("Violacion max. limites", f"{max_bound_viol:.2e}"),

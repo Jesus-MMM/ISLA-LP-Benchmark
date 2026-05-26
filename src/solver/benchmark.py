@@ -237,18 +237,6 @@ class BenchmarkRunner:
             if solver_class is None:
                 raise ValueError(f"Solver '{solver_name}' no encontrado")
             
-            # Verificar si el solver soporta MILP si el problema es MIP
-            if problem.is_mip and not solver.capabilities.milp:
-                return BenchmarkResult(
-                    solver_name=solver_name,
-                    problem_name=problem_name,
-                    problem_text=problem_text,
-                    solution=Solution(status="ERROR: Solver does not support MILP", objective_value=None, variables={}),
-                    stats=SolverStats(),
-                    total_time=time.perf_counter() - total_start,
-                    error=" la capacidad de MILP no es soportada por este solver"
-                )
-            
             # Crear solver con configuracion (verbose + time_limit)
             from src.solver import SolverConfig
             scfg = SolverConfig(
@@ -260,6 +248,18 @@ class BenchmarkRunner:
             except TypeError:
                 solver = solver_class(problem)
                 solver.config = scfg
+            
+            # Verificar si el solver soporta MILP si el problema es MIP
+            if problem.is_mip and not solver.capabilities.milp:
+                return BenchmarkResult(
+                    solver_name=solver_name,
+                    problem_name=problem_name,
+                    problem_text=problem_text,
+                    solution=Solution(status="ERROR: Solver does not support MILP", objective_value=None, variables={}),
+                    stats=SolverStats(),
+                    total_time=time.perf_counter() - total_start,
+                    error=" la capacidad de MILP no es soportada por este solver"
+                )
             
             # F6-5: Measure memory after solver creation (more accurate per-solver)
             if self.config.collect_memory and PSUTIL_AVAILABLE:

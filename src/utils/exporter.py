@@ -37,10 +37,10 @@ def export_to_lp_format(problem: LinearProblem, problem_name: str = "LPProblem")
 
     lines.append("Subject To")
     for i, constraint in enumerate(problem.constraints):
-        c_name = constraint.coefficients.get("name", f"c{i+1}")
+        c_name = constraint.name or f"c{i+1}"
         expr = _format_expression(constraint.coefficients, problem.variables)
         sense = constraint.sense.replace("=", "=").replace("<=", "<").replace(">=", ">")
-        lines.append(f"  c{i+1}:  {expr} {sense} {constraint.rhs}")
+        lines.append(f"  {c_name}:  {expr} {sense} {constraint.rhs}")
     lines.append("")
 
     lines.append("Bounds")

@@ -3,9 +3,9 @@ Tests for LP Parser.
 """
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from parser.lp_parser import LPParser
+from src.parser.lp_parser import LPParser
 
 
 class TestLPParser:

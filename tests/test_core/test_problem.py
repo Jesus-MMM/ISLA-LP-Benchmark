@@ -3,11 +3,11 @@ Tests for core dataclasses: LinearProblem, VariableBound, etc.
 """
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from core.problem import LinearProblem
-from core.constraint import LinearConstraint
-from core.bound import VariableBound
+from src.core.problem import LinearProblem
+from src.core.constraint import LinearConstraint
+from src.core.bound import VariableBound
 
 
 class TestLinearProblem:

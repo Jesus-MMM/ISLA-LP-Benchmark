@@ -195,12 +195,17 @@ def _validate_variables(problem: LinearProblem) -> list[ValidationIssue]:
             location="variables"
         ))
 
-    duplicate_vars = [v for v in problem.variables if problem.variables.count(v) > 1]
+    seen = set()
+    duplicate_vars = set()
+    for v in problem.variables:
+        if v in seen:
+            duplicate_vars.add(v)
+        seen.add(v)
     if duplicate_vars:
         issues.append(ValidationIssue(
             severity="ERROR",
             code="VAR003",
-            message=f"Variables duplicadas: {set(duplicate_vars)}",
+            message=f"Variables duplicadas: {duplicate_vars}",
             location="variables"
         ))
 
