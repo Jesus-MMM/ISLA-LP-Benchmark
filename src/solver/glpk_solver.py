@@ -187,8 +187,10 @@ class GLPKSolver(BaseSolver):
                 obj_value = swiglpk.glp_get_obj_val(prob)
                 try:
                     self._iterations = swiglpk.glp_get_simplex_itcnt(prob)
-                except:
+                except Exception as e:
                     self._iterations = 0
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"No se pudieron extraer iteraciones de GLPK: {e}")
             else:
                 obj_value = None
             
@@ -220,8 +222,9 @@ class GLPKSolver(BaseSolver):
             if prob is not None:
                 try:
                     swiglpk.glp_delete_prob(prob)
-                except:
-                    pass
+                except Exception as cleanup_err:
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"Error al limpiar problema GLPK: {cleanup_err}")
             
             return Solution(
                 status=f"ERROR: {str(e)}",

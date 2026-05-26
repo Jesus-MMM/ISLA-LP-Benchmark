@@ -62,7 +62,8 @@ class MultiLPParser:
                 problem.name = f"Problema {problem_count}"
                 problems.append(problem)
             except Exception as e:
-                print(f"Warning: Error al parsear problema {problem_count + 1}: {e}")
+                logger = __import__('logging').getLogger(__name__)
+                logger.warning(f"Error al parsear problema {problem_count + 1}: {e}")
                 continue
 
         return problems

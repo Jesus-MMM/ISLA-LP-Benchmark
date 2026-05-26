@@ -71,7 +71,7 @@ class GurobiSolver(BaseSolver):
         try:
             import gurobipy
             return gurobipy.__version__
-        except:
+        except Exception:
             return "Unknown"
     
     @property
@@ -308,8 +308,9 @@ class GurobiSolver(BaseSolver):
                 max_constraint_viol=getattr(self.model, 'ConstrVio', 0.0),
                 condition_number=getattr(self.model, 'KappaExact', None)
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger = __import__('logging').getLogger(__name__)
+            logger.debug(f"No se pudieron extraer metricas numericas: {e}")
         
         if self.config.verbose:
             self._print_solution(var_values, self.model.objVal)

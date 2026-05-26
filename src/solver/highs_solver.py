@@ -133,23 +133,24 @@ class HiGHSSolver(BaseSolver):
                 for i, var in enumerate(variables_list):
                     variables[var] = solution.col_value[i]
                 
-                # F3-7: Try to get dual values and reduced costs
+                # F3-7: Try to get dual values and reduced costs (reuse solution from line 132)
                 try:
-                    sol = hp.getSolution()
-                    # For constraints - needs mapping
                     for i, constr in enumerate(problem.constraints):
-                        if i < len(sol.row_dual):
-                            dual_values[constr.name or f"R{i}"] = sol.row_dual[i]
-                except:
-                    pass
+                        if i < len(solution.row_dual):
+                            dual_values[constr.name or f"R{i}"] = solution.row_dual[i]
+                except Exception as e:
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"No se pudieron extraer valores duales de HiGHS: {e}")
                 
                 # F3-14: Get basis info
                 try:
                     basis_info = hp.getBasis()
                     basis = {var: ("basic" if basis_info[i] == 0 else "nonbasic") 
                                for i, var in enumerate(variables_list)}
-                except:
+                except Exception as e:
                     basis = None
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"No se pudo obtener informacion de base HiGHS: {e}")
             
             sensitivity = None
             try:
@@ -175,8 +176,9 @@ class HiGHSSolver(BaseSolver):
             try:
                 info = hp.getInfo()
                 self._iterations = getattr(info, 'simplex_iterations', 0) or 0
-            except:
-                pass
+            except Exception as e:
+                logger = __import__('logging').getLogger(__name__)
+                logger.debug(f"No se pudieron extraer estadisticas de HiGHS: {e}")
             
             return self._solution
             

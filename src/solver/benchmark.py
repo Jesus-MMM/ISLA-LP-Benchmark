@@ -73,8 +73,9 @@ class BenchmarkResult:
                         "variables": self.solution_table.variables.to_dicts() if hasattr(self.solution_table.variables, 'to_dicts') else str(self.solution_table.variables),
                         "constraints": self.solution_table.constraints.to_dicts() if self.solution_table.constraints and hasattr(self.solution_table.constraints, 'to_dicts') else None,
                     }
-            except:
-                pass
+            except Exception as e:
+                logger = __import__('logging').getLogger(__name__)
+                logger.debug(f"No se pudo incluir tabla de solucion en exportacion: {e}")
         
         return result
 
@@ -173,7 +174,9 @@ class BenchmarkRunner:
             # Parse problem once for verification
             try:
                 problem = LPParser(results[0].problem_text).parse()
-            except:
+            except Exception as e:
+                logger = __import__('logging').getLogger(__name__)
+                logger.debug(f"No se pudo parsear problema para validacion cruzada: {e}")
                 continue
             
             # Verify each solution
@@ -271,8 +274,9 @@ class BenchmarkRunner:
                 for _ in range(self.config.warmup_runs):
                     try:
                         solver.solve()
-                    except:
-                        pass
+                    except Exception as e:
+                        logger = __import__('logging').getLogger(__name__)
+                        logger.debug(f"Error en warmup run: {e}")
                 # Reiniciar stats pero mantener estado interno
                 solver.reset()
             
@@ -309,8 +313,9 @@ class BenchmarkRunner:
             try:
                 if solution.is_optimal():
                     solution_table = to_solution_table(solution, problem)
-            except:
-                pass
+            except Exception as e:
+                logger = __import__('logging').getLogger(__name__)
+                logger.debug(f"No se pudo generar tabla de solucion: {e}")
             
             result = BenchmarkResult(
                 solver_name=solver_name,

@@ -37,7 +37,7 @@ class SCIPSolver(BaseSolver):
     def solver_version(self) -> str:
         try:
             return scip.__version__
-        except:
+        except Exception:
             return "SCIP"
     
     @property
@@ -161,8 +161,9 @@ class SCIPSolver(BaseSolver):
                         rc = model.getRedcostVar(var_obj)
                         if abs(rc) > 1e-10:
                             reduced_costs[var_name] = rc
-                except:
-                    pass
+                except Exception as e:
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"No se pudieron extraer duales/reduced costs de SCIP: {e}")
                 
                 self._solution = Solution(
                     status=status,

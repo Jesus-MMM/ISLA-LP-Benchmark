@@ -40,7 +40,7 @@ class CBCSolver(BaseSolver):
     def solver_version(self) -> str:
         try:
             return f"PuLP {pulp.__version__}"
-        except:
+        except Exception:
             return "PuLP"
     
     @property
@@ -154,8 +154,10 @@ class CBCSolver(BaseSolver):
                 obj_value = float(obj_val) if obj_val is not None else None
                 try:
                     self._iterations = getattr(prob.solver, 'iterations', 0) or 0
-                except:
+                except Exception as e:
                     self._iterations = 0
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"No se pudieron extraer iteraciones de CBC: {e}")
                 
                 # Try to get dual values and reduced costs
                 try:
@@ -165,8 +167,9 @@ class CBCSolver(BaseSolver):
                     for var in prob.variables():
                         if hasattr(var, 'dj'):
                             reduced_costs[var.name] = var.dj
-                except:
-                    pass
+                except Exception as e:
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"No se pudieron extraer duales/reduced costs de CBC: {e}")
             
             self._solution = Solution(
                 status=status,
