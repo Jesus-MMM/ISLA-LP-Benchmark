@@ -91,6 +91,13 @@ Para mas ayuda sobre un modo concreto, combine las opciones:
         action='store_true',
         help='Mostrar todos los solvers registrados y su disponibilidad'
     )
+    info_group.add_argument(
+        '--log-level',
+        type=str,
+        default=None,
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        help='Nivel de detalle de los mensajes de registro (default: WARNING)'
+    )
 
     # --- Seleccion de solver ---
     solver_group = parser.add_argument_group('Seleccion de solver')
@@ -212,6 +219,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     """Punto de entrada principal."""
     parser = create_parser()
     args = parser.parse_args(argv)
+
+    # Configurar nivel de logging global
+    if args.log_level is not None:
+        from src.utils.logging import LogLevel, set_default_level
+        set_default_level(LogLevel[args.log_level])
 
     if args.list_solvers:
         from src.solver import SolverRegistry
