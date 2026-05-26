@@ -1,4 +1,4 @@
-# Comandos para Generar Reportes (v1.4.0)
+# Comandos para Generar Reportes (v1.5.0)
 
 ## 1. Reporte Individual (Single Report)
 

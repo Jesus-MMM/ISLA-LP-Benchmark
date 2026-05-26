@@ -1,4 +1,4 @@
-# ISLA LP Benchmark v1.4.0
+# ISLA LP Benchmark v1.5.0
 
 ## Resumen del Proyecto
 
@@ -37,15 +37,17 @@ Esta herramienta esta disenada para uso educativo, investigacion y evaluacion de
 
 | Caracteristica | Descripcion |
 |-------------|-----------|
-| Multiples Solvers | Comparativa de HiGHS, GLPK, CBC y Gurobi |
+| Multiples Solvers | Comparativa de 10+ solvers (Gurobi, HiGHS, GLPK, CBC, etc.) |
 | Modo Benchmark | Comparacion justa con warmup y metricas detalladas |
 | Metricas Detalladas | Tiempo, iteraciones, memoria, nodos |
 | Warmup | Ejecuciones de calentamiento para fair benchmarking |
-| Reportes PDF | Comparaciones visuales con graficos |
+| Reportes PDF | Comparaciones visuales con graficos, tablas de sensibilidad |
+| Analisis de Sensibilidad | Rangos objetivo, RHS y limites via APIs nativas |
+| MatrixConverter | Conversion unificada de LinearProblem a formatos de solver |
 | Exportacion | CSV, JSON, Markdown |
 | CLI Modular | Flags configurables |
 | Registro de Solvers | Deteccion automatica de disponibilidad |
-| Docker | Imagen Alpine ligera |
+| Docker | Imagen Python 3.12 Slim |
 
 ---
 
@@ -97,12 +99,14 @@ flowchart TB
         direction TB
         BUILD["builder.py - LPBuilder"]
         POLARS["matrix.py - PolarsLP"]
+        CONV["converter.py - MatrixConverter"]
     end
     
     subgraph ANALYSIS["Capa de Analisis"]
         direction TB
         AN["analysis.py - Reporte single"]
         BENCHREP["benchmark_report.py - Reporte benchmark"]
+        SENS["sensitivity.py - SensitivityAnalysis"]
     end
     
     subgraph VIS["Capa de Visualizacion"]
@@ -251,6 +255,8 @@ stateDiagram-v2
 | LinearVisualization | visualization/visualization.py | Gráfico 2D | plot() |
 | LPValidator | utils/validation.py | Validador | validate() |
 | LPExporter | utils/exporter.py | Exportador | export() |
+| MatrixConverter | matrix/converter.py | Conversion a formatos solver | to_highs(), to_glpk(), to_cvxopt(), to_osqp(), to_scipy() |
+| SensitivityAnalysis | analysis/sensitivity.py | Analisis de sensibilidad nativo | extract_highs_sensitivity(), extract_glpk_sensitivity(), extract_gurobi_sensitivity() |
 
 ---
 
@@ -1033,6 +1039,8 @@ isla-lp-benchmark/
 │   │   ├── analysis.py         # Reporte single
 │   │   ├── benchmark_report.py # Reporte PDF benchmark
 │   │   ├── benchmark_results.py # Visualizacion
+│   │   ├── multi_analysis.py   # Reporte multi-problema
+│   │   ├── sensitivity.py      # SensitivityAnalysis
 │   │   └── __init__.py
 │   ├── parser/
 │   │   ├── lp_parser.py    # Parser formato propio
@@ -1048,6 +1056,7 @@ isla-lp-benchmark/
 │   ├── matrix/
 │   │   ├── builder.py     # LPBuilder
 │   │   ├── matrix.py      # PolarsLP
+│   │   ├── converter.py   # MatrixConverter
 │   │   └── __init__.py
 │   ├── visualization/
 │   │   ├── visualization.py
@@ -1991,7 +2000,44 @@ analysis = MultiLPAnalysis(results)  # results: MultiSolverResult
 analysis.generate_pdf("output/multi_report.pdf")
 ```
 
-#### 10.7.5 ResultsExporter y export_benchmark_results (benchmark_results.py)
+#### 10.7.5 SensitivityAnalysis (sensitivity.py)
+
+**Proposito**: Extrae analisis de sensibilidad real desde APIs nativas de los solvers.
+
+**Clase Principal**: `SensitivityAnalysis`
+
+**Clase de Datos**: `SensitivityRange`
+
+| Atributo | Tipo | Descripcion |
+|----------|------|-------------|
+| objective_ranges | list[dict] | Rangos de coeficientes objetivo por variable |
+| rhs_ranges | list[dict] | Rangos de lados derechos por restriccion |
+| bound_ranges | list[dict] | Rangos de limites de variables |
+| shadow_prices | dict[str, float] | Precios sombra por restriccion |
+| reduced_costs | dict[str, float] | Costos reducidos por variable |
+
+**Extractores**:
+
+| Metodo | Solver | API Nativa |
+|--------|--------|-----------|
+| extract_gurobi_sensitivity | Gurobi | `model.getAttr("VBasis")`, `model.getAttr("CBasis")` |
+| extract_highs_sensitivity | HiGHS | `hp.getRanging()` |
+| extract_glpk_sensitivity | GLPK | `glp_get_row_dual()`, `glp_get_col_dual()` |
+
+**Uso**:
+```python
+from src.analysis.sensitivity import SensitivityAnalysis
+
+# Extraer sensibilidad desde el solver
+sensitivity = SensitivityAnalysis.extract_highs_sensitivity(hp)
+solution.sensitivity = sensitivity
+
+# Rangos disponibles
+for r in sensitivity.objective_ranges:
+    print(f"{r.name}: [{r.lower:.4f}, {r.upper:.4f}]")
+```
+
+#### 10.7.6 ResultsExporter y export_benchmark_results (benchmark_results.py)
 
 **Proposito**: Exporta resultados de benchmarking a multiples formatos.
 
@@ -2914,7 +2960,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## 20. Version
 
-**Version actual: 1.4.0**
+**Version actual: 1.5.0**
+
+### Changelog v1.5.0
+
+- `MatrixConverter` (5 metodos estaticos: `to_highs`, `to_glpk`, `to_cvxopt`, `to_osqp`, `to_scipy`)
+- Solvers HiGHS, GLPK, CVXOPT, OSQP refactorizados para delegar conversion a `MatrixConverter`
+- `SensitivityAnalysis` con extractores nativos para HiGHS, GLPK y Gurobi
+- `SensitivityRange` dataclass: rangos objetivo, RHS, precios sombra, costos reducidos
+- Tablas numericas de sensibilidad en PDF (rangos objetivo, RHS, limites)
+- 89 errores de ruff corregidos (E722, E741, F401, F541, F841)
+- 277 tests pasando (246 originales + 31 de MatrixConverter)
 
 ### Changelog v1.4.0
 

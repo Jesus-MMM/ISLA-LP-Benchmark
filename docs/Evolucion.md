@@ -19,6 +19,26 @@
 
 ## Historial de Cambios
 
+### v1.5.0 (2026-05-26)
+
+#### MatrixConverter
+- Nueva clase `MatrixConverter` con 5 metodos estaticos: `to_highs`, `to_glpk`, `to_cvxopt`, `to_osqp`, `to_scipy`
+- Solvers HiGHS, GLPK, CVXOPT, OSQP refactorizados para delegar conversion de matrices a `MatrixConverter`
+- 31 tests para MatrixConverter (277 tests total)
+
+#### Analisis de Sensibilidad Real
+- Nuevo modulo `src/analysis/sensitivity.py` con `SensitivityAnalysis`
+- Extractores nativos: `extract_highs_sensitivity()` (via `hp.getRanging()`), `extract_glpk_sensitivity()` (via API nativa), `extract_gurobi_sensitivity()` (via `getAttr`)
+- `SensitivityRange` dataclass con rangos objetivo, RHS, precios sombra y costos reducidos
+
+#### Reportes PDF
+- Tablas numericas de sensibilidad en `LPAnalysis`: rangos objetivo, RHS y limites
+- Seccion de sensibilidad en `MultiLPAnalysis` por problema
+
+#### Limpieza de Codigo
+- 89 errores de ruff corregidos (E722, E741, F401, F541, F841) en 25 archivos
+- `ruff check src/ tests/` produce 0 errores
+
 ### v1.4.0 (2026-05-26)
 
 #### Infraestructura Docker

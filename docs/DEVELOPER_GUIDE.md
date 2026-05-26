@@ -1,4 +1,4 @@
-# Guia del Desarrollador - ISLA LP Benchmark v1.4.0
+# Guia del Desarrollador - ISLA LP Benchmark v1.5.0
 
 Esta guia es para **desarrolladores** que quieren extender o integrar el proyecto.
 
@@ -31,6 +31,7 @@ src/
 │   ├── benchmark_report.py   # BenchmarkReport - PDF benchmark
 │   ├── benchmark_results.py  # ResultsExporter, export_benchmark_results
 │   ├── multi_analysis.py     # MultiLPAnalysis - reporte multi-problema
+│   ├── sensitivity.py        # SensitivityAnalysis - sensibilidad nativa
 │   └── __init__.py
 ├── parser/                   # Parsing de archivos
 │   ├── lp_parser.py          # LPParser - formato texto propio
@@ -46,9 +47,10 @@ src/
 │   ├── constants.py          # Constantes centralizadas
 │   ├── verification.py       # verify_solution, compare_solutions
 │   └── __init__.py
-├── matrix/                   # Construccion Polars
+├── matrix/                   # Construccion y conversion
 │   ├── builder.py            # LPBuilder
 │   ├── matrix.py             # PolarsLP
+│   ├── converter.py          # MatrixConverter
 │   └── __init__.py
 ├── visualization/            # Graficos 2D
 │   ├── visualization.py      # LinearVisualization
