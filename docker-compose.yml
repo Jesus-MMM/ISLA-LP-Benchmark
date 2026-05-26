@@ -1,34 +1,35 @@
-version: '3.8'
-
 services:
-  lp-solver:
+  isla-lp:
     build:
       context: .
       dockerfile: Dockerfile
-    image: lp-solver:latest
-    container_name: lp-solver
+    image: isla-lp-benchmark:latest
+    container_name: isla-lp
     volumes:
       - ./data:/app/data:ro
-    command: python main.py --help
+      - ./output:/app/output
+    environment:
+      - GRB_LICENSE_FILE=/app/gurobi.lic
+    command: --help
 
-  # CLI interactivo
-  cli:
+  solve:
     build: .
-    stdin_open: true
-    tty: true
     volumes:
-      - .:/app
-    command: python main.py --help
+      - ./data:/app/data:ro
+      - ./output:/app/output
+    environment:
+      - GRB_LICENSE_FILE=/app/gurobi.lic
+    command: data/problem.txt
 
-  # Benchmark
   benchmark:
     build: .
     volumes:
       - ./data:/app/data
       - ./output:/app/output
-    command: python main.py --benchmark --solvers highs glpk --repetitions 1 /app/data/problem.txt
+    environment:
+      - GRB_LICENSE_FILE=/app/gurobi.lic
+    command: --benchmark --solvers highs glpk cbc --repetitions 3 data/problem.txt
 
-  # Listar solvers disponibles
   list-solvers:
     build: .
-    command: python main.py --list-solvers
+    command: --list-solvers

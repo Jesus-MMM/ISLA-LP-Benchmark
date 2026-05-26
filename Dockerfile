@@ -1,39 +1,42 @@
 # ============================================================
-# LP Solver Benchmark - Docker Image
-# Uses Poetry, Alpine Python (lightweight)
+# ISLA LP Benchmark v1.4.0 — Docker Image
+# Uses python:3.12-slim (lightweight, wide compatibility)
 # ============================================================
 
-# ----- Stage 1: Build -----
-FROM python:3.14-alpine AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
-RUN apk add --no-cache \
-    gcc g++ musl-dev linux-headers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libgomp1 \
+    coinor-cbc \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml requirements.txt ./
 
-RUN pip install --no-cache-dir poetry && \
-    poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-ansi --only main
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -e .
 
-# ----- Stage 2: Runtime -----
-FROM python:3.14-alpine
+FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN apk add --no-cache libgcc libgomp && \
-    adduser -D -u 1000 appuser
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    coinor-cbc \
+    && rm -rf /var/lib/apt/lists/* && \
+    adduser --disabled-password --gecos '' --uid 1000 appuser
 
-COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --chown=appuser:appuser src/ ./src/
-COPY --chown=appuser:appuser main.py ./
 COPY --chown=appuser:appuser data/ ./data/
 
 USER appuser
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python", "-m", "src.cli"]
 CMD ["--help"]
