@@ -1,6 +1,5 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Any
-from .constants import OPTIMALITY_TOLERANCE
 
 # Import sensitivity analysis if available
 try:
