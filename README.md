@@ -1,4 +1,4 @@
-# ISLA LP Benchmark v1.3.0
+# ISLA LP Benchmark v1.4.0
 
 ## Resumen del Proyecto
 
@@ -2914,7 +2914,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## 20. Version
 
-**Version actual: 1.3.0**
+**Version actual: 1.4.0**
+
+### Changelog v1.4.0
+
+- Infraestructura Docker migrada a `python:3.12-slim` con `coinor-cbc` preinstalado
+- `docker-compose.yml` actualizado con servicios `isla-lp`, `solve`, `benchmark`, `list-solvers`
+- Entrypoint CLI `isla` registrado en `pyproject.toml` (`[project.scripts]`)
+- Versión del proyecto actualizada a 1.4.0
+- Workflow CI/CD de Docker agregado (construcción y push a GitHub Container Registry)
 
 ### Changelog v1.3.0
 

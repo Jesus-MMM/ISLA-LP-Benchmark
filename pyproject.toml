@@ -1,6 +1,6 @@
 [project]
 name = "isla-lp-benchmark"
-version = "1.2.1"
+version = "1.4.0"
 description = "LP Benchmarking Platform - Compare multiple Linear Programming solvers"
 authors = [
     {name = "Oyhs-co",email = "oyhsotelo@gmail.com"}
