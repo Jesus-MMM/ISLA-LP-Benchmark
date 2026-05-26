@@ -4,15 +4,14 @@ Genera gráficos comparativos y reportes visuales.
 """
 
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from pathlib import Path
 from datetime import datetime
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 
-from src.solver.benchmark import BenchmarkRunner, BenchmarkResult
+from src.solver.benchmark import BenchmarkRunner
 
 
 @dataclass
@@ -68,7 +67,7 @@ class BenchmarkPlotter:
                     times.append(0)
             
             offset = (i - len(solvers)/2 + 0.5) * width
-            bars = ax.bar(x + offset, times, width, label=solver, color=colors[i])
+            ax.bar(x + offset, times, width, label=solver, color=colors[i])
         
         ax.set_xlabel('Problemas', fontsize=self.style.font_size)
         ax.set_ylabel('Tiempo (ms)', fontsize=self.style.font_size)
@@ -104,7 +103,7 @@ class BenchmarkPlotter:
         x = np.arange(len(solvers))
         width = 0.35
         
-        bars1 = ax.bar(x - width/2, total, width, label='Total', color=self.style.secondary_color)
+        ax.bar(x - width/2, total, width, label='Total', color=self.style.secondary_color)
         bars2 = ax.bar(x + width/2, successful, width, label='Exitosos', color=self.style.success_color)
         
         ax.set_xlabel('Solver', fontsize=self.style.font_size)

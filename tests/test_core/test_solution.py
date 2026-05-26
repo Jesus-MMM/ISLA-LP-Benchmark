@@ -179,7 +179,7 @@ class TestSolutionTable:
 
     def test_to_solution_table_iis(self):
         """Test to_solution_table with IIS."""
-        from src.core.solution import to_solution_table, SolutionTable
+        from src.core.solution import to_solution_table
         from src.core.problem import LinearProblem
 
         problem = LinearProblem(

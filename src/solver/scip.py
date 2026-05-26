@@ -3,7 +3,6 @@ SCIP Solver for linear and mixed-integer programming.
 Implements using PySCIPOpt (interface to SCIP).
 """
 
-import time
 from typing import Optional
 
 import pyscipopt as scip
@@ -54,8 +53,6 @@ class SCIPSolver(BaseSolver):
                 objective_value=None,
                 variables={},
             )
-        
-        start_time = time.perf_counter()
         
         try:
             model = scip.Model("LP")
@@ -119,8 +116,6 @@ class SCIPSolver(BaseSolver):
                 model.setIntParam("parallel/maxnthreads", self.config.threads)
             
             model.optimize()
-            
-            solve_time = time.perf_counter() - start_time
             
             status_map = {
                 "optimal": "OPTIMAL",

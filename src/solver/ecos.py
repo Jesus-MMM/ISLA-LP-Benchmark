@@ -3,8 +3,6 @@ Solver ECOS para problemas de programacion lineal.
 Implementacion usando ecos (Embedded Conic Solver).
 """
 
-import time
-
 try:
     import ecos
     _is_solver_available = True
@@ -41,7 +39,7 @@ class ECOSSolver(BaseSolver):
         if _is_solver_available:
             try:
                 return ecos.__version__
-            except:
+            except Exception:
                 return "ecos"
         return "ecos (not installed)"
 
@@ -63,8 +61,6 @@ class ECOSSolver(BaseSolver):
                 objective_value=None,
                 variables={},
             )
-
-        start_time = time.perf_counter()
 
         try:
             import numpy as np
@@ -156,8 +152,6 @@ class ECOSSolver(BaseSolver):
                 c, G, h, dims, A, b,
                 verbose=self.config.verbose,
             )
-
-            solve_time = time.perf_counter() - start_time
 
             variables = {}
             dual_values = None

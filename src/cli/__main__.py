@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Optional
 
 from src.cli import solve, benchmark
-from src.cli import get_system_info
 
 
 class CustomHelpFormatter(

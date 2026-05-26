@@ -16,7 +16,7 @@ class LPParseError(LPError):
 
     def __init__(self, message: str, line: int | None = None, problem: str | None = None):
         self.line = line
-        full_message = f"Error de parseo"
+        full_message = "Error de parseo"
         if line is not None:
             full_message += f" en línea {line}"
         full_message += f": {message}"

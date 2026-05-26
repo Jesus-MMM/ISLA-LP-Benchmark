@@ -3,12 +3,11 @@ Solver CBC (COIN-OR) para problemas de programacion lineal.
 Implementacion usando PuLP.
 """
 
-import time
 from typing import Optional
 
 import pulp
 from pulp import LpProblem, LpVariable, LpMinimize, LpMaximize, LpBinary, LpContinuous, LpInteger, LpStatus
-from ..core import LinearProblem, Solution, VariableBound
+from ..core import LinearProblem, Solution
 from ..matrix import LPBuilder
 from .base import BaseSolver, SolverStats, SolverCapabilities
 
@@ -112,8 +111,6 @@ class CBCSolver(BaseSolver):
                 variables={},
             )
         
-        start_time = time.perf_counter()
-        
         try:
             prob = self._build_problem(self.problem)
             
@@ -129,8 +126,6 @@ class CBCSolver(BaseSolver):
             solver = pulp.PULP_CBC_CMD(msg=self.config.verbose, options=solver_options)
             
             prob.solve(solver)
-            
-            solve_time = time.perf_counter() - start_time
             
             status_map = {
                 "Optimal": "OPTIMAL",

@@ -5,13 +5,12 @@ Handler para el modo benchmark.
 from pathlib import Path
 from typing import Optional
 
-from fpdf import FPDF
 
-from src.parser import LPParser, MultiLPParser
+from src.parser import MultiLPParser
 from src.solver import (
-    BenchmarkRunner, BenchmarkConfig, SolverRegistry
+    BenchmarkRunner, BenchmarkConfig
 )
-from src.analysis import export_benchmark_results, ResultsExporter
+from src.analysis import export_benchmark_results
 from src.cli import get_system_info
 from src.visualization.benchmark_plots import BenchmarkPlotter as BenchmarkVisualizer
 
@@ -47,7 +46,6 @@ def run_benchmark(
             for i, p in enumerate(parsed_problems, 1):
                 problems.append((f"Problema_{i}", _problem_to_text(p)))
         else:
-            problem = LPParser(content).parse()
             problems.append((input_path.stem, content))
     else:
         problems = [

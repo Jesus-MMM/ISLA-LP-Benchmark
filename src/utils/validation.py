@@ -5,7 +5,7 @@ Validador de problemas de programación lineal.
 from dataclasses import dataclass, field
 from typing import Optional
 
-from ..core import LinearProblem, LinearConstraint
+from ..core import LinearProblem
 
 
 @dataclass

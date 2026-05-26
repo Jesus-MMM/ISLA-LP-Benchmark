@@ -3,13 +3,12 @@ Exportacion de resultados de benchmarking.
 Genera reportes y tablas (la visualizacion esta en src.visualization).
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from pathlib import Path
-import json
 from datetime import datetime
 
-from src.solver.benchmark import BenchmarkRunner, BenchmarkResult
-from src.visualization import BenchmarkPlotter, PlotStyle
+from src.solver.benchmark import BenchmarkRunner
+from src.visualization import BenchmarkPlotter
 
 
 class ResultsExporter:
@@ -25,24 +24,24 @@ class ResultsExporter:
         lines = [
             "# Reporte de Benchmarking",
             f"\nFecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            f"\n## Resumen",
+            "\n## Resumen",
             f"- Total de pruebas: {self.summary['total_benchmarks']}",
             f"- Exitosas: {self.summary['successful']}",
             f"- Fallidas: {self.summary['failed']}",
-            f"\n## Por Solver",
+            "\n## Por Solver",
         ]
         
-        lines.append(f"\n| Solver | Pruebas | Exitosas | Tiempo Promedio |")
-        lines.append(f"|--------|---------|----------|-----------------|")
+        lines.append("\n| Solver | Pruebas | Exitosas | Tiempo Promedio |")
+        lines.append("|--------|---------|----------|-----------------|")
         
         for solver, data in self.summary["by_solver"].items():
             avg_time = data["avg_time"] * 1000
             lines.append(f"| {solver} | {data['runs']} | {data['successful']} | {avg_time:.2f}ms |")
         
-        lines.append(f"\n## Detalle de Resultados")
+        lines.append("\n## Detalle de Resultados")
         
-        lines.append(f"\n| Problema | Solver | Estado | Valor Obj. | Tiempo |")
-        lines.append(f"|----------|--------|--------|------------|--------|")
+        lines.append("\n| Problema | Solver | Estado | Valor Obj. | Tiempo |")
+        lines.append("|----------|--------|--------|------------|--------|")
         
         for r in self.results:
             status_icon = "OK" if r.solution.is_optimal() else "X"

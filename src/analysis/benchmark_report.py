@@ -5,12 +5,12 @@ Genera PDF con comparacion detallada de multiples solvers.
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 import tempfile
 import os
 
 from fpdf import FPDF
-from fpdf.enums import Align, XPos, YPos
+from fpdf.enums import Align, YPos
 import numpy as np
 
 from ..solver import BenchmarkRunner
@@ -755,7 +755,7 @@ class BenchmarkReport:
                     try:
                         from src.parser import LPParser
                         problem = LPParser(r.problem_text).parse()
-                    except:
+                    except Exception:
                         problem = None
                 
                 vars_count = 0
@@ -891,7 +891,7 @@ class BenchmarkReport:
                 import numpy as np
                 q1, q3 = np.percentile(times, [25, 75])
                 iqr = q3 - q1
-                lower = q1 - 1.5 * iqr
+
                 upper = q3 + 1.5 * iqr
                 
                 for r in self.runner.results:

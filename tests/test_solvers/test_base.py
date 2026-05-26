@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.core.problem import LinearProblem
 from src.core.solution import Solution
-from src.solver.base import BaseSolver, SolverRegistry, SolverStats, SolverCapabilities
+from src.solver.base import BaseSolver, SolverRegistry, SolverStats
 
 
 class _ConcreteSolver(BaseSolver):

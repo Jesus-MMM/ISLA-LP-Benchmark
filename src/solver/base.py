@@ -4,8 +4,8 @@ Proporciona una interfaz comun para diferentes implementaciones de solvers.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Optional, Any, List, Dict
+from dataclasses import dataclass
+from typing import Optional
 
 from ..core import Solution, LinearProblem
 from ..core.solution import ProgressPoint as PP

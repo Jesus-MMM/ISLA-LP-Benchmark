@@ -10,7 +10,7 @@ from gurobipy import GRB
 
 from ..matrix import LPBuilder
 from ..core import Solution, LinearProblem
-from .base import BaseSolver, SolverStats, register_solver, SolverCapabilities
+from .base import BaseSolver, register_solver, SolverCapabilities
 
 
 @register_solver("gurobi")
@@ -81,7 +81,7 @@ class GurobiSolver(BaseSolver):
             import gurobipy as gp
             # intentamos crear un modelo minimo para validar la licencia
             with gp.Env() as env:
-                model = gp.Model("check", env=env)
+                gp.Model("check", env=env)
             return True
         except Exception:
             return False

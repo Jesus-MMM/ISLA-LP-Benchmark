@@ -3,7 +3,7 @@ Orquestador de benchmarking para comparar solvers de programacion lineal.
 Permite ejecutar multiples solvers contra multiples problemas y recopilar metricas.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 import time
 import json
@@ -18,9 +18,8 @@ except ImportError:
     PSUTIL_AVAILABLE = False
 
 from ..parser import LPParser
-from ..matrix import LPBuilder
-from ..core import LinearProblem, Solution
-from ..core.solution import ProgressPoint, SolutionTable, to_solution_table
+from ..core import Solution
+from ..core.solution import ProgressPoint, to_solution_table
 from ..core.verification import verify_solution, compare_solutions
 from .base import BaseSolver, SolverStats, SolverRegistry
 
@@ -233,7 +232,6 @@ class BenchmarkRunner:
             parse_time = time.perf_counter() - parse_start
             
             build_start = time.perf_counter()
-            lp = LPBuilder(problem).build()
             build_time = time.perf_counter() - build_start
             
             solver_class = SolverRegistry.get(solver_name)

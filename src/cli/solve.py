@@ -7,11 +7,8 @@ from pathlib import Path
 from typing import Optional
 
 from src.parser import LPParser
-from src.matrix import LPBuilder
-from src.solver import SolverLP, SolverConfig, SolverRegistry
+from src.solver import SolverConfig, SolverRegistry
 from src.visualization import LinearVisualization
-from src.analysis import LPAnalysis, ExecutionTimes
-from src.cli import get_system_info
 
 
 def solve_single(
@@ -47,7 +44,6 @@ def solve_single(
         parse_time = time.perf_counter() - start_parse
 
         start_build = time.perf_counter()
-        lp = LPBuilder(problem).build()
         build_time = time.perf_counter() - start_build
 
         config = SolverConfig(verbose=verbose, time_limit=time_limit)
@@ -211,7 +207,7 @@ def solve_multi(
 
             if not quiet:
                 if solution.is_optimal():
-                    print(f"  Estado: OPTIMAL")
+                    print("  Estado: OPTIMAL")
                     print(f"  Valor optimo: {solution.objective_value:.4f}")
                     vars_str = ", ".join(f"{k}={v:.2f}" for k, v in solution.variables.items())
                     print(f"  Variables: {vars_str}")

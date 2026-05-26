@@ -3,8 +3,6 @@ Solver SCS para problemas de programacion lineal.
 Implementacion usando scs (Splitting Conic Solver).
 """
 
-import time
-
 try:
     import scs
     _is_solver_available = True
@@ -41,7 +39,7 @@ class SCSSolver(BaseSolver):
         if _is_solver_available:
             try:
                 return scs.__version__
-            except:
+            except Exception:
                 return "scs"
         return "scs (not installed)"
 
@@ -63,8 +61,6 @@ class SCSSolver(BaseSolver):
                 objective_value=None,
                 variables={},
             )
-
-        start_time = time.perf_counter()
 
         try:
             import numpy as np
@@ -155,8 +151,6 @@ class SCSSolver(BaseSolver):
                 data, cone,
                 verbose=self.config.verbose,
             )
-
-            solve_time = time.perf_counter() - start_time
 
             scs_status = sol["info"]["status"]
             if scs_status == "solved":
