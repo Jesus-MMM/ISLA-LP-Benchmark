@@ -37,9 +37,10 @@ pre-commit install
 ## Estándares de Código
 
 - **Lenguaje**: Python 3.12+
-- **Docstrings**: Español (estándar del proyecto)
-- **Type hints**: Requerido para código nuevo
-- **Formato**: Seguir estilo existente
+- **Docstrings**: Español (estándar del proyecto) — todas las funciones públicas deben tener docstring
+- **Type hints**: Requerido para código nuevo y modificaciones
+- **Formato**: Seguir estilo existente (ruff default)
+- **Logging**: Usar `get_logger(__name__)` en vez de `print()` o `except: pass`
 
 ## Estilo de Código
 
@@ -70,20 +71,35 @@ def mi_funcion(param: str) -> int:
 
 ## Verificación
 
-Antes de enviar, verificar:
+Antes de enviar, ejecutar:
 
 ```bash
-# Ejecutar test básico
-python main.py data/problem.txt
-python main.py data/problem_multi.txt --multi
+# Tests unitarios con cobertura (requiere ≥90%)
+pytest tests/ -v --cov=src --cov-fail-under=90
+
+# Linting
+ruff check src/ tests/
+
+# Ejecutar test básico de integración
+python -m src.cli data/problem.txt
+python -m src.cli data/problem_multi.txt --multi
 ```
 
 ## Enviando Cambios
 
-1. Asegurar que todo funcione
+1. Asegurar que todo funcione (tests + linting)
 2. Actualizar documentación si es necesario
-3. Agregar mensaje de commit claro
-4. Crear un Pull Request
+3. Usar mensajes de commit claros en español o inglés
+4. Crear un Pull Request contra la rama `develop`
+
+### Política de PRs
+
+- El título debe describir el cambio (ej: "Fix: NameError en benchmark.py")
+- Incluir descripción del problema y solución
+- Referenciar issues si aplica
+- Mantener PRs pequeños y enfocados
+- Asegurar que el CI pase (tests + lint + coverage ≥90%)
+- No incluir cambios de formato no relacionados
 
 ## Reportando Problemas
 

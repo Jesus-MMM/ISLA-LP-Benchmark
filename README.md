@@ -1,4 +1,4 @@
-# ISLA LP Benchmark v1.2.1
+# ISLA LP Benchmark v1.3.0
 
 ## Resumen del Proyecto
 
@@ -403,7 +403,7 @@ Salida (ejemplo en entorno con modulos instalados):
 
 | Requisito | Version Minima | Descripcion |
 |----------|---------------|-------------|
-| Python | 3.14 | Lenguaje de programacion |
+| Python | 3.12 | Lenguaje de programacion |
 | Memoria RAM | 4 GB (8 GB recomendado) | Para ejecucion de solvers |
 | Espacio disco | 500 MB | Para instalacion de dependencias |
 
@@ -411,7 +411,7 @@ Salida (ejemplo en entorno con modulos instalados):
 
 | Paquete | Version | Proposito |
 |---------|---------|-----------|
-| gurobipy | >=13.0.1 | Optimizador comercial de PL/MILP (opcional) |
+| gurobipy | >=13.0.1 | Optimizador comercial de PL/MILP |
 | polars | >=1.39.0 | DataFrames de alto rendimiento |
 | matplotlib | >=3.9.0 | Generacion de graficos 2D |
 | numpy | >=2.4.3 | Computacion numerica |
@@ -420,11 +420,19 @@ Salida (ejemplo en entorno con modulos instalados):
 | highspy | >=1.14.0 | Solver HiGHS |
 | swiglpk | >=5.0.13 | Solver GLPK |
 | pulp | >=3.3.0 | Solver CBC |
-| ecos | >=2.0.0 | Solver conico ECOS (LP/SOCP) |
-| osqp | >=0.6.0 | Solver de optimizacion cuadratica OSQP |
-| cvxopt | >=1.3.0 | Solver de programacion convexa CVXOPT |
-| scs | >=3.0.0 | Solver conico de punto fijo SCS |
-| casadi | >=3.7.0 | Interfaz Python para Ipopt NLP |
+| pyscipopt | >=6.1.0 | Solver SCIP (MILP) |
+| ecos | >=2.0.14 | Solver conico ECOS (LP/SOCP) |
+| osqp | >=1.1.1 | Solver de optimizacion cuadratica OSQP |
+| cvxopt | >=1.3.3 | Solver de programacion convexa CVXOPT |
+| scs | >=3.2.11 | Solver conico de punto fijo SCS |
+
+### Dependencias Opcionales
+
+| Paquete | Extra | Proposito |
+|---------|-------|-----------|
+| casadi | ipopt | Solver de punto interior Ipopt (NLP) |
+
+Instalar con: `pip install isla-lp-benchmark[ipopt]` o `poetry install --extras ipopt`
 
 
 ---
@@ -528,6 +536,7 @@ flowchart TB
 | --output | -o | path | None | Ruta de salida (visualizacion/PDF/JSON) |
 | --output-dir | -O | path | None | Directorio de salida (benchmark) |
 | --output-csv | | path | None | Exportar resultados a CSV |
+| --log-level | | str | "INFO" | Nivel de log: DEBUG/INFO/WARNING/ERROR/CRITICAL |
 
 ### 6.4 Combinaciones de Comandos
 
@@ -2799,81 +2808,84 @@ El sistema incluye archivos para containerizacion con Docker.
 ```mermaid
 flowchart TB
     subgraph BUILD["Build"]
-        DOCKERFILE["Dockerfile"] --> IMAGE["Python 3.14 Alpine"]
-        IMAGE --> SOLVERS["Install solvers"]
+        DOCKERFILE["Dockerfile"] --> IMAGE["Python 3.12 Slim"]
+        IMAGE --> SOLVERS["Install solvers + deps"]
     end
     
     subgraph RUN["Runtime"]
         SOLVERS --> CONTAINER["Container"]
-        CONTAINER --> CMD["Command"]
+        CONTAINER --> CMD["python -m src.cli"]
     end
     
-    CMD -->|"python main.py"| OUTPUT["Output"]
+    CMD -->|"python -m src.cli"| OUTPUT["Output"]
 ```
 
 ### 18.2 Comandos Docker
 
 | Comando | Descripcion | Ejemplo |
 |---------|-------------|--------|
-| build | Construir imagen | `docker build -t lp-solver .` |
-| run | Ejecutar contenedor | `docker run lp-solver problema.txt` |
+| build | Construir imagen | `docker build -t isla-lp-benchmark .` |
+| run | Ejecutar contenedor | `docker run isla-lp-benchmark data/problem.txt` |
 | compose | Orquestar servicios | `docker compose run benchmark` |
-| exec | Ejecutar en contenedor | `docker exec -it lp-solver bash` |
+| exec | Ejecutar en contenedor | `docker exec -it isla-lp-benchmark bash` |
 
 ### 18.3 Construir Imagen
 
 ```bash
-docker build -t lp-solver .
+docker build -t isla-lp-benchmark .
 ```
 
 **Args de build**:
 | Arg | Default | Descripcion |
 |-----|---------|-------------|
-| PYTHON_VERSION | 3.14 | Version de Python |
-| ALPINE_VERSION | 3.20 | Version de Alpine |
+| PYTHON_VERSION | 3.12 | Version de Python |
 
 ### 18.4 Ejecutar Contenedor
 
 ```bash
 # Listar solvers
-docker run lp-solver --list-solvers
+docker run isla-lp-benchmark --list-solvers
 
 # Benchmark basico
-docker run lp-solver --benchmark --solvers highs glpk --repetitions 1 data/problem.txt
+docker run isla-lp-benchmark --benchmark --solvers highs glpk --repetitions 1 data/problem.txt
 
 # Resolver problema
-docker run lp-solver data/problem.txt --pdf
+docker run isla-lp-benchmark data/problem.txt --pdf
 ```
 
 ### 18.5 docker-compose.yml
 
 ```yaml
 services:
-  lp-solver:
+  isla-lp:
     build: .
     volumes:
       - ./data:/app/data:ro
-    working_dir: /app
+      - ./output:/app/output
+    environment:
+      - GRB_LICENSE_FILE=/app/gurobi.lic
+    command: data/problem.txt
 
   benchmark:
     build: .
-    command: python main.py --benchmark --solvers highs glpk cbc --repetitions 3 /app/data/problem.txt
     volumes:
       - ./data:/app/data
       - ./output:/app/output
-    working_dir: /app
+    command: --benchmark --solvers highs glpk cbc --repetitions 3 data/problem.txt
 ```
 
 ### 18.6 Caracteristicas de la Imagen
 
 | Caracteristica | Valor |
 |---------------|-------|
-| Base | Python 3.14 Alpine Linux |
-| Gestor | Poetry |
+| Base | Python 3.12 Slim |
+| Gestor | pip + requirements.txt |
 | Usuario | No-root (security) |
-| Tamano | ~200 MB |
-| Solvers incluidos | HiGHS, GLPK |
-| Gurobi | Requiere licencia |
+| Tamano | ~300 MB |
+| Solvers incluidos | HiGHS, GLPK, CBC (system) |
+| Solvers Python | ECOS, OSQP, CVXOPT, SCS, SCIP |
+| Gurobi | Requiere licencia (`GRB_LICENSE_FILE`) |
+| Ipopt | Opcional (`pip install isla-lp-benchmark[ipopt]` o `poetry install --extras ipopt`) |
 
 ### 18.7 Puertos y Volumenes
 
@@ -2882,6 +2894,7 @@ services:
 | Volume | /app/data | Datos de entrada (read-only) |
 | Volume | /app/output | Resultados |
 | Workdir | /app | Directorio de trabajo |
+| Entrypoint | python -m src.cli | Punto de entrada CLI |
 
 ---
 
@@ -2901,7 +2914,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## 20. Version
 
-**Version actual: 1.2.0**
+**Version actual: 1.3.0**
+
+### Changelog v1.3.0
+
+- Hotfixes criticos: NameError en benchmark.py, imports rotos a sensitivity, CI pipeline, exporter.py, validation.py
+- Eliminados 18+ bloques `except: pass` reemplazados con logging profesional via `get_logger()`
+- Flag `--log-level` con soporte DEBUG/INFO/WARNING/ERROR/CRITICAL
+- Acceso a duales en HiGHS corregido (eliminada redundancia, agregada guarda de indice)
+- `casadi` movido a dependencias opcionales (`pip install isla-lp-benchmark[ipopt]`)
+- Suite de 246 tests (desde 10 originales). Coverage: core ~100%, parser ~92%
+- CI/CD pipeline actualizado: matriz Python 3.12-3.13, ruff lint, pytest con --cov-fail-under=90
+- `gurobipy` agregado a requirements.txt
+- Semicolons `;` soportados como terminadores de linea en el parser LP
+- Deteccion de duplicados corregida en validation.py (usa `set()` en vez de `list.count()`)
 
 ### Changelog v1.2.0
 
