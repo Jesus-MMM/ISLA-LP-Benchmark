@@ -140,7 +140,7 @@ class LPParser:
         coefficients = self._parse_linear_expression(lhs.strip())
 
         try:
-            rhs_value = float(rhs.strip())
+            rhs_value = float(rhs.strip().rstrip(";"))
         except ValueError:
             raise ValueError(f"Valor RHS inválido en restricción: {line}")
 
@@ -167,7 +167,7 @@ class LPParser:
         if not expr.strip():
             raise ValueError("Expresión lineal vacía")
 
-        expr = expr.replace(" ", "").lstrip("+")
+        expr = expr.replace(" ", "").rstrip(";").lstrip("+")
         expr = expr.replace("-", "+-")
 
         terms = expr.split("+")
