@@ -35,7 +35,7 @@ dev = ["pytest", "pytest-cov", "ruff"]
 isla = "src.cli.__main__:main"
 
 [tool.poetry]
-package-mode = false
+packages = [{include = "src"}]
 
 
 [build-system]
