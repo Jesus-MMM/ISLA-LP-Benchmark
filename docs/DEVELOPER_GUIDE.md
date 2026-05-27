@@ -1,4 +1,4 @@
-# Guia del Desarrollador - ISLA LP Benchmark v1.5.0
+# Guia del Desarrollador - ISLA LP Benchmark v1.6.0
 
 Esta guia es para **desarrolladores** que quieren extender o integrar el proyecto.
 
@@ -24,6 +24,7 @@ src/
 │   ├── scs_solver.py         # SCSSolver (scs)
 │   ├── ipopt_solver.py       # IpoptSolver (casadi)
 │   ├── benchmark.py          # BenchmarkRunner, BenchmarkConfig
+│   ├── parallel_benchmark.py # ParallelBenchmarkRunner (ProcessPoolExecutor)
 │   ├── multi_solver.py       # MultiSolverResult
 │   └── __init__.py           # Registro de todos los solvers
 ├── analysis/                 # Analisis y reportes
@@ -32,6 +33,7 @@ src/
 │   ├── benchmark_results.py  # ResultsExporter, export_benchmark_results
 │   ├── multi_analysis.py     # MultiLPAnalysis - reporte multi-problema
 │   ├── sensitivity.py        # SensitivityAnalysis - sensibilidad nativa
+│   ├── statistics.py         # Pruebas estadisticas (Friedman, Nemenyi, ANOVA)
 │   └── __init__.py
 ├── parser/                   # Parsing de archivos
 │   ├── lp_parser.py          # LPParser - formato texto propio
@@ -54,11 +56,13 @@ src/
 │   └── __init__.py
 ├── visualization/            # Graficos 2D
 │   ├── visualization.py      # LinearVisualization
+│   ├── benchmark_plots.py    # BenchmarkPlotter (perfiles Dolan-More, tasas exito)
 │   └── __init__.py
 └── utils/                    # Utilidades
     ├── validation.py         # LPValidator
     ├── exporter.py           # LPExporter
     ├── logging.py            # ExecutionTimes
+    ├── cache.py              # ProblemCache (SHA256, TTL)
     └── __init__.py
 ```
 
@@ -286,6 +290,87 @@ runner.results.append(BenchmarkResult(
 # Exportar
 runner.export_csv(Path("results.csv"))
 runner.export_json(Path("results.json"))
+```
+
+## ParallelBenchmarkRunner
+
+Ejecuta benchmarks con procesos independientes para aislar cada ejecucion:
+
+```python
+from src.solver.parallel_benchmark import ParallelBenchmarkRunner, ParallelBenchmarkConfig
+
+config = ParallelBenchmarkConfig(
+    timeout=300,         # Timeout por ejecucion (segundos)
+    max_workers=4,       # Procesos paralelos
+    collect_memory=True, # Medir memoria por proceso
+)
+
+runner = ParallelBenchmarkRunner(config)
+results = runner.run(problems, solvers)
+
+# Resumen
+summary = runner.get_summary()
+runner.print_summary()
+```
+
+## ProblemCache
+
+Cachea problemas parseados y resultados de solvers con hash SHA256:
+
+```python
+from src.utils.cache import ProblemCache
+
+cache = ProblemCache(ttl_hours=24)
+
+# Cachear problema parseado
+cache.set_parsed("hash_del_archivo", problem)
+
+# Recuperar
+cached = cache.get_parsed("hash_del_archivo")
+
+# Cachear resultado
+cache.set_result("hash", solver_name, result)
+
+# Estadisticas
+stats = cache.get_stats()
+print(stats)  # {parsed: 5, results: 12}
+```
+
+## Perfiles de Rendimiento (Dolan-More)
+
+```python
+from src.analysis.benchmark_results import performance_profile
+from src.visualization.benchmark_plots import BenchmarkPlotter
+
+# Calcular perfiles
+perfiles = performance_profile(results, tau_max=10.0)
+
+# Graficar
+plotter = BenchmarkPlotter(runner)
+plotter.plot_performance_profile(save_path="profile.png")
+```
+
+## Pruebas Estadisticas
+
+```python
+from src.analysis.statistics import friedman_test, nemenyi_posthoc, anova_one_way
+import numpy as np
+
+# Matriz (n_problemas, n_solvers) con tiempos
+data = np.array([[...], [...]])
+
+# Friedman
+result = friedman_test(data)
+print(f"Q = {result['statistic']:.4f}, p = {result['p_value']:.6f}")
+
+# Nemenyi post-hoc
+nemenyi = nemenyi_posthoc(np.array(result['avg_ranks']), n_problems=10)
+print(f"CD = {nemenyi['critical_difference']:.4f}")
+
+# ANOVA
+groups = [data[:, 0], data[:, 1], data[:, 2]]
+anova = anova_one_way(groups)
+print(f"F = {anova['statistic']:.4f}, p = {anova['p_value']:.6f}")
 ```
 
 ## Verificacion de Soluciones

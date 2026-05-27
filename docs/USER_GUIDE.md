@@ -1,4 +1,4 @@
-# Guia de Usuario - ISLA LP Benchmark v1.5.0
+# Guia de Usuario - ISLA LP Benchmark v1.6.0
 
 Esta guia es para **usuarios finales** que quieren resolver y comparar problemas de Programacion Lineal.
 
@@ -368,11 +368,19 @@ El objetivo puede mejorar indefinidamente.
 El reporte incluye:
 
 1. **Portada**: Informacion del benchmark
-2. **Resumen**: Tabla comparativa por solver
-3. **Graficos**:
+2. **Resumen Estadistico**: Tabla comparativa por solver
+3. **Comparacion por Solver**: Stats detallados por solver
+4. **Resultados Detallados**: Tabla completa con todos los resultados
+5. **Definiciones de Problemas**: Texto original de cada problema
+6. **Graficos**:
    - Tiempo de ejecucion
+   - Tasa de exito
    - Uso de memoria
-   - Iteraciones
+   - Perfiles de rendimiento (Dolan-More)
+7. **Analisis de Escalabilidad**: Relacion tamano vs tiempo
+8. **Matriz de Correlacion**: Correlacion entre metricas
+9. **Analisis Estadistico**: Test de Friedman, post-hoc Nemenyi, ANOVA
+10. **Recomendaciones**: Sugerencias basadas en resultados
 
 ## Solucion de Problemas
 

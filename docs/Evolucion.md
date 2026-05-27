@@ -14,10 +14,58 @@
 | 6. Containerization | Terminado | Dockerfile Slim + docker-compose + CI workflow |
 | 7. Tests y CI/CD | Terminado | 246 tests, coverage 90%+, ruff lint |
 | 8. Logging profesional | Terminado | --log-level, except:pass eliminados |
+| 9. ParallelBenchmarkRunner | Terminado | Ejecucion aislada por proceso con timeout |
+| 10. Metricas MILP | Terminado | mip_gap, nodes_per_second, cuts_generated |
+| 11. ProblemCache | Terminado | Cache SHA256 con TTL 24h |
+| 12. Perfiles Dolan-More | Terminado | performance_profile() y graficos |
+| 13. Pruebas Estadisticas | Terminado | Friedman, Nemenyi, ANOVA |
 
 ---
 
 ## Historial de Cambios
+
+### v1.6.0 (2026-05-26)
+
+#### ParallelBenchmarkRunner
+- Nueva clase `ParallelBenchmarkRunner` con `ProcessPoolExecutor`
+- Ejecucion aislada por proceso para proteger contra segfaults y fugas de memoria
+- Timeout configurable, medicion de memoria psutil por worker
+- `ParallelBenchmarkConfig` dataclass
+
+#### ProblemCache
+- Nueva clase `ProblemCache` en `src/utils/cache.py`
+- Hash SHA256 del contenido del archivo
+- Cache de problemas parseados (pickle) y resultados (JSON)
+- TTL configurable (default 24h), invalidacion manual
+
+#### Metricas MILP en NumericalQuality
+- Campos agregados: `mip_gap`, `first_feasible_time`, `nodes_per_second`, `cuts_generated`, `presolve_reduction`
+- Gurobi: extraccion de MIPGap, CutCount, NodeCount/Runtime
+- HiGHS: extraccion de mip_gap y node_count de hp.getInfo()
+- SCIP: metodo `_build_numerical_quality()` con getGap(), getNNodes()
+- CBC: metodo `_build_numerical_quality()` con nodes_per_second
+
+#### Perfiles de Rendimiento (Dolan-More)
+- Nueva funcion `performance_profile()` en `benchmark_results.py`
+- Calculo de ratios de tiempo vs mejor solver y funcion de distribucion acumulada
+- Grafico `plot_performance_profile()` con datos reales (no simulacion)
+- Integrado en reporte PDF benchmark
+
+#### Pruebas Estadisticas
+- Nuevo modulo `src/analysis/statistics.py`
+- `friedman_test()`: estadistico Q, p-valor via chi-cuadrado
+- `nemenyi_posthoc()`: diferencia critica, matriz pairwise
+- `anova_one_way()`: F-test via scipy.stats.f_oneway
+- Seccion "Analisis Estadistico" en reporte PDF benchmark
+
+#### CI Fix
+- Reemplazado `package-mode = false` por `packages = [{include = "src"}]` en pyproject.toml
+- Corrige error `Building a package is not possible in non-package mode` en workflows CI
+
+#### Documentacion
+- README actualizado a v1.6.0
+- Guias de usuario, desarrollador y matematica actualizadas
+- 277 tests pasando, ruff check limpio
 
 ### v1.5.0 (2026-05-26)
 
