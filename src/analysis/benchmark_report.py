@@ -11,7 +11,6 @@ import os
 
 from fpdf import FPDF
 from fpdf.enums import Align, YPos
-import numpy as np
 
 from ..solver import BenchmarkRunner
 
@@ -107,16 +106,20 @@ class BenchmarkReport:
         pdf.add_page()
         self._outliers_detection(pdf)
         
-        # Pagina 13: Recomendaciones
+        # Pagina 13: Analisis estadistico
+        pdf.add_page()
+        self._statistical_analysis(pdf)
+        
+        # Pagina 14: Recomendaciones
         pdf.add_page()
         self._recommendations(pdf)
         
-        # Pagina 14: Versiones de software
+        # Pagina 15: Versiones de software
         if self.system_info:
             pdf.add_page()
             self._system(pdf)
         
-        # Pagina 15: Analisis de memoria
+        # Pagina 16: Analisis de memoria
         pdf.add_page()
         self._memory_analysis(pdf)
         
@@ -665,7 +668,7 @@ class BenchmarkReport:
         pdf.ln(5)
 
     def _performance_profiles(self, pdf: BenchmarkPDF) -> None:
-        """Genera perfiles de rendimiento."""
+        """Genera perfiles de rendimiento Dolan-Moré con datos reales."""
         self._header(pdf, "PERFILES DE RENDIMIENTO")
         
         try:
@@ -679,24 +682,34 @@ class BenchmarkReport:
             return
         
         try:
-            summary = self.runner.get_summary()
-            solvers = list(summary.get("by_solver", {}).keys())
+            from src.analysis.benchmark_results import performance_profile
+            
+            perfiles = performance_profile(
+                self.runner.results,
+                time_col="total_time",
+                solver_col="solver_name",
+                tau_max=5.0,
+                num_points=80,
+            )
+            
+            if not perfiles:
+                pdf.set_font('Helvetica', 'I', 9)
+                pdf.set_text_color(100, 100, 100)
+                pdf.cell(0, 6, "No hay suficientes datos para generar perfiles.", new_y=YPos.NEXT)
+                return
             
             fig, ax = plt.subplots(figsize=(5, 4))
-            fig.suptitle('Perfiles de Rendimiento', fontsize=14, fontweight='bold')
+            fig.suptitle('Perfiles de Rendimiento (Dolan-Moré)', fontsize=14, fontweight='bold')
             
-            for solver in solvers:
-                # Simulacion de perfiles (en implementacion real se usarian tiempos reales)
-                x = np.linspace(1, 3, 20)
-                y = 1 - np.exp(-x) + np.random.random() * 0.1
-                ax.plot(x, y, label=solver, linewidth=2)
+            for solver, (tau, rho) in sorted(perfiles.items()):
+                ax.step(tau, rho, label=solver, where='post', linewidth=2)
             
-            ax.set_xlabel('Ratio de Tiempo (t/t_min)')
-            ax.set_ylabel('Fraccion de Problemas')
-            ax.set_xlim(1, 3)
-            ax.set_ylim(0, 1.1)
+            ax.set_xlabel(r'Ratio de Tiempo ($\tau$)')
+            ax.set_ylabel(r'$\rho(\tau)$ — Fraccion de Problemas')
+            ax.set_xlim(1.0, 5.0)
+            ax.set_ylim(0, 1.05)
             ax.grid(True, alpha=0.3)
-            ax.legend()
+            ax.legend(loc='lower right')
             
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
                 plt.savefig(tmp.name, dpi=300, bbox_inches='tight')
@@ -907,6 +920,201 @@ class BenchmarkReport:
         if not outliers_found:
             pdf.set_font('Helvetica', 'I', 8)
             pdf.cell(0, 5, "No se detectaron outliers.", new_y=YPos.NEXT)
+        
+        pdf.set_text_color(0, 0, 0)
+
+    def _statistical_analysis(self, pdf: BenchmarkPDF) -> None:
+        """Analisis estadistico: Friedman, Nemenyi, ANOVA."""
+        self._header(pdf, "ANALISIS ESTADISTICO")
+        
+        pdf.set_font('Helvetica', '', 9)
+        pdf.set_text_color(60, 60, 60)
+        pdf.multi_cell(CONTENT_WIDTH, 4,
+                       "Pruebas estadisticas para comparar el rendimiento de los solvers. "
+                       "Test de Friedman (comparacion multiple), test post-hoc de Nemenyi "
+                       "(diferencias por pares) y ANOVA de una via.")
+        pdf.ln(5)
+        
+        try:
+            from src.analysis.statistics import friedman_test, nemenyi_posthoc, anova_one_way
+            import numpy as np
+            
+            results = self.runner.results
+            if len(results) < 3:
+                pdf.set_font('Helvetica', 'I', 8)
+                pdf.cell(0, 5, "Datos insuficientes para analisis estadistico.", new_y=YPos.NEXT)
+                return
+            
+            solvers_set = sorted(set(r.solver_name for r in results))
+            problems_set = sorted(set(r.problem_name for r in results))
+            
+            if len(solvers_set) < 2 or len(problems_set) < 2:
+                pdf.set_font('Helvetica', 'I', 8)
+                pdf.cell(0, 5, "Se necesitan al menos 2 solvers y 2 problemas.", new_y=YPos.NEXT)
+                return
+            
+            solver_idx = {s: i for i, s in enumerate(solvers_set)}
+            problem_idx = {p: i for i, p in enumerate(problems_set)}
+            
+            time_matrix = np.full((len(problems_set), len(solvers_set)), np.nan)
+            for r in results:
+                if r.solution and r.solution.is_optimal():
+                    pi = problem_idx[r.problem_name]
+                    si = solver_idx[r.solver_name]
+                    if np.isnan(time_matrix[pi, si]):
+                        time_matrix[pi, si] = r.total_time
+                    else:
+                        time_matrix[pi, si] = min(time_matrix[pi, si], r.total_time)
+            
+            valid_rows = ~np.any(np.isnan(time_matrix), axis=1)
+            time_matrix = time_matrix[valid_rows]
+            
+            if time_matrix.shape[0] < 2:
+                pdf.set_font('Helvetica', 'I', 8)
+                pdf.cell(0, 5, "No hay suficientes problemas resueltos por todos los solvers.", new_y=YPos.NEXT)
+                return
+            
+            # --- Friedman Test ---
+            friedman = friedman_test(time_matrix)
+            
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_text_color(0, 51, 102)
+            pdf.cell(0, 6, "1. Test de Friedman", new_y=YPos.NEXT)
+            pdf.ln(2)
+            
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_text_color(0, 0, 0)
+            
+            pdf.set_x(MARGIN + 5)
+            pdf.cell(0, 5, f"Estadistico Q = {friedman['statistic']:.4f}", new_y=YPos.NEXT)
+            pdf.set_x(MARGIN + 5)
+            pdf.cell(0, 5, f"p-valor = {friedman['p_value']:.6f}", new_y=YPos.NEXT)
+            pdf.set_x(MARGIN + 5)
+            pdf.cell(0, 5, f"Grados de libertad = {friedman['df']}", new_y=YPos.NEXT)
+            pdf.set_x(MARGIN + 5)
+            pdf.cell(0, 5, f"Problemas evaluados = {time_matrix.shape[0]}", new_y=YPos.NEXT)
+            
+            if friedman['p_value'] < 0.05:
+                pdf.set_text_color(0, 128, 0)
+                pdf.set_x(MARGIN + 5)
+                pdf.cell(0, 5, "Resultado: Diferencias estadisticamente significativas (p < 0.05)", new_y=YPos.NEXT)
+            else:
+                pdf.set_text_color(200, 140, 0)
+                pdf.set_x(MARGIN + 5)
+                pdf.cell(0, 5, "Resultado: No hay diferencias significativas (p >= 0.05)", new_y=YPos.NEXT)
+            pdf.set_text_color(0, 0, 0)
+            
+            pdf.ln(3)
+            
+            # --- Ranking de solvers ---
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_text_color(0, 51, 102)
+            pdf.cell(0, 6, "Ranking promedio (menor rango = mejor):", new_y=YPos.NEXT)
+            pdf.ln(2)
+            
+            pdf.set_font('Helvetica', '', 8)
+            ranked = sorted(zip(solvers_set, friedman['avg_ranks']), key=lambda x: x[1])
+            for rank, (solver, avg_r) in enumerate(ranked, 1):
+                pdf.set_x(MARGIN + 5)
+                pdf.cell(0, 5, f"{rank}. {solver}: rango promedio = {avg_r:.4f}", new_y=YPos.NEXT)
+            
+            pdf.ln(5)
+            
+            # --- Nemenyi Post-hoc ---
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_text_color(0, 51, 102)
+            pdf.cell(0, 6, "2. Test Post-hoc de Nemenyi", new_y=YPos.NEXT)
+            pdf.ln(2)
+            
+            nemenyi = nemenyi_posthoc(
+                np.array(friedman['avg_ranks']),
+                n_problems=time_matrix.shape[0],
+            )
+            
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_text_color(0, 0, 0)
+            pdf.set_x(MARGIN + 5)
+            pdf.cell(0, 5, f"Diferencia critica (CD) = {nemenyi['critical_difference']:.4f}", new_y=YPos.NEXT)
+            pdf.set_x(MARGIN + 5)
+            pdf.cell(0, 5, "Pares con diferencia superior a CD son significativamente distintos.", new_y=YPos.NEXT)
+            pdf.ln(2)
+            
+            k = len(solvers_set)
+            if k <= 6:
+                pdf.set_font('Helvetica', 'B', 8)
+                header_w = CONTENT_WIDTH / (k + 1)
+                pdf.set_x(MARGIN)
+                pdf.cell(header_w, 5, "", align=Align.L)
+                for s in solvers_set:
+                    pdf.cell(header_w, 5, s[:8], align=Align.C)
+                pdf.ln(5)
+                
+                pdf.set_font('Helvetica', '', 7)
+                for i, s_i in enumerate(solvers_set):
+                    pdf.set_x(MARGIN)
+                    pdf.cell(header_w, 4, f"{s_i[:8]}", align=Align.L)
+                    for j, s_j in enumerate(solvers_set):
+                        diff = nemenyi['matrix'][i][j]
+                        cd = nemenyi['critical_difference']
+                        if i == j:
+                            pdf.set_text_color(200, 200, 200)
+                        elif diff > cd:
+                            pdf.set_text_color(200, 0, 0)
+                        else:
+                            pdf.set_text_color(100, 100, 100)
+                        pdf.cell(header_w, 4, f"{diff:.2f}", align=Align.C)
+                    pdf.ln(4)
+                    pdf.set_text_color(0, 0, 0)
+            
+            pdf.ln(5)
+            
+            # --- ANOVA ---
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_text_color(0, 51, 102)
+            pdf.cell(0, 6, "3. ANOVA de una via", new_y=YPos.NEXT)
+            pdf.ln(2)
+            
+            groups = []
+            for si, solver in enumerate(solvers_set):
+                group = time_matrix[:, si][~np.isnan(time_matrix[:, si])]
+                if len(group) > 0:
+                    groups.append(group)
+            
+            if len(groups) >= 2:
+                anova = anova_one_way(groups)
+                
+                pdf.set_font('Helvetica', '', 8)
+                pdf.set_text_color(0, 0, 0)
+                pdf.set_x(MARGIN + 5)
+                pdf.cell(0, 5, f"Estadistico F = {anova['statistic']:.4f}", new_y=YPos.NEXT)
+                pdf.set_x(MARGIN + 5)
+                pdf.cell(0, 5, f"p-valor = {anova['p_value']:.6f}", new_y=YPos.NEXT)
+                pdf.set_x(MARGIN + 5)
+                pdf.cell(0, 5, f"df entre grupos = {anova['df_between']}", new_y=YPos.NEXT)
+                pdf.set_x(MARGIN + 5)
+                pdf.cell(0, 5, f"df dentro de grupos = {anova['df_within']}", new_y=YPos.NEXT)
+                
+                if anova['p_value'] < 0.05:
+                    pdf.set_text_color(0, 128, 0)
+                    pdf.set_x(MARGIN + 5)
+                    pdf.cell(0, 5, "Resultado: Al menos un solver es significativamente diferente (p < 0.05)", new_y=YPos.NEXT)
+                else:
+                    pdf.set_text_color(200, 140, 0)
+                    pdf.set_x(MARGIN + 5)
+                    pdf.cell(0, 5, "Resultado: No hay diferencias significativas entre grupos (p >= 0.05)", new_y=YPos.NEXT)
+            else:
+                pdf.set_font('Helvetica', 'I', 8)
+                pdf.set_text_color(100, 100, 100)
+                pdf.cell(0, 5, "Datos insuficientes para ANOVA.", new_y=YPos.NEXT)
+        
+        except ImportError as e:
+            pdf.set_font('Helvetica', 'I', 9)
+            pdf.set_text_color(150, 0, 0)
+            pdf.cell(0, 5, f"Biblioteca no disponible: {e}", new_y=YPos.NEXT)
+        except Exception as e:
+            pdf.set_font('Helvetica', 'I', 9)
+            pdf.set_text_color(150, 0, 0)
+            pdf.cell(0, 5, f"Error en analisis estadistico: {str(e)[:60]}", new_y=YPos.NEXT)
         
         pdf.set_text_color(0, 0, 0)
 
