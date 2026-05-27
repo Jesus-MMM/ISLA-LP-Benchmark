@@ -1,5 +1,5 @@
 # ============================================================
-# ISLA LP Benchmark v1.4.0 — Docker Image
+# ISLA LP Benchmark v1.8.0 — Docker Image
 # Uses python:3.12-slim (lightweight, wide compatibility)
 # ============================================================
 
@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     coinor-cbc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml requirements.txt ./
+COPY pyproject.toml .
+COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir -e .
