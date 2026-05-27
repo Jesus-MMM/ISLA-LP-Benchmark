@@ -211,8 +211,8 @@ class TestLPParser:
         assert problem.bounds["y"].upper == 8
 
     def test_empty_objective_line_raises(self):
-        """Test that empty text raises IndexError."""
-        with pytest.raises(IndexError):
+        """Test that empty text raises ValueError."""
+        with pytest.raises(ValueError, match="objetivo"):
             LPParser("").parse()
 
     def test_objective_without_expression_raises(self):

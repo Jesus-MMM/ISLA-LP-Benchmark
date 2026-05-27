@@ -48,7 +48,7 @@ class TestValidateProblem:
         )
         result = validate_problem(problem)
         assert not result.is_valid
-        assert any(i.code == "OBJ001" for i in result.issues)
+        assert any(i.code == "VAL-001" for i in result.issues)
 
     def test_no_variables(self):
         """Test problema sin variables."""
@@ -62,7 +62,7 @@ class TestValidateProblem:
         result = validate_problem(problem)
         assert not result.is_valid
         codes = [i.code for i in result.issues]
-        assert "OBJ002" in codes or "VAR001" in codes
+        assert "VAL-001" in codes
 
     def test_duplicate_variables(self):
         """Test variables duplicadas."""
@@ -75,7 +75,7 @@ class TestValidateProblem:
         )
         result = validate_problem(problem)
         # duplicate detection depends on validation
-        assert any(i.code == "VAR003" for i in result.issues if i.code == "VAR003")
+        assert any(i.code == "VAL-002" for i in result.issues)
 
     def test_inconsistent_bounds(self):
         """Test bounds inconsistentes (lower > upper)."""
@@ -88,7 +88,7 @@ class TestValidateProblem:
         )
         result = validate_problem(problem)
         assert not result.is_valid
-        assert any(i.code == "BND001" for i in result.issues)
+        assert any(i.code == "VAL-004" for i in result.issues)
 
     def test_no_constraints(self):
         """Test problema sin restricciones."""
@@ -101,7 +101,7 @@ class TestValidateProblem:
         )
         result = validate_problem(problem)
         assert not result.is_valid
-        assert any(i.code == "CON001" for i in result.issues)
+        assert any(i.code == "VAL-001" for i in result.issues)
 
     def test_invalid_sense_in_constraint(self):
         """Test restriccion con sentido invalido."""
@@ -116,7 +116,7 @@ class TestValidateProblem:
         )
         result = validate_problem(problem)
         assert not result.is_valid
-        assert any(i.code == "CON004" for i in result.issues)
+        assert any(i.code == "PARSE-003" for i in result.issues)
 
     def test_variables_not_in_problem(self):
         """Test variables en objetivo no definidas en variables list."""
@@ -128,7 +128,8 @@ class TestValidateProblem:
             bounds={},
         )
         result = validate_problem(problem)
-        assert any(i.code == "OBJ003" for i in result.issues)
+        assert any(i.code == "VAL-005" for i in result.issues)
+
 
     def test_zero_coefficient_warning(self):
         """Test advertencia por coeficiente cero en objetivo."""
@@ -142,7 +143,7 @@ class TestValidateProblem:
             bounds={},
         )
         result = validate_problem(problem)
-        assert any(i.code == "OBJ004" for i in result.issues)
+        assert any(i.code == "VAL-005" for i in result.issues)
 
     def test_fixed_variable_warning(self):
         """Test advertencia por variable fija (lower == upper)."""
@@ -156,7 +157,7 @@ class TestValidateProblem:
             bounds={"x": VariableBound("x", lower=5, upper=5)},
         )
         result = validate_problem(problem)
-        assert any(i.code == "BND002" for i in result.issues)
+        assert any(i.code == "VAL-004" for i in result.issues)
 
 
 class TestValidationResult:
