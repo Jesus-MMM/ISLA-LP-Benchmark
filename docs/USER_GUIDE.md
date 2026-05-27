@@ -1,4 +1,5 @@
-# Guia de Usuario - ISLA LP Benchmark v1.6.0
+# Guia de Usuario - ISLA LP Benchmark v1.8.0
+
 
 Esta guia es para **usuarios finales** que quieren resolver y comparar problemas de Programacion Lineal.
 
@@ -33,7 +34,10 @@ python -m src.cli -l
 ### 3. Resolver un Problema
 
 ```bash
+# Formato LP (estandar)
 python -m src.cli problema.txt
+# Formato MPS (estandar industrial)
+python -m src.cli problema.mps
 ```
 
 ### 4. Ejecutar Benchmark
@@ -172,6 +176,27 @@ Salida:
   Matriz: 2x2 (Polars LP)
   Variables: x, y
 ```
+
+## Modo REPL Interactivo
+
+El sistema incluye un modo interactivo para explorar problemas y probar solvers sin salir de la terminal.
+
+```bash
+python -m src.cli --repl
+```
+
+**Comandos principales:**
+- `load <archivo>`: Carga un problema LP.
+- `load-mps <archivo>`: Carga un problema MPS.
+- `info`: Muestra dimensiones y sentido del problema.
+- `solve <solver>`: Resuelve el problema cargado.
+- `vars`: Lista variables y sus limites.
+- `export <archivo>`: Exporta el problema actual a formato LP.
+- `solvers`: Lista motores disponibles.
+- `help`: Muestra ayuda.
+- `quit`: Sale del REPL.
+
+---
 
 ## Formato de Problemas
 

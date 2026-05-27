@@ -1,10 +1,16 @@
-# Comandos para Generar Reportes (v1.6.0)
+# Comandos para Generar Reportes (v1.8.0)
+
 
 ## 1. Reporte Individual (Single Report)
 
-### Con Gurobi
+### Con Gurobi (Formato LP)
 ```bash
 python -m src.cli data/problem.txt --pdf --solver gurobi
+```
+
+### Con Gurobi (Formato MPS)
+```bash
+python -m src.cli data/problem.mps --pdf --solver gurobi
 ```
 **Salida:** `data/problem.pdf`
 

@@ -1,6 +1,6 @@
 # ISLA LP Benchmark - Evolución del Proyecto
 
-## Estado: Fases 1-5 Completadas ✅
+## Estado: Fases 1-6 Completadas ✅ (v1.8.0)
 
 ### Roadmap Completado
 
@@ -12,17 +12,49 @@
 | 4. Export/Visualización | Terminado | CSV, JSON, PDF plots, Markdown |
 | 5. Reportes y Docs | Terminado | README actualizado |
 | 6. Containerization | Terminado | Dockerfile Slim + docker-compose + CI workflow |
-| 7. Tests y CI/CD | Terminado | 246 tests, coverage 90%+, ruff lint |
+| 7. Tests y CI/CD | Terminado | 400+ tests, coverage 90%+, ruff lint |
 | 8. Logging profesional | Terminado | --log-level, except:pass eliminados |
 | 9. ParallelBenchmarkRunner | Terminado | Ejecucion aislada por proceso con timeout |
 | 10. Metricas MILP | Terminado | mip_gap, nodes_per_second, cuts_generated |
 | 11. ProblemCache | Terminado | Cache SHA256 con TTL 24h |
 | 12. Perfiles Dolan-More | Terminado | performance_profile() y graficos |
 | 13. Pruebas Estadisticas | Terminado | Friedman, Nemenyi, ANOVA |
+| 14. Interoperabilidad | Terminado | Soporte formato MPS, ProblemGenerator |
+| 15. Interfaces Modernas | Terminado | REPL interactivo, Web App (FastAPI + HTMX) |
 
 ---
 
 ## Historial de Cambios
+
+### v1.8.0 (2026-05-27)
+
+#### Interfaces y Experiencia de Usuario
+- Nuevo modo REPL interactivo (`--repl`) para exploracion rapida de problemas
+- Implementacion de Web App basada en FastAPI + HTMX para visualización de resultados
+- Integracion de comandos de carga MPS en el REPL
+
+#### v1.7.0 (2026-05-27)
+
+#### Interoperabilidad y Estándares Industriales
+- Implementacion de `MPSParser` para soporte de formato industrial MPS
+- Nueva utilidad `ProblemGenerator` para creación de problemas sintéticos
+- Extension de `LPExporter` para exportación a formato MPS
+- Correccion de bugs en detección de marcadores INTORG/INTEND en MPS
+
+### v1.8.0 (2026-05-27)
+
+#### Interfaces y Experiencia de Usuario
+- Nuevo modo REPL interactivo (`--repl`) para exploracion rapida de problemas
+- Implementacion de Web App basada en FastAPI + HTMX para visualización de resultados
+- Integracion de comandos de carga MPS en el REPL
+
+#### v1.7.0 (2026-05-27)
+
+#### Interoperabilidad y Estándares Industriales
+- Implementacion de `MPSParser` para soporte de formato industrial MPS
+- Nueva utilidad `ProblemGenerator` para creación de problemas sintéticos
+- Extension de `LPExporter` para exportación a formato MPS
+- Correccion de bugs en detección de marcadores INTORG/INTEND en MPS
 
 ### v1.6.0 (2026-05-26)
 

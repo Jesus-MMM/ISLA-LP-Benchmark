@@ -1,4 +1,4 @@
-# ISLA LP Benchmark v1.6.0
+# ISLA LP Benchmark v1.8.0
 
 ## Resumen del Proyecto
 
