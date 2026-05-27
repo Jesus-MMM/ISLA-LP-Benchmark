@@ -11,6 +11,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 
+from src.analysis.benchmark_results import performance_profile
 from src.solver.benchmark import BenchmarkRunner
 
 
@@ -131,39 +132,31 @@ class BenchmarkPlotter:
             plt.show()
     
     def plot_performance_profile(self, save_path: Optional[Path] = None) -> None:
-        """Gráfica perfil de rendimiento (tiempo relativo al más rápido)."""
+        """Gráfica perfil de rendimiento estilo Dolan-Moré."""
         if not self.results:
             return
         
-        problems = list(self.summary["by_problem"].keys())
-        solvers = list(self.summary["by_solver"].keys())
+        perfiles = performance_profile(
+            self.results,
+            time_col="total_time",
+            solver_col="solver_name",
+            tau_max=10.0,
+            num_points=100,
+        )
         
         fig, ax = plt.subplots(figsize=self.style.figure_size)
         
-        for i, solver in enumerate(solvers):
-            ratios = []
-            for problem in problems:
-                times = []
-                for r in self.results:
-                    if r.problem_name == problem and r.solver_name == solver and r.solution.is_optimal():
-                        times.append(r.total_time)
-                if times:
-                    ratios.append(min(times))
-                else:
-                    ratios.append(float('inf'))
-            
-            if ratios:
-                min_ratio = min(r for r in ratios if r != float('inf'))
-                normalized = [r / min_ratio if r != float('inf') else None for r in ratios]
-                x_vals = sorted(set(v for v in normalized if v is not None))
-                y_vals = [sum(1 for v in normalized if v is not None and v <= x) / len(x_vals) for x in x_vals]
-                
-                ax.step(x_vals, y_vals, label=solver, where='post')
+        colors = plt.cm.Set2(np.linspace(0, 1, len(perfiles)))
         
-        ax.set_xlabel('Ratio de Tiempo (relativo al más rápido)', fontsize=self.style.font_size)
-        ax.set_ylabel('Fracción de Problemas', fontsize=self.style.font_size)
-        ax.set_title('Perfil de Rendimiento', fontsize=14, fontweight='bold')
-        ax.legend()
+        for i, (solver, (tau, rho)) in enumerate(sorted(perfiles.items())):
+            ax.step(tau, rho, label=solver, where='post', color=colors[i], linewidth=2)
+        
+        ax.set_xlabel(r'Ratio de Tiempo ($\tau$)', fontsize=self.style.font_size)
+        ax.set_ylabel(r'$\rho(\tau)$ — Fracción de Problemas', fontsize=self.style.font_size)
+        ax.set_title('Perfil de Rendimiento (Dolan-Moré)', fontsize=14, fontweight='bold')
+        ax.set_xlim(1.0, 10.0)
+        ax.set_ylim(0, 1.05)
+        ax.legend(loc='lower right')
         ax.grid(True, alpha=self.style.grid_alpha, linestyle='--')
         
         plt.tight_layout()
