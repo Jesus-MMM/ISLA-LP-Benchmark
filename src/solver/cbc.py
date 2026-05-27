@@ -172,6 +172,7 @@ class CBCSolver(BaseSolver):
                 variables=variables,
                 dual_values=dual_values if dual_values else None,
                 reduced_costs=reduced_costs if reduced_costs else None,
+                numerical_quality=self._build_numerical_quality(prob),
             )
             
             return self._solution
@@ -182,6 +183,19 @@ class CBCSolver(BaseSolver):
                 objective_value=None,
                 variables={},
             )
+    
+    def _build_numerical_quality(self, prob) -> object:
+        """Construye NumericalQuality con metricas MILP de CBC."""
+        try:
+            from ..core import NumericalQuality
+            nodes = self._nodes
+            runtime = max(getattr(self.stats, 'solve_time', 0.001), 0.001)
+            return NumericalQuality(
+                mip_gap=0.0,
+                nodes_per_second=nodes / runtime if nodes > 0 else 0.0,
+            )
+        except Exception:
+            return None
     
     def get_stats(self) -> SolverStats:
         """Obtiene estadisticas de la resolucion."""

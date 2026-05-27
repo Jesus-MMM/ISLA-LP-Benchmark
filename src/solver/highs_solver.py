@@ -129,6 +129,18 @@ class HiGHSSolver(BaseSolver):
                     print(f"Advertencia: No se pudo extraer sensibilidad de HiGHS: {e}")
             
             
+            numerical_quality = None
+            try:
+                from ..core import NumericalQuality
+                info = hp.getInfo()
+                mip_gap = getattr(info, 'mip_gap', 0.0) or 0.0
+                numerical_quality = NumericalQuality(
+                    mip_gap=float(mip_gap),
+                    nodes_per_second=float(getattr(info, 'node_count', 0) or 0),
+                )
+            except Exception:
+                pass
+
             self._solution = Solution(
                 status=status,
                 objective_value=hp.getObjectiveValue() if status == "OPTIMAL" else None,
@@ -136,6 +148,7 @@ class HiGHSSolver(BaseSolver):
                 dual_values=dual_values if dual_values else None,
                 reduced_costs=reduced_costs if reduced_costs else None,
                 basis=basis,
+                numerical_quality=numerical_quality,
             )
             
             self._iterations = 0

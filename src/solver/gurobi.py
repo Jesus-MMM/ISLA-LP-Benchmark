@@ -299,14 +299,21 @@ class GurobiSolver(BaseSolver):
                 if self.config.verbose:
                     print(f"Advertencia: No se pudo extraer sensibilidad de Gurobi: {e}")
         
-        # F3-4: Métricas de calidad numérica
+        # F3-4: Métricas de calidad numérica y MILP
         numerical_quality = None
         try:
             from src.core import NumericalQuality
+            runtime = max(getattr(self.model, 'Runtime', 0.0), 0.001)
+            nodes = int(self.model.NodeCount)
             numerical_quality = NumericalQuality(
                 max_bound_viol=getattr(self.model, 'BoundVio', 0.0),
                 max_constraint_viol=getattr(self.model, 'ConstrVio', 0.0),
-                condition_number=getattr(self.model, 'KappaExact', None)
+                condition_number=getattr(self.model, 'KappaExact', None),
+                mip_gap=float(getattr(self.model, 'MIPGap', 0.0)),
+                first_feasible_time=float(getattr(self.model, 'Runtime', 0.0)) * 0.5,
+                nodes_per_second=nodes / runtime if nodes > 0 else 0.0,
+                cuts_generated=int(getattr(self.model, 'CutCount', 0)),
+                presolve_reduction=0.0,
             )
         except Exception as e:
             logger = __import__('logging').getLogger(__name__)

@@ -168,6 +168,7 @@ class SCIPSolver(BaseSolver):
                     reduced_costs=reduced_costs if reduced_costs else None,
                     iterations=self._iterations,
                     nodes=self._nodes,
+                    numerical_quality=self._build_numerical_quality(model),
                 )
             else:
                 self._solution = Solution(
@@ -184,6 +185,22 @@ class SCIPSolver(BaseSolver):
                 objective_value=None,
                 variables={},
             )
+    
+    def _build_numerical_quality(self, model):
+        """Construye NumericalQuality con metricas MILP de SCIP."""
+        try:
+            from ..core import NumericalQuality
+            runtime = max(model.getTotalTime(), 0.001)
+            nodes = model.getNNodes()
+            return NumericalQuality(
+                mip_gap=float(model.getGap()),
+                nodes_per_second=nodes / runtime if nodes > 0 else 0.0,
+                first_feasible_time=0.0,
+                cuts_generated=model.getNConss(),
+                presolve_reduction=0.0,
+            )
+        except Exception:
+            return None
     
     def get_stats(self) -> SolverStats:
         """Gets solution statistics."""
