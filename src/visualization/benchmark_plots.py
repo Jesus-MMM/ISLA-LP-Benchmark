@@ -11,7 +11,8 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.analysis.benchmark_results import performance_profile
+# Import inside function to avoid circular import
+# from src.analysis.benchmark_results import performance_profile
 from src.solver.benchmark import BenchmarkRunner
 
 
@@ -135,6 +136,9 @@ class BenchmarkPlotter:
         """Gráfica perfil de rendimiento estilo Dolan-Moré."""
         if not self.results:
             return
+        
+        # Import here to avoid circular import
+        from src.analysis.benchmark_results import performance_profile
         
         perfiles = performance_profile(
             self.results,

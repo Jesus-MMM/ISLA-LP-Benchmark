@@ -669,8 +669,8 @@ class LPAnalysis:
         pdf.set_font('Helvetica', '', 7)
         pdf.set_text_color(0, 0, 0)
         for r in ranges:
-            lower_str = f"{r.lower:.4f}" if r.lower is not None else "-∞"
-            upper_str = f"{r.upper:.4f}" if r.upper is not None else "+∞"
+            lower_str = f"{r.lower:.4f}" if r.lower is not None else "-inf"
+            upper_str = f"{r.upper:.4f}" if r.upper is not None else "+inf"
             rc_str = f"{r.reduced_cost:.4f}" if r.reduced_cost is not None else "-"
             name = str(r.name)[:20]
             pdf.cell(w[0] * CONTENT_WIDTH, 4, name, align=Align.C)
@@ -706,8 +706,8 @@ class LPAnalysis:
         pdf.set_font('Helvetica', '', 7)
         pdf.set_text_color(0, 0, 0)
         for r in ranges:
-            lower_str = f"{r.lower:.4f}" if r.lower is not None else "-∞"
-            upper_str = f"{r.upper:.4f}" if r.upper is not None else "+∞"
+            lower_str = f"{r.lower:.4f}" if r.lower is not None else "-inf"
+            upper_str = f"{r.upper:.4f}" if r.upper is not None else "+inf"
             dual_str = f"{r.dual_value:.4f}" if r.dual_value is not None else "-"
             name = str(r.name)[:20]
             pdf.cell(w[0] * CONTENT_WIDTH, 4, name, align=Align.C)
@@ -742,8 +742,8 @@ class LPAnalysis:
         pdf.set_font('Helvetica', '', 7)
         pdf.set_text_color(0, 0, 0)
         for r in ranges:
-            lower_str = f"{r.lower:.4f}" if r.lower is not None else "-∞"
-            upper_str = f"{r.upper:.4f}" if r.upper is not None else "+∞"
+            lower_str = f"{r.lower:.4f}" if r.lower is not None else "-inf"
+            upper_str = f"{r.upper:.4f}" if r.upper is not None else "+inf"
             name = str(r.name)[:20]
             pdf.cell(w[0] * CONTENT_WIDTH, 4, name, align=Align.C)
             pdf.cell(w[1] * CONTENT_WIDTH, 4, f"{r.current:.4f}", align=Align.C)
@@ -1333,7 +1333,7 @@ class LPAnalysis:
             for point in progress_log[:20]:
                 pdf.cell(w[0], 3, str(point.iteration), align=Align.C)
                 pdf.cell(w[1], 3, f"{point.objective:.4f}", align=Align.C)
-                pdf.cell(w[2], 3, f"{point.infeasibility:.2e}", align=Align.C)
+                pdf.cell(w[2], 3, f"{point.gap:.2e}", align=Align.C)
                 pdf.cell(w[3], 3, f"{point.time:.2f}s", align=Align.C)
                 pdf.ln(3)
         else:

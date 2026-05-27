@@ -11,7 +11,7 @@ class CPLEXParser:
     Parser para formato LP (CPLEX/GLPK).
     
     Formato LP estándar:
-    \ Problem name:  name
+    \\ Problem name:  name
     Maximize/Minimize
       objective
     Subject To

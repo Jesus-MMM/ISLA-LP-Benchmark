@@ -10,7 +10,8 @@ from datetime import datetime
 import numpy as np
 
 from src.solver.benchmark import BenchmarkRunner
-from src.visualization import BenchmarkPlotter
+# Import BenchmarkPlotter in function to avoid circular import
+# from src.visualization import BenchmarkPlotter
 
 
 def performance_profile(
@@ -117,6 +118,8 @@ class ResultsExporter:
         """Exporta resultados a formato HTML."""
         plots_html = ""
         if include_plots and plots_dir:
+            # Import here to avoid circular import
+            from src.visualization.benchmark_plots import BenchmarkPlotter
             plots_dir.mkdir(parents=True, exist_ok=True)
             plotter = BenchmarkPlotter(self.runner)
             paths = {
