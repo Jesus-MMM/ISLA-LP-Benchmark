@@ -8,7 +8,12 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from rich.console import Console
+from rich.table import Table
+
 from src.cli import solve, benchmark
+
+_console = Console()
 
 
 class CustomHelpFormatter(
@@ -25,6 +30,26 @@ def _version() -> str:
         return version("isla-lp-benchmark")
     except Exception:
         return "1.2.1"
+
+
+def _install_completion() -> int:
+    """Instala autocompletado para bash/zsh."""
+    completion_script = f"""_{Path(sys.argv[0]).name}() {{
+    local cur opts
+    COMPREPLY=()
+    cur="${{COMP_WORDS[COMP_CWORD]}}"
+    opts="--version -V --list-solvers -l --log-level --solver -s --solvers -S --all-solvers -a --timeout -T --multi -m --visualize -v --pdf -p --times -t --no-solve -n --benchmark -b --repetitions -r --plot-comparison -C --output-csv --output -o --output-dir -O --json -j --quiet -q --verbose --help -h --install-completion input"
+    COMPREPLY=($(compgen -W "${{opts}}" -- "${{cur}}"))
+    return 0
+}}
+complete -F _Path(sys.argv[0])name {Path(sys.argv[0]).name}"""
+    completion_path = Path("~/.local/share/isla-lp-benchmark/completion.sh").expanduser()
+    completion_path.parent.mkdir(parents=True, exist_ok=True)
+    completion_path.write_text(completion_script)
+    _console.print(f"[green]Autocompletado instalado en:[/green] {completion_path}")
+    _console.print("[yellow]Agrega la siguiente linea a tu ~/.bashrc o ~/.zshrc:[/yellow]")
+    _console.print(f"  [bold]source {completion_path}[/bold]")
+    return 0
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -96,6 +121,16 @@ Para mas ayuda sobre un modo concreto, combine las opciones:
         default=None,
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         help='Nivel de detalle de los mensajes de registro (default: WARNING)'
+    )
+    info_group.add_argument(
+        '--install-completion',
+        action='store_true',
+        help='Instalar autocompletado para bash/zsh'
+    )
+    info_group.add_argument(
+        '--repl',
+        action='store_true',
+        help='Iniciar modo REPL interactivo'
     )
 
     # --- Seleccion de solver ---
@@ -224,25 +259,34 @@ def main(argv: Optional[list[str]] = None) -> int:
         from src.utils.logging import LogLevel, set_default_level
         set_default_level(LogLevel[args.log_level])
 
+    if args.install_completion:
+        return _install_completion()
+
+    if args.repl:
+        from src.cli.repl import run_repl
+        return run_repl()
+
     if args.list_solvers:
         from src.solver import SolverRegistry
         all_info = SolverRegistry.list_all_info()
         available = SolverRegistry.list_solvers(available_only=True)
 
-        print()
-        print("  Solvers registrados")
-        print("  " + "-" * 50)
+        table = Table(title="Solvers Registrados")
+        table.add_column("Solver", style="cyan")
+        table.add_column("Estado", justify="center")
+        table.add_column("Detalle")
+
         for name, info in all_info.items():
             if info['available']:
-                status = "  DISPONIBLE"
+                status = "[green]DISPONIBLE[/green]"
                 error = ""
             else:
-                status = "  NO DISPONIBLE"
-                error = f"  ({info['error']})" if info['error'] else ""
-            print(f"    {name:<20s}{status}{error}")
-        print()
-        print(f"  {len(available)}/{len(all_info)} solvers disponibles: {', '.join(available)}")
-        print()
+                status = "[red]NO DISPONIBLE[/red]"
+                error = info.get('error', '')
+            table.add_row(name, status, error)
+
+        _console.print(table)
+        _console.print(f"\n[bold]{len(available)}/{len(all_info)}[/bold] solvers disponibles: [green]{', '.join(available)}[/green]")
         return 0
 
     solver_name = args.solver

@@ -5,6 +5,10 @@ Handler para el modo benchmark.
 from pathlib import Path
 from typing import Optional
 
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
 
 from src.parser import MultiLPParser
 from src.solver import (
@@ -13,6 +17,8 @@ from src.solver import (
 from src.analysis import export_benchmark_results
 from src.cli import get_system_info
 from src.visualization.benchmark_plots import BenchmarkPlotter as BenchmarkVisualizer
+
+_console = Console()
 
 
 def run_benchmark(
@@ -31,15 +37,15 @@ def run_benchmark(
     """Ejecuta el modo benchmark."""
     solvers = solvers or ['gurobi']
     output_dir_val = Path(output_dir) if output_dir else Path('data/benchmark_output')
-    
+
     problems = []
-    
+
     system_info = get_system_info()
-    
+
     if input_path and input_path.exists():
         with open(input_path, 'r') as f:
             content = f.read()
-        
+
         if '---' in content:
             parser = MultiLPParser(content)
             parsed_problems = parser.parse_all()
@@ -53,55 +59,72 @@ def run_benchmark(
             ("Problema_2", "max Z = 3x + 5y\n2x + y <= 18\nx + 3y <= 24\nx >= 0\ny >= 0"),
             ("Problema_3", "min Z = 2x + 3y\nx + y >= 5\n2x + y >= 8\nx >= 0\ny >= 0"),
         ]
-    
+
     if not quiet:
-        print(f"\n{'='*50}")
-        print("BENCHMARK")
-        print("="*50)
-        print(f"Problems: {len(problems)}")
-        print(f"Solvers: {', '.join(solvers)}")
-        print(f"Repetitions: {repetitions}")
-        print(f"Output: {output_dir}")
+        info_table = Table(title="Benchmark Configuration")
+        info_table.add_column("Parametro", style="cyan")
+        info_table.add_column("Valor", style="green")
+        info_table.add_row("Problems", str(len(problems)))
+        info_table.add_row("Solvers", ", ".join(solvers))
+        info_table.add_row("Repetitions", str(repetitions))
+        info_table.add_row("Output", str(output_dir))
         if time_limit:
-            print(f"Time limit: {time_limit}s")
-        print("="*50 + "\n")
-    
+            info_table.add_row("Time limit", f"{time_limit}s")
+        _console.print(info_table)
+        _console.print()
+
     config = BenchmarkConfig(
         verbose=verbose,
         runs_per_problem=repetitions,
         time_limit=time_limit,
     )
     runner = BenchmarkRunner(config)
-    runner.run(problems, solvers)
-    
-    runner.print_summary()
-    
+
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeElapsedColumn(),
+        console=_console,
+        disable=quiet,
+    ) as progress:
+        task = progress.add_task("Running benchmark...", total=len(problems) * len(solvers) * repetitions)
+        original_run = runner.run
+        def run_with_progress(problems, solvers):
+            original_run(problems, solvers)
+            progress.update(task, advance=len(problems) * len(solvers) * repetitions)
+        runner.run = run_with_progress
+        runner.run(problems, solvers)
+
+    if not quiet:
+        _console.print()
+        _console.print(Panel(runner.print_summary(), title="Resumen", border_style="green"))
+
     if output_csv:
         runner.export_csv(Path(output_csv))
-        print(f"\nCSV exported to: {output_csv}")
-    
+        _console.print(f"\n[green]CSV exported to:[/green] {output_csv}")
+
     if plot_comparison or visualize:
-        print("\nGenerating plots...")
+        _console.print("\n[blue]Generating plots...[/blue]")
         viz = BenchmarkVisualizer(runner)
         viz.generate_all_plots(output_dir_val)
-        print(f"Plots saved to: {output_dir_val}")
-    
+        _console.print(f"[green]Plots saved to:[/green] {output_dir_val}")
+
     if pdf:
-        print("\nGenerating PDF report...")
+        _console.print("\n[blue]Generating PDF report...[/blue]")
         from src.analysis import BenchmarkReport
-        
-        # Create output directory if it doesn't exist
+
         output_dir_path = Path(output_dir) if output_dir else Path('data/benchmark_output')
         output_dir_path.mkdir(parents=True, exist_ok=True)
-        
+
         pdf_path = output_dir_path / "benchmark_report.pdf"
         benchmark_report = BenchmarkReport(runner, system_info)
         benchmark_report.generate(str(pdf_path))
-        print(f"PDF saved to: {pdf_path}")
-    
+        _console.print(f"[green]PDF saved to:[/green] {pdf_path}")
+
     export_benchmark_results(runner, output_dir_val, formats=['json', 'csv', 'md'])
-    print(f"\nFull results saved to: {output_dir}")
-    
+    _console.print(f"\n[green]Full results saved to:[/green] {output_dir}")
+
     return 0
 
 
