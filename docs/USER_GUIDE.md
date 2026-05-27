@@ -331,6 +331,93 @@ El reporte incluye:
 3. **Pagina individual** por problema (funcion objetivo, restricciones, solucion, holguras, grafico)
 4. **Resumen de tiempos** por problema
 
+## Soporta Formatos Estándar de Industria (MPS)
+
+El sistema soporta el formato MPS (Mathematical Programming System), un estándar de la industria para intercambio de problemas de optimización lineal y mixta-enteros.
+
+### Características del formato MPS Soportadas
+- Formato fijo y libre
+- Marcadores INTORG/INTEND para variables enteras
+- Secciones: NAME, ROWS, COLUMNS, RHS, BOUNDS, RANGES, QSECTION
+- Comentarios con `*` en columna 1
+
+### Uso básico
+```bash
+# Resolver problema en formato MPS
+python -m src.cli problema.mps
+
+# Resolver MPS con opciones adicionales
+python -m src.cli problema.mps --solver gurobi --pdf --visualize
+```
+
+### Ejemplo de archivo MPS sencillo
+```
+NAME          TESTPROB
+ROWS
+ N  COST
+ L  LIM1
+ L  LIM2
+COLUMNS
+    X1       COST        1.0   LIM1        1.0
+    X1       LIM2        1.0
+    X2       COST        2.0   LIM1        1.0
+    X2       LIM2        1.0
+RHS
+    RHS      LIM1        5.0
+    RHS      LIM2        3.0
+BOUNDS
+ UP B1       X1        4.0
+ LO B2       X2        0.0
+ ENDATA
+```
+
+## Generador de Problemas Sintéticos
+
+El sistema incluye un generador de problemas sintéticos útil para testing, benchmarks y experimentos.
+
+### Uso desde línea de comandos
+```bash
+# Generar y resolver un problema aleatorio LP
+python -m src.cli --generate-problem --vars 10 --constraints 5 --density 0.3
+
+# Generar problema MILP y resolverlo
+python -m src.cli --generate-problem --vars 8 --constraints 4 --int-vars 3 --solver gurobi
+
+# Guardar problema generado en archivo
+python -m src.cli --generate-problem --vars 15 --constraints 10 --output problem_generated.lp
+```
+
+### Parámetros disponibles
+| Parámetro | Descripción | Valor por defecto |
+|-----------|-------------|-------------------|
+| `--vars` | Número de variables | 5 |
+| `--constraints` | Número de restricciones | 3 |
+| `--density` | Densidad de la matriz (0-1) | 0.3 |
+| `--int-vars` | Número de variables enteras (para MILP) | 0 |
+| `--coeff-range` | Rango de coeficientes "min,max" | "-10,10" |
+| `--rhs-range` | Rango de lados derechos "min,max" | "-100,100" |
+| `--output` | Archivo donde guardar el problema generado | None (solo resuelve) |
+| `--solver` | Solver a usar para resolver el problema generado | "gurobi" |
+
+### Uso programático
+```python
+from src.utils.problem_generator import ProblemGenerator
+
+# Generar problema LP aleatorio
+gen = ProblemGenerator(seed=42)
+problem = gen.generate_lp(n_vars=20, n_constraints=10, density=0.25)
+
+# Generar problema MILP
+mip_problem = gen.generate_milp(n_vars=15, n_constraints=8, n_int_vars=5)
+
+# Generar problema mal condicionado para stress testing
+ill_problem = gen.generate_ill_conditioned()
+
+# Exportar a formato LP o MPS
+lp_text = problem.to_lp()
+mps_text = problem.to_mps()
+```
+
 ## MILP (Programacion Lineal Entera)
 
 El sistema soporta variables enteras (`int`, `integer`) y binarias (`bin`, `binary`).

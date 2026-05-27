@@ -38,6 +38,7 @@ src/
 │   └── __init__.py
 ├── parser/                   # Parsing de archivos
 │   ├── lp_parser.py          # LPParser - formato texto propio
+│   ├── mps_parser.py         # MPSParser - formato industrial MPS
 │   ├── cplex_parser.py       # CPLEXParser - formato CPLEX/LP
 │   ├── multi_parser.py       # MultiLPParser - multi-problema
 │   └── __init__.py
@@ -421,6 +422,32 @@ paths = export_benchmark_results(
 # Retorna: {"json": Path(...), "csv": Path(...), "md": Path(...), "html": Path(...)}
 ```
 
+### LPExporter (exporter.py)
+
+Exporta problemas a formato CPLEX/LP y MPS.
+
+```python
+from src.utils.exporter import LPExporter
+
+# Exportar a formato LP
+exporter = LPExporter(problem)
+lp_text = exporter.export()
+
+# Exportar a formato MPS
+mps_text = exporter.export_mps()
+
+# Guardar en archivos
+exporter.export_to_file("problem.lp")
+exporter.export_to_mps_file("problem.mps")
+```
+
+**Parámetros del exportador:**
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `problem` | LinearProblem | requerido | Problema a exportar |
+| `precision` | int | 6 | Decimales en coeficientes |
+| `include_names` | bool | True | Incluir nombres de variables/restricciones |
+
 ## Analisis Multi-Problema
 
 ### MultiLPAnalysis
@@ -492,6 +519,80 @@ class MiParser:
         # Logica de parsing
         return LinearProblem(...)
 ```
+
+### MPSParser (mps_parser.py)
+
+Parsea el formato MPS estándar de la industria para problemas de optimización lineal.
+
+```python
+from src.parser.mps_parser import MPSParser
+
+# Parsear desde archivo
+parser = MPSParser()
+problem = parser.parse_file("problema.mps")
+
+# Parsear desde string
+problem = MPSParser().parse(mps_text)
+```
+
+**Secciones soportadas:**
+- `NAME` — nombre del problema
+- `ROWS` — definición de restricciones (N, L, G, E)
+- `COLUMNS` — coeficientes por columna
+- `RHS` — lados derechos
+- `BOUNDS` — limites de variables
+- `RANGES` — rangos para restricciones
+- `MARKER` — `INTORG`/`INTEND` para variables enteras
+
+```python
+# Uso programático
+from src.parser.mps_parser import MPSParser
+
+parser = MPSParser()
+problem = parser.parse(mps_content)
+
+# Acceder a problemas parseados
+print(problem.sense)      # "max" o "min"
+print(problem.variables)  # lista de nombres de variables
+print(problem.constraints) # lista de LinearConstraint
+```
+
+### ProblemGenerator (problem_generator.py)
+
+Genera problemas sintéticos para testing y benchmarking.
+
+```python
+from src.utils.problem_generator import ProblemGenerator
+
+gen = ProblemGenerator(seed=42)
+
+# Problema LP aleatorio
+lp = gen.generate_lp(n_vars=20, n_constraints=10, density=0.3)
+
+# Problema MILP aleatorio  
+milp = gen.generate_milp(n_vars=15, n_constraints=8, n_int_vars=5)
+
+# Problema estilo Netlib
+netlib_like = gen.generate_netlib_like("creators")
+
+# Problema mal condicionado
+ill = gen.generate_ill_conditioned()
+
+# Exportar a formatos
+lp.to_lp()   # Formato CPLEX/LP
+lp.to_mps()  # Formato MPS
+```
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `n_vars` | int | 10 | Número de variables |
+| `n_constraints` | int | 5 | Número de restricciones |
+| `density` | float | 0.3 | Densidad de la matriz (0-1) |
+| `n_int_vars` | int | 0 | Variables enteras (para MILP) |
+| `coeff_range` | tuple | (-10, 10) | Rango de coeficientes |
+| `rhs_range` | tuple | (-100, 100) | Rango de RHS |
+| `seed` | int | None | Semilla aleatoria |
 
 ### Agregar Visualizacion
 

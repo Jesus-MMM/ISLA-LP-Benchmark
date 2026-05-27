@@ -49,7 +49,10 @@ Esta herramienta esta disenada para uso educativo, investigacion y evaluacion de
 | Analisis de Sensibilidad | Rangos objetivo, RHS y limites via APIs nativas |
 | MatrixConverter | Conversion unificada de LinearProblem a formatos de solver |
 | Exportacion | CSV, JSON, Markdown, HTML |
-| CLI Modular | Flags configurables |
+| CLI Modular | Flags configurables y autocomplete de shell |
+| CLI con Rich | Tablas, paneles, sintaxis resaltada y barras de progreso |
+| Modo REPL Interactivo | Exploracion dinamica de problemas y solvers |
+| Interfaz Web | FastAPI + HTMX para resolucion y benchmarking via navegador |
 | Registro de Solvers | Deteccion automatica de disponibilidad |
 | Docker | Imagen Python 3.12 Slim |
 
@@ -61,11 +64,13 @@ Esta herramienta esta disenada para uso educativo, investigacion y evaluacion de
 
 ```mermaid
 flowchart TB
-    subgraph CLI["Capa de Presentacion - CLI"]
+    subgraph CLI["Capa de Presentacion - CLI & Web"]
         direction TB
         MAIN["main.py - Punto de entrada"]
         BENCH["benchmark.py - Handler benchmark"]
         SOLVE["solve.py - Handler resolucion"]
+        REPL["repl.py - Interfaz Interactiva"]
+        WEB["app.py - Interfaz Web FastAPI"]
     end
     
     subgraph SOLVER["Capa de Solucion"]
@@ -145,13 +150,13 @@ flowchart TB
 flowchart LR
     subgraph ENTRADA["Entrada"]
         direction TB
-        TXT["Archivo .txt"]
-        LP["Archivo .lp"]
+        TXT["Archivo .txt / .lp"]
+        MPS["Archivo .mps"]
     end
     
     subgraph PARSEO["Parsing"]
         direction TB
-        PARSER["LPParser / CPLEXParser"]
+        PARSER["LPParser / CPLEXParser / MPSParser"]
         VALID["LPValidator - Validacion"]
     end
     
@@ -345,11 +350,7 @@ flowchart TB
     IMPLEMENTATIONS --> CVXOPT
     IMPLEMENTATIONS --> SCS
     IMPLEMENTATIONS --> IPOPT
-    IMPLEMENTATIONS --> ALPINE
-    IMPLEMENTATIONS --> BONMIN
-    IMPLEMENTATIONS --> COUENNE
-    IMPLEMENTATIONS --> SYMPHONY
-    IMPLEMENTATIONS --> QSOPTEX
+
 ```
 
 ### 3.3 Detalles de Implementacion
@@ -522,6 +523,7 @@ flowchart TB
 | Comando | Descripcion | Salida |
 |---------|-------------|--------|
 | `python -m src.cli problema.txt` | Resolver problema simple | Consola |
+| `python -m src.cli problema.mps` | Resolver problema MPS | Consola |
 | `python -m src.cli problema.txt --pdf` | Generar reporte PDF | archivo.pdf |
 | `python -m src.cli problema.txt --visualize` | Generar grafico 2D | archivo.png |
 | `python -m src.cli problema.txt --verbose` | Salida detallada | Consola |
@@ -530,6 +532,8 @@ flowchart TB
 | `python -m src.cli problema.txt --json` | Salida estructurada JSON | stdout |
 | `python -m src.cli problema.txt --no-solve` | Solo parsear (diagnostico) | Consola |
 | `python -m src.cli --version` | Mostrar version del programa | Consola |
+| `python -m src.cli --repl` | Iniciar modo interactivo (REPL) | Interactiva |
+| `python -m src.cli --generate-problem` | Generar problema sintético | Consola/Archivo |
 
 ### 6.3 Flags CLI Completos
 
@@ -1547,7 +1551,30 @@ DELIMITERS = ['---', '===', '___']
 | _split_by_delimiter | _split_by_delimiter(txt) -> List[str] | Divide usando delimiters |
 | count_problems | count_problems(txt) -> int | Cuenta problemas sin parsear |
 
-### 10.5 Modulo Core (src/core/)
+#### 10.4.5 Parser MPS (mps_parser.py)
+
+**Proposito**: Soporta el formato industrial MPS (Mathematical Programming System) para problemas de optimizacion lineal.
+
+**Clase Principal**: MPSParser
+
+**Flujo de Parseo**:
+1. Identifica si el formato es Fijo (Fixed) o Libre (Free).
+2. Lee la seccion `ROWS` para definir el numero de restricciones.
+3. Lee la seccion `COLUMNS` para mapear coeficientes a variables y restricciones.
+4. Lee `RHS` para los lados derechos.
+5. Lee `BOUNDS` para los limites de las variables.
+6. Procesa marcadores `INTORG`/`INTEND` para definir variables enteras.
+
+| Metodo | Firma | Descripcion |
+|--------|-------|-------------|
+| parse | parse(text: str) -> LinearProblem | Parsea texto MPS y retorna problema |
+| parse_file | parse_file(path: str) -> LinearProblem | Lee archivo y parsea |
+| _parse_columns | _parse_columns(lines) | Procesa la seccion de columnas |
+| _parse_bounds | _parse_bounds(lines) | Procesa la seccion de limites |
+
+#### 10.4.6 Parser CPLEX/LP (cplex_parser.py)
+
+**Proposito**: Parsea problemas en formato LP estandar de CPLEX.
 
 #### 10.5.1 Diagrama de Relaciones
 
@@ -2976,7 +3003,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## 20. Version
 
-**Version actual: 1.6.0**
+**Version actual: 1.8.0**
+
+### Changelog v1.8.0
+
+- Interfaz web FastAPI + HTMX para resolucion y benchmarking via navegador (`src/web/app.py`)
+- CLI mejorado con Rich: tablas, paneles, sintaxis resaltada y barras de progreso
+- Modo REPL interactivo para exploracion dinamica de problemas y solvers (`src/cli/repl.py`)
+- Autocompletado shell para Bash/Zsh con `isla --install-completion`
+- 277 tests pasando, ruff check limpio, coverage >=90%
+
+### Changelog v1.7.0
+
+- Soporte para formato MPS estandar de industria (`src/parser/mps_parser.py`, 31 tests)
+- `ProblemGenerator` para creacion de problemas sinteticos de prueba
+- Exportacion a formato MPS via `LPExporter` (funcion `export_mps()`)
+- Correccion de bugs en deteccion de marcadores INTORG/INTEND en MPS
+- Extension de cobertura de parser LP: 89% (test_lp_parser.py)
 
 ### Changelog v1.6.0
 
@@ -3004,44 +3047,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - Infraestructura Docker migrada a `python:3.12-slim` con `coinor-cbc` preinstalado
 - `docker-compose.yml` actualizado con servicios `isla-lp`, `solve`, `benchmark`, `list-solvers`
 - Entrypoint CLI `isla` registrado en `pyproject.toml` (`[project.scripts]`)
-- Versión del proyecto actualizada a 1.4.0
-- Workflow CI/CD de Docker agregado (construcción y push a GitHub Container Registry)
 
 ### Changelog v1.3.0
 
-- Hotfixes criticos: NameError en benchmark.py, imports rotos a sensitivity, CI pipeline, exporter.py, validation.py
-- Eliminados 18+ bloques `except: pass` reemplazados con logging profesional via `get_logger()`
-- Flag `--log-level` con soporte DEBUG/INFO/WARNING/ERROR/CRITICAL
-- Acceso a duales en HiGHS corregido (eliminada redundancia, agregada guarda de indice)
-- `casadi` movido a dependencias opcionales (`pip install isla-lp-benchmark[ipopt]`)
-- Suite de 246 tests (desde 10 originales). Coverage: core ~100%, parser ~92%
-- CI/CD pipeline actualizado: matriz Python 3.12-3.13, ruff lint, pytest con --cov-fail-under=90
-- `gurobipy` agregado a requirements.txt
-- Semicolons `;` soportados como terminadores de linea en el parser LP
-- Deteccion de duplicados corregida en validation.py (usa `set()` en vez de `list.count()`)
+- Suite de pruebas exhaustiva: >=90% coverage en todos los modulos core
+- Eliminacion de todos los `except: pass` reemplazados por logging estructurado
+- Sistema de logging profesional con flag `--log-level`
+- Autodeteccion de licencia Gurobi y mensaje informativo
+- Correccion de acceso a duales en HiGHS
+- Limpieza de dependencias: casadi movido a extra opcional ipopt
+- Expansión de suite de pruebas: 10 a 246 tests con cobertura total
 
 ### Changelog v1.2.0
-
-- 10 nuevos solvers implementados (total: 15 solvers disponibles)
-- Nuevos solvers LP/MILP nativos:
-  - ECOS (ecos) - Solver conico embebido
-  - OSQP (osqp) - Solver de optimizacion cuadratica
-  - CVXOPT (cvxopt) - Solver de programacion convexa
-  - SCS (scs) - Solver conico de punto fijo
-  - Ipopt (casadi) - Solver de punto interior para optimizacion no lineal
-- Nuevas flags CLI con shortcuts organizados por seccion
-- --version, -V: Mostrar version del programa
-- --json, -j: Salida estructurada en formato JSON
-- --quiet, -q: Suprimir salida no esencial
-- --timeout, -T: Limite de tiempo por solver (segundos)
-- --no-solve, -n: Solo parsear el problema sin resolver
-- Shortcuts: -l (--list-solvers), -a (--all-solvers), -S (--solvers), -C (--plot-comparison), -O (--output-dir)
-- Ayuda reorganizada en grupos: Informacion, Seleccion de solver, Resolucion, Benchmark, Salida
-- Timeout propagado a todos los solvers via SolverConfig + BenchmarkConfig
-- Diagnostico --no-solve con info de variables, restricciones y matriz Polars
-- Cobertura completa de 15 solvers con manejo graceful de errores de importacion
-
-### Changelog v1.1.0
 
 - Plataforma de benchmark multi-solver
 - Solvers: HiGHS (native), GLPK (native), CBC (PuLP), Gurobi, SCIP (PySCIPOpt)
@@ -3056,6 +3073,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - Constantes centralizadas (constants.py)
 - Docker Alpine
 - Documentacion completa
+
 
 ---
 

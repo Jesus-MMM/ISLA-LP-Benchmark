@@ -12,31 +12,37 @@ python -m src.cli data/problem.txt --pdf --solver gurobi
 ```bash
 python -m src.cli data/problem.mps --pdf --solver gurobi
 ```
-**Salida:** `data/problem.pdf`
+**Salida**: `data/problem.pdf`
+
+### Con Gurobi (ProblemGenerator + PDF)
+```bash
+python -m src.cli --generate-problem --vars 20 --constraints 10 --solver gurobi --pdf
+```
+**Salida**: `problem_generated.pdf`
 
 ### Con CBC
 ```bash
 python -m src.cli data/problem.txt --pdf --solver cbc
 ```
-**Salida:** `data/problem.pdf`
+**Salida**: `data/problem.pdf`
 
 ### Con SCIP
 ```bash
 python -m src.cli data/problem.txt --pdf --solver scip
 ```
-**Salida:** `data/problem.pdf`
+**Salida**: `data/problem.pdf`
 
 ### Con HiGHS
 ```bash
 python -m src.cli data/problem.txt --pdf --solver highs
 ```
-**Salida:** `data/problem.pdf`
+**Salida**: `data/problem.pdf`
 
 ### Automático (detecta solver disponible)
 ```bash
 python -m src.cli data/problem.txt --pdf
 ```
-**Salida:** `data/problem.pdf`
+**Salida**: `data/problem.pdf`
 
 ---
 
@@ -46,13 +52,13 @@ python -m src.cli data/problem.txt --pdf
 ```bash
 python -m src.cli data/problem.txt --multi --solvers gurobi cbc --pdf
 ```
-**Salida:** `data/problem_multi.pdf`
+**Salida**: `data/problem_multi.pdf`
 
 ### Con todos los solvers disponibles
 ```bash
 python -m src.cli data/problem.txt --multi --solvers gurobi cbc scip highs --pdf
 ```
-**Salida:** `data/problem_multi.pdf`
+**Salida**: `data/problem_multi.pdf`
 
 ---
 
@@ -62,19 +68,19 @@ python -m src.cli data/problem.txt --multi --solvers gurobi cbc scip highs --pdf
 ```bash
 python -m src.cli --benchmark --pdf data/problem.txt
 ```
-**Salida:** `data/benchmark_output/benchmark_report.pdf`
+**Salida**: `data/benchmark_output/benchmark_report.pdf`
 
 ### Benchmark con múltiples problemas
 ```bash
 python -m src.cli --benchmark --pdf data/problem.txt data/milp_example.txt
 ```
-**Salida:** `data/benchmark_output/benchmark_report.pdf`
+**Salida**: `data/benchmark_output/benchmark_report.pdf`
 
 ### Benchmark con solvers específicos
 ```bash
 python -m src.cli --benchmark --solvers gurobi cbc scip --pdf data/problem.txt
 ```
-**Salida:** `data/benchmark_output/benchmark_report.pdf`
+**Salida**: `data/benchmark_output/benchmark_report.pdf`
 
 ### Benchmark con límite de tiempo
 ```bash
@@ -161,12 +167,55 @@ python -m src.cli --benchmark --pdf data/problem.txt data/milp_example.txt
 
 ---
 
+## 7. Generación de Problemas Sintéticos (ProblemGenerator)
+
+### Generar y resolver problema LP
+```bash
+python -m src.cli --generate-problem --vars 20 --constraints 10 --solver gurobi --pdf
+```
+
+### Generar y resolver MILP
+```bash
+python -m src.cli --generate-problem --vars 15 --constraints 8 --int-vars 5 --solver cbc --pdf
+```
+
+### Generar problema estilo Netlib
+```bash
+python -m src.cli --generate-problem --netlib "creators" --solver highs --pdf
+```
+
+### Generar problema mal condicionado
+```bash
+python -m src.cli --generate-problem --ill-conditioned --solver gurobi --pdf
+```
+
+### Guardar problema generado
+```bash
+python -m src.cli --generate-problem --vars 20 --constraints 10 --output problem.lp
+python -m src.cli --generate-problem --vars 20 --constraints 10 --output problem.mps
+```
+
+### Parámetros de ProblemGenerator
+| Parámetro | Descripción | Default |
+|-----------|-------------|---------|
+| `--vars` | Número de variables | 10 |
+| `--constraints` | Número de restricciones | 5 |
+| `--density` | Densidad de matriz | 0.3 |
+| `--int-vars` | Variables enteras | 0 |
+| `--netlib` | Nombre de problema Netlib | None |
+| `--ill-conditioned` | Generar mal condicionado | False |
+| `--output` | Archivo de salida | None |
+| `--solver` | Solver para resolver | "gurobi" |
+| `--seed` | Semilla aleatoria | None |
+
+---
+
 ## Notas Importantes
 
 - Todos los reportes usan márgenes de 15mm (multi-problema) o 20mm (individual/benchmark)
 - Los gráficos se centran respetando los márgenes
-- Formatos soportados: `.txt` (formato estándar LP), `.lp` (CPLEX/LP)
+- Formatos soportados: `.txt`, `.lp`, `.mps`
 - Solvers soportados: `gurobi`, `cbc`, `scip`, `highs`, `glpk`, `ecos`, `osqp`, `cvxopt`, `scs`, `ipopt`
-- Ejecutar `python -m src.cli --list-solvers` para ver solvers disponibles en el sistema
+- Ejecutar `python -m src.cli --list-solvers` para ver solvers disponibles
 - Usar `--log-level DEBUG` para ver información detallada de diagnóstico
 - Tras `pip install -e .`, usar `isla` como atajo: `isla data/problem.txt --pdf`
