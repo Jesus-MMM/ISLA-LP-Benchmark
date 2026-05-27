@@ -1,4 +1,4 @@
-# ISLA LP Benchmark v1.5.0
+# ISLA LP Benchmark v1.6.0
 
 ## Resumen del Proyecto
 
@@ -39,12 +39,16 @@ Esta herramienta esta disenada para uso educativo, investigacion y evaluacion de
 |-------------|-----------|
 | Multiples Solvers | Comparativa de 10+ solvers (Gurobi, HiGHS, GLPK, CBC, etc.) |
 | Modo Benchmark | Comparacion justa con warmup y metricas detalladas |
-| Metricas Detalladas | Tiempo, iteraciones, memoria, nodos |
+| Ejecucion Aislada | ParallelBenchmarkRunner con procesos independientes y timeout |
+| Metricas MILP | mip_gap, nodes_per_second, cuts_generated, presolve_reduction |
 | Warmup | Ejecuciones de calentamiento para fair benchmarking |
-| Reportes PDF | Comparaciones visuales con graficos, tablas de sensibilidad |
+| Reportes PDF | Comparaciones visuales con graficos, tablas de sensibilidad, analisis estadistico |
+| Perfiles Dolan-More | Performance profiles con datos reales |
+| Analisis Estadistico | Test de Friedman, post-hoc Nemenyi, ANOVA |
+| Cache de Problemas | ProblemCache con hash SHA256 y TTL 24h |
 | Analisis de Sensibilidad | Rangos objetivo, RHS y limites via APIs nativas |
 | MatrixConverter | Conversion unificada de LinearProblem a formatos de solver |
-| Exportacion | CSV, JSON, Markdown |
+| Exportacion | CSV, JSON, Markdown, HTML |
 | CLI Modular | Flags configurables |
 | Registro de Solvers | Deteccion automatica de disponibilidad |
 | Docker | Imagen Python 3.12 Slim |
@@ -107,11 +111,13 @@ flowchart TB
         AN["analysis.py - Reporte single"]
         BENCHREP["benchmark_report.py - Reporte benchmark"]
         SENS["sensitivity.py - SensitivityAnalysis"]
+        STATS["statistics.py - Pruebas estadisticas"]
     end
     
     subgraph VIS["Capa de Visualizacion"]
         direction TB
         VISUAL["visualization.py - Graficos 2D"]
+        BENCHPLOTS["benchmark_plots.py - Benchmark plots"]
     end
     
     subgraph UTILS["Capa de Utilidades"]
@@ -119,6 +125,7 @@ flowchart TB
         VAL["validation.py - Validacion"]
         EXP["exporter.py - Exportacion"]
         LOG["logging.py - Registro"]
+        CACHE["cache.py - ProblemCache"]
     end
     
     CLI --> PARSER
@@ -227,13 +234,13 @@ stateDiagram-v2
 |------|-----------|---------|-------------|
 | Presentacion | main.py, cli/ | Punto de entrada CLI | Gestiona argumentos y coordina ejecucion |
 | Solucion | solver/ | Múltiples implementaciones | Gurobi, HiGHS, GLPK, CBC, SCIP, ECOS, OSQP, CVXOPT, SCS, Ipopt |
-| Benchmark | benchmark.py | BenchmarkRunner | Orquestador con warmup y métricas |
-| Análisis | analysis.py, benchmark_report.py | Reportes PDF | Generación de informes académicos |
-| Visualización | visualization.py | Gráficos 2D | Región factible matplotlib |
+| Benchmark | benchmark.py, parallel_benchmark.py | BenchmarkRunner, ParallelBenchmarkRunner | Orquestador con warmup y ejecución aislada |
+| Análisis | analysis.py, benchmark_report.py, statistics.py | Reportes PDF, analisis estadístico | Generación de informes académicos, Friedman, Nemenyi, ANOVA |
+| Visualización | visualization.py, benchmark_plots.py | Gráficos 2D | Región factible matplotlib, perfiles Dolan-Moré |
 | Construcción | matrix/builder.py | LPBuilder | Convierte a estructuras Polars |
 | Parsing | parser/ | Parsers | Interpreta archivos de entrada |
-| Core | problem.py, constraint.py, bound.py, solution.py | Estructuras fundamentales | Define tipos base |
-| Utilidades | validation.py, exporter.py, logging.py | Funciones auxiliares | Helpers del sistema |
+| Core | problem.py, constraint.py, bound.py, solution.py | Estructuras fundamentales | Define tipos base, NumericalQuality con métricas MILP |
+| Utilidades | validation.py, exporter.py, logging.py, cache.py | Funciones auxiliares | Helpers del sistema, ProblemCache con SHA256 |
 
 ### 2.6 Tabla de Clases Principales
 
@@ -257,6 +264,12 @@ stateDiagram-v2
 | LPExporter | utils/exporter.py | Exportador | export() |
 | MatrixConverter | matrix/converter.py | Conversion a formatos solver | to_highs(), to_glpk(), to_cvxopt(), to_osqp(), to_scipy() |
 | SensitivityAnalysis | analysis/sensitivity.py | Analisis de sensibilidad nativo | extract_highs_sensitivity(), extract_glpk_sensitivity(), extract_gurobi_sensitivity() |
+| ParallelBenchmarkRunner | solver/parallel_benchmark.py | Ejecucion aislada por proceso | run(), get_summary(), print_summary() |
+| ProblemCache | utils/cache.py | Cache con hash SHA256 y TTL | get_parsed(), set_parsed(), get_result(), set_result() |
+| performance_profile | analysis/benchmark_results.py | Perfiles Dolan-More | performance_profile() |
+| friedman_test | analysis/statistics.py | Test de Friedman | returns Q, p-valor |
+| nemenyi_posthoc | analysis/statistics.py | Post-hoc Nemenyi | returns CD, matrix |
+| anova_one_way | analysis/statistics.py | ANOVA de una via | returns F, p-valor |
 
 ---
 
@@ -1034,11 +1047,13 @@ isla-lp-benchmark/
 │   │   ├── glpk_solver.py  # Solver GLPK
 │   │   ├── cbc.py         # Solver CBC
 │   │   ├── benchmark.py    # BenchmarkRunner
+│   │   ├── parallel_benchmark.py  # ParallelBenchmarkRunner
 │   │   └── __init__.py
 │   ├── analysis/
 │   │   ├── analysis.py         # Reporte single
 │   │   ├── benchmark_report.py # Reporte PDF benchmark
-│   │   ├── benchmark_results.py # Visualizacion
+│   │   ├── benchmark_results.py # Resultados y perfiles Dolan-More
+│   │   ├── statistics.py       # Pruebas estadisticas (Friedman, Nemenyi, ANOVA)
 │   │   ├── multi_analysis.py   # Reporte multi-problema
 │   │   ├── sensitivity.py      # SensitivityAnalysis
 │   │   └── __init__.py
@@ -1065,6 +1080,7 @@ isla-lp-benchmark/
 │       ├── validation.py
 │       ├── exporter.py
 │       ├── logging.py
+│       ├── cache.py       # ProblemCache
 │       └── __init__.py
 ├── docs/
 │   ├── USER_GUIDE.md       # Guia de usuario
@@ -2960,7 +2976,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## 20. Version
 
-**Version actual: 1.5.0**
+**Version actual: 1.6.0**
+
+### Changelog v1.6.0
+
+- `ParallelBenchmarkRunner` con `ProcessPoolExecutor`: ejecucion aislada por proceso, timeout, medicion de memoria psutil
+- `ProblemCache` con hash SHA256: cache de problemas parseados (pickle) y resultados (JSON) con TTL 24h
+- `NumericalQuality` extendido con metricas MILP: `mip_gap`, `first_feasible_time`, `nodes_per_second`, `cuts_generated`, `presolve_reduction`
+- Metricas MILP extraidas de Gurobi (MIPGap, CutCount), HiGHS (mip_gap, node_count), SCIP (getGap, getNNodes), CBC (nodes_per_second)
+- Perfiles de rendimiento Dolan-More: funcion `performance_profile()` y grafico `plot_performance_profile()` con datos reales
+- Pruebas estadisticas: `friedman_test()`, `nemenyi_posthoc()`, `anova_one_way()` en nuevo modulo `statistics.py`
+- Seccion de analisis estadistico en reportes PDF (Friedman, ranking, Nemenyi, ANOVA)
+- 277 tests pasando, ruff check limpio
 
 ### Changelog v1.5.0
 
