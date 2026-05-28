@@ -80,6 +80,7 @@ def run_benchmark(
     )
     runner = BenchmarkRunner(config)
 
+    total_tasks = len(problems) * len(solvers) * repetitions
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
@@ -88,13 +89,10 @@ def run_benchmark(
         console=_console,
         disable=quiet,
     ) as progress:
-        task = progress.add_task("Running benchmark...", total=len(problems) * len(solvers) * repetitions)
-        original_run = runner.run
-        def run_with_progress(problems, solvers):
-            original_run(problems, solvers)
-            progress.update(task, advance=len(problems) * len(solvers) * repetitions)
-        runner.run = run_with_progress
-        runner.run(problems, solvers)
+        task = progress.add_task("Running benchmark...", total=total_tasks)
+        def _on_result(_result):
+            progress.update(task, advance=1)
+        runner.run(problems, solvers, on_result=_on_result)
 
     if not quiet:
         _console.print()

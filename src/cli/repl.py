@@ -1,5 +1,6 @@
 """
 Modo REPL interactivo para exploracion y resolucion de problemas de PL.
+Soporta multiproblemas y benchmark.
 """
 
 import time
@@ -12,7 +13,7 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.prompt import Prompt
 
-from src.parser import LPParser, MPSParser
+from src.parser import LPParser, MPSParser, MultiLPParser
 from src.solver import SolverConfig, SolverRegistry
 from src.core import LinearProblem
 
@@ -28,8 +29,12 @@ def _print_help() -> None:
     table.add_row("help", "Muestra esta ayuda", "help")
     table.add_row("load", "Carga un problema desde archivo", "load problema.lp")
     table.add_row("load-mps", "Carga un problema MPS", "load-mps prob.mps")
+    table.add_row("load-multi", "Carga multiples problemas", "load-multi multi.txt")
+    table.add_row("problems", "Lista problemas cargados", "problems")
+    table.add_row("select", "Selecciona un problema por indice", "select 2")
     table.add_row("info", "Muestra informacion del problema", "info")
     table.add_row("solve", "Resuelve con un solver", "solve gurobi")
+    table.add_row("benchmark", "Ejecuta benchmark sobre todos", "benchmark")
     table.add_row("solvers", "Lista solvers disponibles", "solvers")
     table.add_row("vars", "Muestra las variables", "vars")
     table.add_row("export", "Exporta a formato LP", "export salida.lp")
@@ -51,7 +56,11 @@ def run_repl() -> int:
         border_style="yellow",
     ))
 
-    problem: Optional[LinearProblem] = None
+    problems: list[LinearProblem] = []
+    current_index: int = -1
+
+    def current_problem() -> Optional[LinearProblem]:
+        return problems[current_index] if 0 <= current_index < len(problems) else None
 
     while True:
         try:
@@ -72,19 +81,38 @@ def run_repl() -> int:
         elif cmd == "help":
             _print_help()
         elif cmd == "load":
-            problem = _cmd_load(arg)
+            p = _cmd_load(arg)
+            if p is not None:
+                problems.append(p)
+                current_index = len(problems) - 1
         elif cmd == "load-mps":
-            problem = _cmd_load_mps(arg)
+            p = _cmd_load_mps(arg)
+            if p is not None:
+                problems.append(p)
+                current_index = len(problems) - 1
+        elif cmd == "load-multi":
+            loaded = _cmd_load_multi(arg)
+            if loaded:
+                problems.extend(loaded)
+                current_index = len(problems) - 1
+        elif cmd == "problems":
+            _cmd_problems(problems, current_index)
+        elif cmd == "select":
+            new_idx = _cmd_select(arg, len(problems))
+            if new_idx is not None:
+                current_index = new_idx
         elif cmd == "info":
-            _cmd_info(problem)
+            _cmd_info(current_problem())
         elif cmd == "solve":
-            _cmd_solve(problem, arg)
+            _cmd_solve_repl(problems, current_index, arg)
+        elif cmd == "benchmark":
+            _cmd_benchmark(problems)
         elif cmd == "solvers":
             _cmd_solvers()
         elif cmd == "vars":
-            _cmd_vars(problem)
+            _cmd_vars(current_problem())
         elif cmd == "export":
-            _cmd_export(problem, arg)
+            _cmd_export(current_problem(), arg)
         else:
             _console.print(f"[red]Comando desconocido:[/red] {cmd}. Escribe [cyan]help[/cyan] para ayuda.")
 
@@ -141,6 +169,134 @@ def _cmd_load_mps(arg: str) -> Optional[LinearProblem]:
         return None
 
 
+def _cmd_load_multi(arg: str) -> list[LinearProblem]:
+    """Carga multiples problemas desde un archivo multi-formato."""
+    if not arg:
+        _console.print("[red]Uso:[/red] load-multi <archivo>")
+        return []
+    path = Path(arg)
+    if not path.exists():
+        _console.print(f"[red]Archivo no encontrado:[/red] {path}")
+        return []
+    try:
+        content = path.read_text()
+        parser = MultiLPParser(content)
+        parsed = parser.parse_all()
+        if not parsed:
+            _console.print("[red]No se encontraron problemas en el archivo.[/red]")
+            return []
+        _console.print(Panel(
+            f"Problemas cargados: [bold]{len(parsed)}[/bold]",
+            title=f"Multi-problema: {path.name}",
+            border_style="green",
+        ))
+        return parsed
+    except Exception as e:
+        _console.print(f"[red]Error al cargar multi-problema:[/red] {e}")
+        return []
+
+
+def _cmd_problems(problems: list[LinearProblem], current_index: int) -> None:
+    """Lista los problemas cargados."""
+    if not problems:
+        _console.print("[yellow]No hay problemas cargados. Usa [cyan]load[/cyan] primero.[/yellow]")
+        return
+    table = Table(title=f"Problemas ({len(problems)})")
+    table.add_column("#", style="cyan", justify="right")
+    table.add_column("Nombre", style="green")
+    table.add_column("Sentido", justify="center")
+    table.add_column("Variables", justify="right")
+    table.add_column("Restricciones", justify="right")
+    table.add_column("Tipo")
+    for i, p in enumerate(problems):
+        marker = ">" if i == current_index else " "
+        name = getattr(p, 'name', '') or f"Problema_{i+1}"
+        mip = "MILP" if p.is_mip else "LP"
+        table.add_row(f"{marker} {i+1}", name, p.sense, str(len(p.variables)), str(len(p.constraints)), mip)
+    _console.print(table)
+
+
+def _cmd_select(arg: str, n_problems: int) -> Optional[int]:
+    """Selecciona un problema por indice."""
+    if not arg or not arg.isdigit():
+        _console.print("[red]Uso:[/red] select <indice>")
+        return None
+    idx = int(arg) - 1
+    if 0 <= idx < n_problems:
+        _console.print(f"[green]Problema {int(arg)} seleccionado.[/green]")
+        return idx
+    _console.print(f"[red]Indice invalido. Hay {n_problems} problemas.[/red]")
+    return None
+
+
+def _cmd_benchmark(problems: list[LinearProblem]) -> None:
+    """Ejecuta benchmark sobre todos los problemas cargados."""
+    if not problems:
+        _console.print("[yellow]No hay problemas cargados.[/yellow]")
+        return
+    from src.solver import BenchmarkRunner, BenchmarkConfig
+    from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
+
+    problem_tuples = []
+    for i, p in enumerate(problems):
+        name = getattr(p, 'name', '') or f"Problema_{i+1}"
+        problem_tuples.append((name, _problem_to_repl_text(p)))
+
+    solvers = SolverRegistry.list_solvers()
+    total = len(problem_tuples) * len(solvers)
+    _console.print(f"[blue]Ejecutando benchmark: {len(problem_tuples)} problemas x {len(solvers)} solvers = {total} ejecuciones[/blue]")
+
+    config = BenchmarkConfig(verbose=False)
+    runner = BenchmarkRunner(config)
+
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeElapsedColumn(),
+        console=_console,
+    ) as progress:
+        task = progress.add_task("Benchmark REPL...", total=total)
+        runner.run(problem_tuples, solvers, on_result=lambda _: progress.update(task, advance=1))
+
+    _console.print()
+    _console.print(Panel(runner.print_summary(), title="Resultados Benchmark", border_style="green"))
+
+
+def _problem_to_repl_text(problem: LinearProblem) -> str:
+    """Convierte un LinearProblem a texto LP simple."""
+    sense = problem.sense.upper()
+    terms = []
+    for var, coeff in problem.objective.items():
+        if coeff >= 0:
+            terms.append(f"+{coeff}{var}")
+        else:
+            terms.append(f"{coeff}{var}")
+    obj = " ".join(terms) if terms else "0"
+    if obj.startswith("+"):
+        obj = obj[1:]
+    lines = [f"{sense} Z = {obj}"]
+    for c in problem.constraints:
+        c_terms = []
+        for var, coeff in c.coefficients.items():
+            if coeff >= 0:
+                c_terms.append(f"+{coeff}{var}")
+            else:
+                c_terms.append(f"{coeff}{var}")
+        c_str = " ".join(c_terms)
+        if c_str.startswith("+"):
+            c_str = c_str[1:]
+        lines.append(f"{c_str} {c.sense} {c.rhs}")
+    for var, bound in problem.bounds.items():
+        if bound.lower is not None and bound.upper is not None:
+            lines.append(f"{bound.lower} <= {var} <= {bound.upper}")
+        elif bound.lower is not None:
+            lines.append(f"{var} >= {bound.lower}")
+        elif bound.upper is not None:
+            lines.append(f"{var} <= {bound.upper}")
+    return "\n".join(lines)
+
+
 def _cmd_info(problem: Optional[LinearProblem]) -> None:
     """Muestra informacion del problema."""
     if problem is None:
@@ -169,12 +325,47 @@ def _cmd_info(problem: Optional[LinearProblem]) -> None:
     ))
 
 
-def _cmd_solve(problem: Optional[LinearProblem], arg: str) -> None:
-    """Resuelve el problema con un solver."""
-    if problem is None:
-        _console.print("[yellow]No hay problema cargado. Usa [cyan]load[/cyan] primero.[/yellow]")
+def _cmd_solve_repl(problems: list[LinearProblem], current_index: int, arg: str) -> None:
+    """Resuelve un problema con un solver. arg puede ser 'solver' o 'solver idx' o 'idx'."""
+    if not problems:
+        _console.print("[yellow]No hay problemas cargados. Usa [cyan]load[/cyan] primero.[/yellow]")
         return
-    solver_name = arg or "highs"
+
+    parts = arg.split()
+    solver_name = "highs"
+    problem = None
+
+    if len(parts) == 0:
+        problem = problems[current_index] if 0 <= current_index < len(problems) else problems[-1]
+    elif len(parts) == 1:
+        if parts[0].isdigit():
+            idx = int(parts[0]) - 1
+            if 0 <= idx < len(problems):
+                problem = problems[idx]
+            else:
+                _console.print("[red]Indice invalido. Usa [cyan]problems[/cyan] para ver indices.[/red]")
+                return
+        else:
+            solver_name = parts[0]
+            problem = problems[current_index] if 0 <= current_index < len(problems) else problems[-1]
+    else:
+        solver_name = parts[0]
+        if parts[1].isdigit():
+            idx = int(parts[1]) - 1
+            if 0 <= idx < len(problems):
+                problem = problems[idx]
+            else:
+                _console.print("[red]Indice invalido.[/red]")
+                return
+        else:
+            _console.print("[red]Uso: solve [solver] [indice][/red]")
+            return
+
+    _solve_problem(problem, solver_name)
+
+
+def _solve_problem(problem: LinearProblem, solver_name: str) -> None:
+    """Resuelve un problema individual e imprime resultado."""
     solver_class = SolverRegistry.get(solver_name)
     if solver_class is None:
         _console.print(f"[red]Solver '{solver_name}' no encontrado.[/red]")

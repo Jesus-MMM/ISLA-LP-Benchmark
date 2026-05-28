@@ -10,6 +10,7 @@ from typing import Optional
 
 from rich.console import Console
 from rich.table import Table
+from rich.panel import Panel
 
 from src.cli import solve, benchmark
 
@@ -29,7 +30,7 @@ def _version() -> str:
         from importlib.metadata import version
         return version("isla-lp-benchmark")
     except Exception:
-        return "1.2.1"
+        return "1.8.1"
 
 
 def _install_completion() -> int:
@@ -52,10 +53,79 @@ complete -F _Path(sys.argv[0])name {Path(sys.argv[0]).name}"""
     return 0
 
 
+class _RichArgumentParser(argparse.ArgumentParser):
+    """Parser que muestra la ayuda con secciones en paneles Rich."""
+
+    def print_help(self, file=None):
+        text = argparse.ArgumentParser.format_help(self)
+        lines = text.split('\n')
+        sections = []
+        current_section = {"title": None, "body": []}
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                if current_section["body"]:
+                    sections.append(current_section)
+                    current_section = {"title": None, "body": []}
+            elif current_section["title"] is None:
+                if stripped.lower().startswith('usage:'):
+                    current_section["title"] = "usage"
+                    current_section["body"].append(stripped)
+                elif stripped == '':
+                    continue
+                else:
+                    current_section["title"] = stripped.rstrip(':')
+                    current_section["body"] = []
+            else:
+                current_section["body"].append(line)
+        if current_section["body"] or current_section["title"] is not None:
+            sections.append(current_section)
+
+        panels = []
+        for sec in sections:
+            title = sec["title"]
+            if title == "usage":
+                usage_panel = Panel(
+                    sec['body'][0],
+                    title="[bold yellow]Uso[/bold yellow]",
+                    border_style="yellow",
+                )
+                panels.append(usage_panel)
+            elif title:
+                body_lines = []
+                for ln in sec["body"]:
+                    stripped = ln.strip()
+                    if stripped.startswith('-') or stripped.startswith('  -'):
+                        parts = ln.split('  ', 1)
+                        if len(parts) == 2 and parts[1].strip():
+                            body_lines.append(f"  [green]{parts[0].strip()}[/green]    {parts[1].strip()}")
+                        else:
+                            body_lines.append(f"  [green]{stripped}[/green]")
+                    else:
+                        body_lines.append(ln)
+                body_text = '\n'.join(body_lines) if body_lines else "[dim]—[/dim]"
+                sec_panel = Panel(
+                    body_text,
+                    title=f"[bold cyan]{title}[/bold cyan]",
+                    border_style="cyan",
+                )
+                panels.append(sec_panel)
+
+        from rich.console import Group
+        _console.print(Panel(
+            Group(*panels),
+            title="[bold]ISLA LP Solver[/bold]",
+            border_style="bright_blue",
+        ))
+
+    def format_help(self):
+        return argparse.ArgumentParser.format_help(self)
+
+
 def create_parser() -> argparse.ArgumentParser:
     """Crea el parser de argumentos con secciones organizadas."""
-    parser = argparse.ArgumentParser(
-        prog='lp-solver',
+    parser = _RichArgumentParser(
+        prog='isla',
         description='Solucionador de Programacion Lineal - Soporta LP/MILP con Gurobi y otros motores',
         formatter_class=CustomHelpFormatter,
         epilog="""\
@@ -104,10 +174,20 @@ Para mas ayuda sobre un modo concreto, combine las opciones:
 
     # --- General / Informacion ---
     info_group = parser.add_argument_group('Informacion')
+    class _RichVersionAction(argparse.Action):
+        def __init__(self, option_strings, dest, version=None, **kwargs):
+            self.version = version
+            super().__init__(option_strings, dest, nargs=0, **kwargs)
+
+        def __call__(self, parser, namespace, values, option_string=None):
+            _print_banner()
+            _console.print(f"[bold cyan]isla[/bold cyan] [green]{self.version}[/green]")
+            parser.exit()
+
     info_group.add_argument(
         '--version', '-V',
-        action='version',
-        version=f'%(prog)s {_version()}',
+        action=_RichVersionAction,
+        version=f'{_version()}',
         help='Mostrar la version del programa y salir'
     )
     info_group.add_argument(
@@ -249,12 +329,21 @@ Para mas ayuda sobre un modo concreto, combine las opciones:
     return parser
 
 
+def _print_banner() -> None:
+    """Muestra el banner de bienvenida del CLI."""
+    _console.print(Panel.fit(
+        "[bold cyan]ISLA LP Benchmark[/bold cyan]\n"
+        f"[green]v{_version()}[/green] - Solucionador de Programacion Lineal\n"
+        "[dim]Soporta LP/MILP con 10+ motores de optimizacion[/dim]",
+        border_style="cyan",
+    ))
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     """Punto de entrada principal."""
     parser = create_parser()
     args = parser.parse_args(argv)
 
-    # Configurar nivel de logging global
     if args.log_level is not None:
         from src.utils.logging import LogLevel, set_default_level
         set_default_level(LogLevel[args.log_level])
@@ -271,6 +360,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         all_info = SolverRegistry.list_all_info()
         available = SolverRegistry.list_solvers(available_only=True)
 
+        _print_banner()
         table = Table(title="Solvers Registrados")
         table.add_column("Solver", style="cyan")
         table.add_column("Estado", justify="center")
@@ -332,6 +422,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         else:
             return solve.solve_single(Path(args.input), **kwargs)
 
+    _print_banner()
     parser.print_help()
     return 0
 
@@ -339,7 +430,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 def _parse_only(path: Path, verbose: bool = False) -> int:
     """Solo parsea y muestra informacion del problema sin resolver."""
     if not path.exists():
-        print(f"Error: Archivo no encontrado: {path}")
+        _console.print(f"[red]Error:[/red] Archivo no encontrado: {path}")
         return 1
 
     try:
@@ -352,33 +443,40 @@ def _parse_only(path: Path, verbose: bool = False) -> int:
         if '---' in content:
             parser = MultiLPParser(content)
             problems = parser.parse_all()
-            print(f"\n  Problemas encontrados: {len(problems)}")
+            _console.print(Panel(
+                f"[bold cyan]Problemas encontrados:[/bold cyan] {len(problems)}",
+                border_style="blue",
+            ))
             for i, p in enumerate(problems, 1):
-                print(f"\n  --- Problema {i} ---")
-                print(f"  Variables: {len(p.variables)}")
-                print(f"  Restricciones: {len(p.constraints)}")
-                print(f"  Tipo: {p.sense}")
+                tbl = Table(title=f"Problema {i}", show_header=False)
+                tbl.add_column("Atributo", style="cyan")
+                tbl.add_column("Valor", style="green")
+                tbl.add_row("Variables", str(len(p.variables)))
+                tbl.add_row("Restricciones", str(len(p.constraints)))
+                tbl.add_row("Tipo", p.sense)
                 lp = LPBuilder(p).build()
                 n_rows = lp.constraints.shape[0] if hasattr(lp, 'constraints') else '?'
                 n_cols = lp.objective.shape[0] if hasattr(lp, 'objective') else '?'
-                print(f"  Matriz: {n_rows}x{n_cols} (Polars LP)")
-            print()
+                tbl.add_row("Matriz", f"{n_rows}x{n_cols} (Polars LP)")
+                _console.print(tbl)
         else:
             parser_obj = LPParser(content)
             problem = parser_obj.parse()
             lp = LPBuilder(problem).build()
-            print(f"\n  Problema: {path.name}")
-            print(f"  Variables: {len(problem.variables)}")
-            print(f"  Restricciones: {len(problem.constraints)}")
-            print(f"  Tipo: {problem.sense}")
+            tbl = Table(title=f"Problema: {path.name}", show_header=False)
+            tbl.add_column("Atributo", style="cyan")
+            tbl.add_column("Valor", style="green")
+            tbl.add_row("Variables", str(len(problem.variables)))
+            tbl.add_row("Restricciones", str(len(problem.constraints)))
+            tbl.add_row("Tipo", problem.sense)
             n_rows = lp.constraints.shape[0] if hasattr(lp, 'constraints') else '?'
             n_cols = lp.objective.shape[0] if hasattr(lp, 'objective') else '?'
-            print(f"  Matriz: {n_rows}x{n_cols} (Polars LP)")
-            print(f"  Variables: {', '.join(problem.variables)}")
-            print()
+            tbl.add_row("Matriz", f"{n_rows}x{n_cols} (Polars LP)")
+            tbl.add_row("Variables", ", ".join(problem.variables))
+            _console.print(tbl)
         return 0
     except Exception as e:
-        print(f"Error al parsear: {e}")
+        _console.print(f"[red]Error al parsear:[/red] {e}")
         if verbose:
             import traceback
             traceback.print_exc()
