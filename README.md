@@ -1,4 +1,4 @@
-# ISLA LP Benchmark v1.2.1
+# ISLA LP Benchmark v1.8.2
 
 ## Resumen del Proyecto
 
@@ -37,15 +37,24 @@ Esta herramienta esta disenada para uso educativo, investigacion y evaluacion de
 
 | Caracteristica | Descripcion |
 |-------------|-----------|
-| Multiples Solvers | Comparativa de HiGHS, GLPK, CBC y Gurobi |
+| Multiples Solvers | Comparativa de 10+ solvers (Gurobi, HiGHS, GLPK, CBC, etc.) |
 | Modo Benchmark | Comparacion justa con warmup y metricas detalladas |
-| Metricas Detalladas | Tiempo, iteraciones, memoria, nodos |
+| Ejecucion Aislada | ParallelBenchmarkRunner con procesos independientes y timeout |
+| Metricas MILP | mip_gap, nodes_per_second, cuts_generated, presolve_reduction |
 | Warmup | Ejecuciones de calentamiento para fair benchmarking |
-| Reportes PDF | Comparaciones visuales con graficos |
-| Exportacion | CSV, JSON, Markdown |
-| CLI Modular | Flags configurables |
+| Reportes PDF | Comparaciones visuales con graficos, tablas de sensibilidad, analisis estadistico |
+| Perfiles Dolan-More | Performance profiles con datos reales |
+| Analisis Estadistico | Test de Friedman, post-hoc Nemenyi, ANOVA |
+| Cache de Problemas | ProblemCache con hash SHA256 y TTL 24h |
+| Analisis de Sensibilidad | Rangos objetivo, RHS y limites via APIs nativas |
+| MatrixConverter | Conversion unificada de LinearProblem a formatos de solver |
+| Exportacion | CSV, JSON, Markdown, HTML |
+| CLI Modular | Flags configurables y autocomplete de shell |
+| CLI con Rich | Interfaz completamente colorida con tablas, paneles, sintaxis resaltada, barras de progreso, banner de bienvenida y ayuda con secciones en paneles |
+| Modo REPL Interactivo | Exploracion dinamica de problemas y solvers con soporte multiproblema (load-multi, problems, select, benchmark) |
+| Interfaz Web | FastAPI + HTMX para resolucion y benchmarking via navegador |
 | Registro de Solvers | Deteccion automatica de disponibilidad |
-| Docker | Imagen Alpine ligera |
+| Docker | Imagen Python 3.12 Slim |
 
 ---
 
@@ -55,11 +64,13 @@ Esta herramienta esta disenada para uso educativo, investigacion y evaluacion de
 
 ```mermaid
 flowchart TB
-    subgraph CLI["Capa de Presentacion - CLI"]
+    subgraph CLI["Capa de Presentacion - CLI & Web"]
         direction TB
         MAIN["main.py - Punto de entrada"]
         BENCH["benchmark.py - Handler benchmark"]
         SOLVE["solve.py - Handler resolucion"]
+        REPL["repl.py - Interfaz Interactiva"]
+        WEB["app.py - Interfaz Web FastAPI"]
     end
     
     subgraph SOLVER["Capa de Solucion"]
@@ -97,17 +108,21 @@ flowchart TB
         direction TB
         BUILD["builder.py - LPBuilder"]
         POLARS["matrix.py - PolarsLP"]
+        CONV["converter.py - MatrixConverter"]
     end
     
     subgraph ANALYSIS["Capa de Analisis"]
         direction TB
         AN["analysis.py - Reporte single"]
         BENCHREP["benchmark_report.py - Reporte benchmark"]
+        SENS["sensitivity.py - SensitivityAnalysis"]
+        STATS["statistics.py - Pruebas estadisticas"]
     end
     
     subgraph VIS["Capa de Visualizacion"]
         direction TB
         VISUAL["visualization.py - Graficos 2D"]
+        BENCHPLOTS["benchmark_plots.py - Benchmark plots"]
     end
     
     subgraph UTILS["Capa de Utilidades"]
@@ -115,6 +130,7 @@ flowchart TB
         VAL["validation.py - Validacion"]
         EXP["exporter.py - Exportacion"]
         LOG["logging.py - Registro"]
+        CACHE["cache.py - ProblemCache"]
     end
     
     CLI --> PARSER
@@ -134,13 +150,13 @@ flowchart TB
 flowchart LR
     subgraph ENTRADA["Entrada"]
         direction TB
-        TXT["Archivo .txt"]
-        LP["Archivo .lp"]
+        TXT["Archivo .txt / .lp"]
+        MPS["Archivo .mps"]
     end
     
     subgraph PARSEO["Parsing"]
         direction TB
-        PARSER["LPParser / CPLEXParser"]
+        PARSER["LPParser / CPLEXParser / MPSParser"]
         VALID["LPValidator - Validacion"]
     end
     
@@ -223,13 +239,13 @@ stateDiagram-v2
 |------|-----------|---------|-------------|
 | Presentacion | main.py, cli/ | Punto de entrada CLI | Gestiona argumentos y coordina ejecucion |
 | Solucion | solver/ | Múltiples implementaciones | Gurobi, HiGHS, GLPK, CBC, SCIP, ECOS, OSQP, CVXOPT, SCS, Ipopt |
-| Benchmark | benchmark.py | BenchmarkRunner | Orquestador con warmup y métricas |
-| Análisis | analysis.py, benchmark_report.py | Reportes PDF | Generación de informes académicos |
-| Visualización | visualization.py | Gráficos 2D | Región factible matplotlib |
+| Benchmark | benchmark.py, parallel_benchmark.py | BenchmarkRunner, ParallelBenchmarkRunner | Orquestador con warmup y ejecución aislada |
+| Análisis | analysis.py, benchmark_report.py, statistics.py | Reportes PDF, analisis estadístico | Generación de informes académicos, Friedman, Nemenyi, ANOVA |
+| Visualización | visualization.py, benchmark_plots.py | Gráficos 2D | Región factible matplotlib, perfiles Dolan-Moré |
 | Construcción | matrix/builder.py | LPBuilder | Convierte a estructuras Polars |
 | Parsing | parser/ | Parsers | Interpreta archivos de entrada |
-| Core | problem.py, constraint.py, bound.py, solution.py | Estructuras fundamentales | Define tipos base |
-| Utilidades | validation.py, exporter.py, logging.py | Funciones auxiliares | Helpers del sistema |
+| Core | problem.py, constraint.py, bound.py, solution.py | Estructuras fundamentales | Define tipos base, NumericalQuality con métricas MILP |
+| Utilidades | validation.py, exporter.py, logging.py, cache.py | Funciones auxiliares | Helpers del sistema, ProblemCache con SHA256 |
 
 ### 2.6 Tabla de Clases Principales
 
@@ -251,6 +267,14 @@ stateDiagram-v2
 | LinearVisualization | visualization/visualization.py | Gráfico 2D | plot() |
 | LPValidator | utils/validation.py | Validador | validate() |
 | LPExporter | utils/exporter.py | Exportador | export() |
+| MatrixConverter | matrix/converter.py | Conversion a formatos solver | to_highs(), to_glpk(), to_cvxopt(), to_osqp(), to_scipy() |
+| SensitivityAnalysis | analysis/sensitivity.py | Analisis de sensibilidad nativo | extract_highs_sensitivity(), extract_glpk_sensitivity(), extract_gurobi_sensitivity() |
+| ParallelBenchmarkRunner | solver/parallel_benchmark.py | Ejecucion aislada por proceso | run(), get_summary(), print_summary() |
+| ProblemCache | utils/cache.py | Cache con hash SHA256 y TTL | get_parsed(), set_parsed(), get_result(), set_result() |
+| performance_profile | analysis/benchmark_results.py | Perfiles Dolan-More | performance_profile() |
+| friedman_test | analysis/statistics.py | Test de Friedman | returns Q, p-valor |
+| nemenyi_posthoc | analysis/statistics.py | Post-hoc Nemenyi | returns CD, matrix |
+| anova_one_way | analysis/statistics.py | ANOVA de una via | returns F, p-valor |
 
 ---
 
@@ -326,11 +350,7 @@ flowchart TB
     IMPLEMENTATIONS --> CVXOPT
     IMPLEMENTATIONS --> SCS
     IMPLEMENTATIONS --> IPOPT
-    IMPLEMENTATIONS --> ALPINE
-    IMPLEMENTATIONS --> BONMIN
-    IMPLEMENTATIONS --> COUENNE
-    IMPLEMENTATIONS --> SYMPHONY
-    IMPLEMENTATIONS --> QSOPTEX
+
 ```
 
 ### 3.3 Detalles de Implementacion
@@ -379,22 +399,25 @@ python -m src.cli --list-solvers
 python -m src.cli -l
 ```
 
-Salida (ejemplo en entorno con modulos instalados):
+Salida (ejemplo en terminal con Rich):
 ```
+┌────────────────────────────────────────────┐
+│            ISLA LP Benchmark               │
+│     v1.8.2 - Solucionador de PL            │
+│  Soporta LP/MILP con 10+ motores           │
+└────────────────────────────────────────────┘
 
-  Solvers registrados
-  --------------------------------------------------
-    gurobi                DISPONIBLE
-    highs                 NO DISPONIBLE  (highspy not available: ...)
-    glpk                  NO DISPONIBLE  (swiglpk not available: ...)
-    cbc                   DISPONIBLE
-    scip                  DISPONIBLE
-    ecos                  DISPONIBLE
-    osqp                  DISPONIBLE
-    cvxopt                DISPONIBLE
-    scs                   DISPONIBLE
-    ipopt                 DISPONIBLE
-  11/11 solvers disponibles: gurobi, highs, glpk, cbc, scip, ecos, osqp, cvxopt, scs, ipopt
+┌────────────────────────────────────────────┐
+│              Solvers Registrados           │
+├──────────┬──────────┬──────────────────────┤
+│ Solver   │ Estado   │ Detalle             │
+├──────────┼──────────┼──────────────────────┤
+│ gurobi   │ DISPONIBLE│                    │
+│ highs    │NO DISP.  │ highspy no disp.    │
+│ ...      │ ...      │ ...                 │
+└──────────┴──────────┴──────────────────────┘
+
+10/11 solvers disponibles: gurobi, cbc, scip, ...
 ```
 
 ---
@@ -403,7 +426,7 @@ Salida (ejemplo en entorno con modulos instalados):
 
 | Requisito | Version Minima | Descripcion |
 |----------|---------------|-------------|
-| Python | 3.14 | Lenguaje de programacion |
+| Python | 3.12 | Lenguaje de programacion |
 | Memoria RAM | 4 GB (8 GB recomendado) | Para ejecucion de solvers |
 | Espacio disco | 500 MB | Para instalacion de dependencias |
 
@@ -411,7 +434,7 @@ Salida (ejemplo en entorno con modulos instalados):
 
 | Paquete | Version | Proposito |
 |---------|---------|-----------|
-| gurobipy | >=13.0.1 | Optimizador comercial de PL/MILP (opcional) |
+| gurobipy | >=13.0.1 | Optimizador comercial de PL/MILP |
 | polars | >=1.39.0 | DataFrames de alto rendimiento |
 | matplotlib | >=3.9.0 | Generacion de graficos 2D |
 | numpy | >=2.4.3 | Computacion numerica |
@@ -420,11 +443,19 @@ Salida (ejemplo en entorno con modulos instalados):
 | highspy | >=1.14.0 | Solver HiGHS |
 | swiglpk | >=5.0.13 | Solver GLPK |
 | pulp | >=3.3.0 | Solver CBC |
-| ecos | >=2.0.0 | Solver conico ECOS (LP/SOCP) |
-| osqp | >=0.6.0 | Solver de optimizacion cuadratica OSQP |
-| cvxopt | >=1.3.0 | Solver de programacion convexa CVXOPT |
-| scs | >=3.0.0 | Solver conico de punto fijo SCS |
-| casadi | >=3.7.0 | Interfaz Python para Ipopt NLP |
+| pyscipopt | >=6.1.0 | Solver SCIP (MILP) |
+| ecos | >=2.0.14 | Solver conico ECOS (LP/SOCP) |
+| osqp | >=1.1.1 | Solver de optimizacion cuadratica OSQP |
+| cvxopt | >=1.3.3 | Solver de programacion convexa CVXOPT |
+| scs | >=3.2.11 | Solver conico de punto fijo SCS |
+
+### Dependencias Opcionales
+
+| Paquete | Extra | Proposito |
+|---------|-------|-----------|
+| casadi | ipopt | Solver de punto interior Ipopt (NLP) |
+
+Instalar con: `pip install isla-lp-benchmark[ipopt]` o `poetry install --extras ipopt`
 
 
 ---
@@ -495,6 +526,7 @@ flowchart TB
 | Comando | Descripcion | Salida |
 |---------|-------------|--------|
 | `python -m src.cli problema.txt` | Resolver problema simple | Consola |
+| `python -m src.cli problema.mps` | Resolver problema MPS | Consola |
 | `python -m src.cli problema.txt --pdf` | Generar reporte PDF | archivo.pdf |
 | `python -m src.cli problema.txt --visualize` | Generar grafico 2D | archivo.png |
 | `python -m src.cli problema.txt --verbose` | Salida detallada | Consola |
@@ -503,6 +535,8 @@ flowchart TB
 | `python -m src.cli problema.txt --json` | Salida estructurada JSON | stdout |
 | `python -m src.cli problema.txt --no-solve` | Solo parsear (diagnostico) | Consola |
 | `python -m src.cli --version` | Mostrar version del programa | Consola |
+| `python -m src.cli --repl` | Iniciar modo interactivo (REPL) | Interactiva |
+| `python -m src.cli --generate-problem` | Generar problema sintético | Consola/Archivo |
 
 ### 6.3 Flags CLI Completos
 
@@ -528,6 +562,9 @@ flowchart TB
 | --output | -o | path | None | Ruta de salida (visualizacion/PDF/JSON) |
 | --output-dir | -O | path | None | Directorio de salida (benchmark) |
 | --output-csv | | path | None | Exportar resultados a CSV |
+| --log-level | | str | "WARNING" | Nivel de log: DEBUG/INFO/WARNING/ERROR/CRITICAL |
+| --repl | | flag | False | Iniciar modo REPL interactivo |
+| --install-completion | | flag | False | Instalar autocompletado para bash/zsh |
 
 ### 6.4 Combinaciones de Comandos
 
@@ -1011,6 +1048,7 @@ isla-lp-benchmark/
 │   │   ├── __main__.py    # Punto de entrada
 │   │   ├── benchmark.py    # Handler benchmark
 │   │   ├── solve.py        # Handler resolucion
+│   │   ├── repl.py         # Modo REPL interactivo
 │   │   └── __init__.py    # Utilidades sistema
 │   ├── solver/
 │   │   ├── base.py        # BaseSolver, SolverRegistry
@@ -1019,11 +1057,15 @@ isla-lp-benchmark/
 │   │   ├── glpk_solver.py  # Solver GLPK
 │   │   ├── cbc.py         # Solver CBC
 │   │   ├── benchmark.py    # BenchmarkRunner
+│   │   ├── parallel_benchmark.py  # ParallelBenchmarkRunner
 │   │   └── __init__.py
 │   ├── analysis/
 │   │   ├── analysis.py         # Reporte single
 │   │   ├── benchmark_report.py # Reporte PDF benchmark
-│   │   ├── benchmark_results.py # Visualizacion
+│   │   ├── benchmark_results.py # Resultados y perfiles Dolan-More
+│   │   ├── statistics.py       # Pruebas estadisticas (Friedman, Nemenyi, ANOVA)
+│   │   ├── multi_analysis.py   # Reporte multi-problema
+│   │   ├── sensitivity.py      # SensitivityAnalysis
 │   │   └── __init__.py
 │   ├── parser/
 │   │   ├── lp_parser.py    # Parser formato propio
@@ -1039,6 +1081,7 @@ isla-lp-benchmark/
 │   ├── matrix/
 │   │   ├── builder.py     # LPBuilder
 │   │   ├── matrix.py      # PolarsLP
+│   │   ├── converter.py   # MatrixConverter
 │   │   └── __init__.py
 │   ├── visualization/
 │   │   ├── visualization.py
@@ -1047,6 +1090,7 @@ isla-lp-benchmark/
 │       ├── validation.py
 │       ├── exporter.py
 │       ├── logging.py
+│       ├── cache.py       # ProblemCache
 │       └── __init__.py
 ├── docs/
 │   ├── USER_GUIDE.md       # Guia de usuario
@@ -1513,7 +1557,30 @@ DELIMITERS = ['---', '===', '___']
 | _split_by_delimiter | _split_by_delimiter(txt) -> List[str] | Divide usando delimiters |
 | count_problems | count_problems(txt) -> int | Cuenta problemas sin parsear |
 
-### 10.5 Modulo Core (src/core/)
+#### 10.4.5 Parser MPS (mps_parser.py)
+
+**Proposito**: Soporta el formato industrial MPS (Mathematical Programming System) para problemas de optimizacion lineal.
+
+**Clase Principal**: MPSParser
+
+**Flujo de Parseo**:
+1. Identifica si el formato es Fijo (Fixed) o Libre (Free).
+2. Lee la seccion `ROWS` para definir el numero de restricciones.
+3. Lee la seccion `COLUMNS` para mapear coeficientes a variables y restricciones.
+4. Lee `RHS` para los lados derechos.
+5. Lee `BOUNDS` para los limites de las variables.
+6. Procesa marcadores `INTORG`/`INTEND` para definir variables enteras.
+
+| Metodo | Firma | Descripcion |
+|--------|-------|-------------|
+| parse | parse(text: str) -> LinearProblem | Parsea texto MPS y retorna problema |
+| parse_file | parse_file(path: str) -> LinearProblem | Lee archivo y parsea |
+| _parse_columns | _parse_columns(lines) | Procesa la seccion de columnas |
+| _parse_bounds | _parse_bounds(lines) | Procesa la seccion de limites |
+
+#### 10.4.6 Parser CPLEX/LP (cplex_parser.py)
+
+**Proposito**: Parsea problemas en formato LP estandar de CPLEX.
 
 #### 10.5.1 Diagrama de Relaciones
 
@@ -1982,7 +2049,44 @@ analysis = MultiLPAnalysis(results)  # results: MultiSolverResult
 analysis.generate_pdf("output/multi_report.pdf")
 ```
 
-#### 10.7.5 ResultsExporter y export_benchmark_results (benchmark_results.py)
+#### 10.7.5 SensitivityAnalysis (sensitivity.py)
+
+**Proposito**: Extrae analisis de sensibilidad real desde APIs nativas de los solvers.
+
+**Clase Principal**: `SensitivityAnalysis`
+
+**Clase de Datos**: `SensitivityRange`
+
+| Atributo | Tipo | Descripcion |
+|----------|------|-------------|
+| objective_ranges | list[dict] | Rangos de coeficientes objetivo por variable |
+| rhs_ranges | list[dict] | Rangos de lados derechos por restriccion |
+| bound_ranges | list[dict] | Rangos de limites de variables |
+| shadow_prices | dict[str, float] | Precios sombra por restriccion |
+| reduced_costs | dict[str, float] | Costos reducidos por variable |
+
+**Extractores**:
+
+| Metodo | Solver | API Nativa |
+|--------|--------|-----------|
+| extract_gurobi_sensitivity | Gurobi | `model.getAttr("VBasis")`, `model.getAttr("CBasis")` |
+| extract_highs_sensitivity | HiGHS | `hp.getRanging()` |
+| extract_glpk_sensitivity | GLPK | `glp_get_row_dual()`, `glp_get_col_dual()` |
+
+**Uso**:
+```python
+from src.analysis.sensitivity import SensitivityAnalysis
+
+# Extraer sensibilidad desde el solver
+sensitivity = SensitivityAnalysis.extract_highs_sensitivity(hp)
+solution.sensitivity = sensitivity
+
+# Rangos disponibles
+for r in sensitivity.objective_ranges:
+    print(f"{r.name}: [{r.lower:.4f}, {r.upper:.4f}]")
+```
+
+#### 10.7.6 ResultsExporter y export_benchmark_results (benchmark_results.py)
 
 **Proposito**: Exporta resultados de benchmarking a multiples formatos.
 
@@ -2799,81 +2903,84 @@ El sistema incluye archivos para containerizacion con Docker.
 ```mermaid
 flowchart TB
     subgraph BUILD["Build"]
-        DOCKERFILE["Dockerfile"] --> IMAGE["Python 3.14 Alpine"]
-        IMAGE --> SOLVERS["Install solvers"]
+        DOCKERFILE["Dockerfile"] --> IMAGE["Python 3.12 Slim"]
+        IMAGE --> SOLVERS["Install solvers + deps"]
     end
     
     subgraph RUN["Runtime"]
         SOLVERS --> CONTAINER["Container"]
-        CONTAINER --> CMD["Command"]
+        CONTAINER --> CMD["python -m src.cli"]
     end
     
-    CMD -->|"python main.py"| OUTPUT["Output"]
+    CMD -->|"python -m src.cli"| OUTPUT["Output"]
 ```
 
 ### 18.2 Comandos Docker
 
 | Comando | Descripcion | Ejemplo |
 |---------|-------------|--------|
-| build | Construir imagen | `docker build -t lp-solver .` |
-| run | Ejecutar contenedor | `docker run lp-solver problema.txt` |
+| build | Construir imagen | `docker build -t isla-lp-benchmark .` |
+| run | Ejecutar contenedor | `docker run isla-lp-benchmark data/problem.txt` |
 | compose | Orquestar servicios | `docker compose run benchmark` |
-| exec | Ejecutar en contenedor | `docker exec -it lp-solver bash` |
+| exec | Ejecutar en contenedor | `docker exec -it isla-lp-benchmark bash` |
 
 ### 18.3 Construir Imagen
 
 ```bash
-docker build -t lp-solver .
+docker build -t isla-lp-benchmark .
 ```
 
 **Args de build**:
 | Arg | Default | Descripcion |
 |-----|---------|-------------|
-| PYTHON_VERSION | 3.14 | Version de Python |
-| ALPINE_VERSION | 3.20 | Version de Alpine |
+| PYTHON_VERSION | 3.12 | Version de Python |
 
 ### 18.4 Ejecutar Contenedor
 
 ```bash
 # Listar solvers
-docker run lp-solver --list-solvers
+docker run isla-lp-benchmark --list-solvers
 
 # Benchmark basico
-docker run lp-solver --benchmark --solvers highs glpk --repetitions 1 data/problem.txt
+docker run isla-lp-benchmark --benchmark --solvers highs glpk --repetitions 1 data/problem.txt
 
 # Resolver problema
-docker run lp-solver data/problem.txt --pdf
+docker run isla-lp-benchmark data/problem.txt --pdf
 ```
 
 ### 18.5 docker-compose.yml
 
 ```yaml
 services:
-  lp-solver:
+  isla-lp:
     build: .
     volumes:
       - ./data:/app/data:ro
-    working_dir: /app
+      - ./output:/app/output
+    environment:
+      - GRB_LICENSE_FILE=/app/gurobi.lic
+    command: data/problem.txt
 
   benchmark:
     build: .
-    command: python main.py --benchmark --solvers highs glpk cbc --repetitions 3 /app/data/problem.txt
     volumes:
       - ./data:/app/data
       - ./output:/app/output
-    working_dir: /app
+    command: --benchmark --solvers highs glpk cbc --repetitions 3 data/problem.txt
 ```
 
 ### 18.6 Caracteristicas de la Imagen
 
 | Caracteristica | Valor |
 |---------------|-------|
-| Base | Python 3.14 Alpine Linux |
-| Gestor | Poetry |
+| Base | Python 3.12 Slim |
+| Gestor | pip + requirements.txt |
 | Usuario | No-root (security) |
-| Tamano | ~200 MB |
-| Solvers incluidos | HiGHS, GLPK |
-| Gurobi | Requiere licencia |
+| Tamano | ~300 MB |
+| Solvers incluidos | HiGHS, GLPK, CBC (system) |
+| Solvers Python | ECOS, OSQP, CVXOPT, SCS, SCIP |
+| Gurobi | Requiere licencia (`GRB_LICENSE_FILE`) |
+| Ipopt | Opcional (`pip install isla-lp-benchmark[ipopt]` o `poetry install --extras ipopt`) |
 
 ### 18.7 Puertos y Volumenes
 
@@ -2882,6 +2989,7 @@ services:
 | Volume | /app/data | Datos de entrada (read-only) |
 | Volume | /app/output | Resultados |
 | Workdir | /app | Directorio de trabajo |
+| Entrypoint | python -m src.cli | Punto de entrada CLI |
 
 ---
 
@@ -2901,30 +3009,65 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## 20. Version
 
-**Version actual: 1.2.0**
+**Version actual: 1.8.1**
+
+### Changelog v1.8.2
+
+- CLI con Rich mejorado: ayuda con secciones en paneles (`_RichArgumentParser.print_help()`) y banner de bienvenida (`_print_banner()`)
+- `_suppress_stdout()` en benchmark: silencia salida C (fd 1/2) y Python (sys.stdout/stderr) para eliminar "Thread-1 exceptions"
+- Ipopt banner silenciado con `opts["ipopt.sb"] = "yes"` en `src/solver/ipopt_solver.py`
+- Import lazy de gurobipy para evitar `ModuleNotFoundError` prematuro
+- `np.errstate(all='ignore')` en `benchmark_report.py` para suprimir RuntimeWarning
+- `print_summary()` ahora retorna `str` en lugar de imprimir directamente
+- Soporte multiproblema en REPL: comandos `load-multi`, `problems`, `select`, `benchmark`
+- 675 tests pasando, 9 skipped, ruff check limpio
+
+### Changelog v1.7.0
+
+- Soporte para formato MPS estandar de industria (`src/parser/mps_parser.py`, 31 tests)
+- `ProblemGenerator` para creacion de problemas sinteticos de prueba
+- Exportacion a formato MPS via `LPExporter` (funcion `export_mps()`)
+- Correccion de bugs en deteccion de marcadores INTORG/INTEND en MPS
+- Extension de cobertura de parser LP: 89% (test_lp_parser.py)
+
+### Changelog v1.6.0
+
+- `ParallelBenchmarkRunner` con `ProcessPoolExecutor`: ejecucion aislada por proceso, timeout, medicion de memoria psutil
+- `ProblemCache` con hash SHA256: cache de problemas parseados (pickle) y resultados (JSON) con TTL 24h
+- `NumericalQuality` extendido con metricas MILP: `mip_gap`, `first_feasible_time`, `nodes_per_second`, `cuts_generated`, `presolve_reduction`
+- Metricas MILP extraidas de Gurobi (MIPGap, CutCount), HiGHS (mip_gap, node_count), SCIP (getGap, getNNodes), CBC (nodes_per_second)
+- Perfiles de rendimiento Dolan-More: funcion `performance_profile()` y grafico `plot_performance_profile()` con datos reales
+- Pruebas estadisticas: `friedman_test()`, `nemenyi_posthoc()`, `anova_one_way()` en nuevo modulo `statistics.py`
+- Seccion de analisis estadistico en reportes PDF (Friedman, ranking, Nemenyi, ANOVA)
+- 277 tests pasando, ruff check limpio
+
+### Changelog v1.5.0
+
+- `MatrixConverter` (5 metodos estaticos: `to_highs`, `to_glpk`, `to_cvxopt`, `to_osqp`, `to_scipy`)
+- Solvers HiGHS, GLPK, CVXOPT, OSQP refactorizados para delegar conversion a `MatrixConverter`
+- `SensitivityAnalysis` con extractores nativos para HiGHS, GLPK y Gurobi
+- `SensitivityRange` dataclass: rangos objetivo, RHS, precios sombra, costos reducidos
+- Tablas numericas de sensibilidad en PDF (rangos objetivo, RHS, limites)
+- 89 errores de ruff corregidos (E722, E741, F401, F541, F841)
+- 277 tests pasando (246 originales + 31 de MatrixConverter)
+
+### Changelog v1.4.0
+
+- Infraestructura Docker migrada a `python:3.12-slim` con `coinor-cbc` preinstalado
+- `docker-compose.yml` actualizado con servicios `isla-lp`, `solve`, `benchmark`, `list-solvers`
+- Entrypoint CLI `isla` registrado en `pyproject.toml` (`[project.scripts]`)
+
+### Changelog v1.3.0
+
+- Suite de pruebas exhaustiva: >=90% coverage en todos los modulos core
+- Eliminacion de todos los `except: pass` reemplazados por logging estructurado
+- Sistema de logging profesional con flag `--log-level`
+- Autodeteccion de licencia Gurobi y mensaje informativo
+- Correccion de acceso a duales en HiGHS
+- Limpieza de dependencias: casadi movido a extra opcional ipopt
+- Expansión de suite de pruebas: 10 a 246 tests con cobertura total
 
 ### Changelog v1.2.0
-
-- 10 nuevos solvers implementados (total: 15 solvers disponibles)
-- Nuevos solvers LP/MILP nativos:
-  - ECOS (ecos) - Solver conico embebido
-  - OSQP (osqp) - Solver de optimizacion cuadratica
-  - CVXOPT (cvxopt) - Solver de programacion convexa
-  - SCS (scs) - Solver conico de punto fijo
-  - Ipopt (casadi) - Solver de punto interior para optimizacion no lineal
-- Nuevas flags CLI con shortcuts organizados por seccion
-- --version, -V: Mostrar version del programa
-- --json, -j: Salida estructurada en formato JSON
-- --quiet, -q: Suprimir salida no esencial
-- --timeout, -T: Limite de tiempo por solver (segundos)
-- --no-solve, -n: Solo parsear el problema sin resolver
-- Shortcuts: -l (--list-solvers), -a (--all-solvers), -S (--solvers), -C (--plot-comparison), -O (--output-dir)
-- Ayuda reorganizada en grupos: Informacion, Seleccion de solver, Resolucion, Benchmark, Salida
-- Timeout propagado a todos los solvers via SolverConfig + BenchmarkConfig
-- Diagnostico --no-solve con info de variables, restricciones y matriz Polars
-- Cobertura completa de 15 solvers con manejo graceful de errores de importacion
-
-### Changelog v1.1.0
 
 - Plataforma de benchmark multi-solver
 - Solvers: HiGHS (native), GLPK (native), CBC (PuLP), Gurobi, SCIP (PySCIPOpt)
@@ -2939,6 +3082,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - Constantes centralizadas (constants.py)
 - Docker Alpine
 - Documentacion completa
+
 
 ---
 

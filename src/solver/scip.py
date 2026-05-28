@@ -3,7 +3,6 @@ SCIP Solver for linear and mixed-integer programming.
 Implements using PySCIPOpt (interface to SCIP).
 """
 
-import time
 from typing import Optional
 
 import pyscipopt as scip
@@ -37,7 +36,7 @@ class SCIPSolver(BaseSolver):
     def solver_version(self) -> str:
         try:
             return scip.__version__
-        except:
+        except Exception:
             return "SCIP"
     
     @property
@@ -54,8 +53,6 @@ class SCIPSolver(BaseSolver):
                 objective_value=None,
                 variables={},
             )
-        
-        start_time = time.perf_counter()
         
         try:
             model = scip.Model("LP")
@@ -120,8 +117,6 @@ class SCIPSolver(BaseSolver):
             
             model.optimize()
             
-            solve_time = time.perf_counter() - start_time
-            
             status_map = {
                 "optimal": "OPTIMAL",
                 "infeasible": "INFEASIBLE",
@@ -161,8 +156,9 @@ class SCIPSolver(BaseSolver):
                         rc = model.getRedcostVar(var_obj)
                         if abs(rc) > 1e-10:
                             reduced_costs[var_name] = rc
-                except:
-                    pass
+                except Exception as e:
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"No se pudieron extraer duales/reduced costs de SCIP: {e}")
                 
                 self._solution = Solution(
                     status=status,
@@ -172,6 +168,7 @@ class SCIPSolver(BaseSolver):
                     reduced_costs=reduced_costs if reduced_costs else None,
                     iterations=self._iterations,
                     nodes=self._nodes,
+                    numerical_quality=self._build_numerical_quality(model),
                 )
             else:
                 self._solution = Solution(
@@ -188,6 +185,22 @@ class SCIPSolver(BaseSolver):
                 objective_value=None,
                 variables={},
             )
+    
+    def _build_numerical_quality(self, model):
+        """Construye NumericalQuality con metricas MILP de SCIP."""
+        try:
+            from ..core import NumericalQuality
+            runtime = max(model.getTotalTime(), 0.001)
+            nodes = model.getNNodes()
+            return NumericalQuality(
+                mip_gap=float(model.getGap()),
+                nodes_per_second=nodes / runtime if nodes > 0 else 0.0,
+                first_feasible_time=0.0,
+                cuts_generated=model.getNConss(),
+                presolve_reduction=0.0,
+            )
+        except Exception:
+            return None
     
     def get_stats(self) -> SolverStats:
         """Gets solution statistics."""

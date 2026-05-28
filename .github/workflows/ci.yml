@@ -2,16 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, Debug ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, Debug ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.12", "3.13"]
     
     steps:
     - uses: actions/checkout@v4
@@ -25,19 +25,14 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest ruff mypy
+        pip install pytest pytest-cov ruff
         pip install -e .
     
     - name: Lint with ruff
       run: ruff check src/ tests/
     
-    - name: Type check with mypy
-      run: mypy src/ --ignore-missing-imports
-      continue-on-error: true
-    
-    - name: Run tests
-      run: pytest tests/ -v
-      continue-on-error: true
+    - name: Run tests with coverage
+      run: pytest tests/ -v --cov=src --cov-fail-under=70
 
   build:
     runs-on: ubuntu-latest
@@ -47,7 +42,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.12"
     
     - name: Install dependencies
       run: |

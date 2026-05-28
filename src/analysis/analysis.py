@@ -18,6 +18,13 @@ from fpdf.enums import Align, XPos, YPos
 
 from ..core import LinearProblem, LinearConstraint, Solution
 
+try:
+    from .sensitivity import SensitivityAnalysis as _SensitivityAnalysis
+    SENSITIVITY_ANALYSIS_AVAILABLE = True
+except ImportError:
+    SENSITIVITY_ANALYSIS_AVAILABLE = False
+    _SensitivityAnalysis = None
+
 
 PAGE_WIDTH = 215.9
 PAGE_HEIGHT = 279.4
@@ -41,12 +48,14 @@ class LPAnalysis:
     def __init__(self, problem: LinearProblem, solution: Solution, 
                  times: Optional[ExecutionTimes] = None,
                  system_info: Optional[Dict] = None,
-                 solver_name: str = "gurobi"):
+                 solver_name: str = "gurobi",
+                 sensitivity: Optional[Any] = None):
         self.problem = problem
         self.solution = solution
         self.times = times or ExecutionTimes()
         self.system_info = system_info if system_info is not None else {}
         self.solver_name = solver_name
+        self.sensitivity = sensitivity or getattr(self.solution, 'sensitivity', None)
         self.page_count = 0
 
     def generate_pdf(self, output_path: str) -> None:
@@ -518,13 +527,10 @@ class LPAnalysis:
                     slack = 0
                 
                 if abs(slack) < 1e-6:
-                    estado = "ACTIVA"
                     pdf.set_text_color(200, 0, 0)
                 elif slack > 0:
-                    estado = "NO ACTIVA"
                     pdf.set_text_color(0, 128, 0)
                 else:
-                    estado = "VIOLADA"
                     pdf.set_text_color(200, 0, 0)
                 
                 dual_value = self.solution.dual_values.get(f"c{i+1}", 0) if self.solution.dual_values else 0
@@ -561,10 +567,6 @@ class LPAnalysis:
         pdf.set_text_color(60, 60, 60)
         pdf.multi_cell(CONTENT_WIDTH, 4, "Costo Reducido: cantidad que el objetivo mejoraria si la variable aumenta en una unidad. Variables con costo reducido = 0 estan en su valor optimo.")
         pdf.ln(2)
-        
-        has_reduced = self.solution.reduced_costs and any(
-            abs(v) > 1e-6 for v in self.solution.reduced_costs.values()
-        ) if self.solution.reduced_costs else False
         
         if self.solution.reduced_costs:
             w = [CONTENT_WIDTH * 0.25, CONTENT_WIDTH * 0.25, CONTENT_WIDTH * 0.25, CONTENT_WIDTH * 0.25]
@@ -604,7 +606,7 @@ class LPAnalysis:
         pdf.ln(3)
 
     def _build_analisis_sensibilidad(self, pdf: 'ReporteAcademico') -> None:
-        """Construye el analisis de sensibilidad general."""
+        """Construye el analisis de sensibilidad con tablas de rangos."""
         pdf.set_font('Helvetica', 'B', 11)
         pdf.set_text_color(0, 51, 102)
         pdf.cell(0, 6, "ANALISIS DE SENSIBILIDAD", new_x=XPos.LEFT, new_y=YPos.NEXT)
@@ -614,11 +616,145 @@ class LPAnalysis:
         pdf.line(MARGIN, pdf.get_y(), PAGE_WIDTH - MARGIN, pdf.get_y())
         pdf.ln(2)
         
-        pdf.set_font('Helvetica', '', 8)
-        pdf.set_text_color(60, 60, 60)
-        pdf.multi_cell(CONTENT_WIDTH, 4, "El analisis de sensibilidad muestra como cambios en los parametros afectan la solucion optima.")
-        pdf.ln(3)
+        sens = self.sensitivity
+        if sens is None:
+            sens = getattr(self.solution, 'sensitivity', None)
         
+        if sens is not None and (sens.objective_ranges or sens.rhs_ranges or sens.bound_ranges):
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_text_color(60, 60, 60)
+            pdf.multi_cell(CONTENT_WIDTH, 4,
+                "Rangos de variacion de los coeficientes manteniendo la base optima:")
+            pdf.ln(2)
+            if sens.objective_ranges:
+                self._build_tabla_rangos_objetivo(pdf, sens.objective_ranges)
+            if sens.rhs_ranges:
+                pdf.ln(1)
+                self._build_tabla_rangos_rhs(pdf, sens.rhs_ranges)
+            if sens.bound_ranges:
+                pdf.ln(1)
+                self._build_tabla_rangos_limites(pdf, sens.bound_ranges)
+        else:
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_text_color(60, 60, 60)
+            pdf.multi_cell(CONTENT_WIDTH, 4,
+                "El analisis de sensibilidad muestra como cambios en los parametros "
+                "afectan la solucion optima. No se dispone de datos numericos de "
+                "sensibilidad para este problema.")
+            pdf.ln(3)
+        
+        self._build_interpretacion_sensibilidad(pdf)
+    
+    def _build_tabla_rangos_objetivo(
+        self, pdf: 'ReporteAcademico', ranges: list
+    ) -> None:
+        """Tabla de rangos de coeficientes objetivo."""
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_text_color(0, 51, 102)
+        pdf.cell(0, 5, "Rangos de Coeficientes Objetivo", new_x=XPos.LEFT, new_y=YPos.NEXT)
+        pdf.ln(1)
+        
+        w = [0.28, 0.18, 0.18, 0.18, 0.18]
+        pdf.set_fill_color(0, 51, 102)
+        pdf.rect(MARGIN, pdf.get_y(), CONTENT_WIDTH, 5, 'F')
+        pdf.set_font('Helvetica', 'B', 7)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(w[0] * CONTENT_WIDTH, 5, "Variable", align=Align.C)
+        pdf.cell(w[1] * CONTENT_WIDTH, 5, "Actual", align=Align.C)
+        pdf.cell(w[2] * CONTENT_WIDTH, 5, "Minimo", align=Align.C)
+        pdf.cell(w[3] * CONTENT_WIDTH, 5, "Maximo", align=Align.C)
+        pdf.cell(w[4] * CONTENT_WIDTH, 5, "Costo Red.", align=Align.C)
+        pdf.ln(5)
+        
+        pdf.set_font('Helvetica', '', 7)
+        pdf.set_text_color(0, 0, 0)
+        for r in ranges:
+            lower_str = f"{r.lower:.4f}" if r.lower is not None else "-inf"
+            upper_str = f"{r.upper:.4f}" if r.upper is not None else "+inf"
+            rc_str = f"{r.reduced_cost:.4f}" if r.reduced_cost is not None else "-"
+            name = str(r.name)[:20]
+            pdf.cell(w[0] * CONTENT_WIDTH, 4, name, align=Align.C)
+            pdf.cell(w[1] * CONTENT_WIDTH, 4, f"{r.current:.4f}", align=Align.C)
+            pdf.cell(w[2] * CONTENT_WIDTH, 4, lower_str, align=Align.C)
+            pdf.cell(w[3] * CONTENT_WIDTH, 4, upper_str, align=Align.C)
+            pdf.cell(w[4] * CONTENT_WIDTH, 4, rc_str, align=Align.C)
+            pdf.ln(4)
+        
+        pdf.ln(1)
+    
+    def _build_tabla_rangos_rhs(
+        self, pdf: 'ReporteAcademico', ranges: list
+    ) -> None:
+        """Tabla de rangos de lados derechos (RHS)."""
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_text_color(0, 51, 102)
+        pdf.cell(0, 5, "Rangos de Lados Derechos (RHS)", new_x=XPos.LEFT, new_y=YPos.NEXT)
+        pdf.ln(1)
+        
+        w = [0.28, 0.18, 0.18, 0.18, 0.18]
+        pdf.set_fill_color(0, 51, 102)
+        pdf.rect(MARGIN, pdf.get_y(), CONTENT_WIDTH, 5, 'F')
+        pdf.set_font('Helvetica', 'B', 7)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(w[0] * CONTENT_WIDTH, 5, "Restriccion", align=Align.C)
+        pdf.cell(w[1] * CONTENT_WIDTH, 5, "Actual", align=Align.C)
+        pdf.cell(w[2] * CONTENT_WIDTH, 5, "Minimo", align=Align.C)
+        pdf.cell(w[3] * CONTENT_WIDTH, 5, "Maximo", align=Align.C)
+        pdf.cell(w[4] * CONTENT_WIDTH, 5, "Precio Sombra", align=Align.C)
+        pdf.ln(5)
+        
+        pdf.set_font('Helvetica', '', 7)
+        pdf.set_text_color(0, 0, 0)
+        for r in ranges:
+            lower_str = f"{r.lower:.4f}" if r.lower is not None else "-inf"
+            upper_str = f"{r.upper:.4f}" if r.upper is not None else "+inf"
+            dual_str = f"{r.dual_value:.4f}" if r.dual_value is not None else "-"
+            name = str(r.name)[:20]
+            pdf.cell(w[0] * CONTENT_WIDTH, 4, name, align=Align.C)
+            pdf.cell(w[1] * CONTENT_WIDTH, 4, f"{r.current:.4f}", align=Align.C)
+            pdf.cell(w[2] * CONTENT_WIDTH, 4, lower_str, align=Align.C)
+            pdf.cell(w[3] * CONTENT_WIDTH, 4, upper_str, align=Align.C)
+            pdf.cell(w[4] * CONTENT_WIDTH, 4, dual_str, align=Align.C)
+            pdf.ln(4)
+        
+        pdf.ln(1)
+    
+    def _build_tabla_rangos_limites(
+        self, pdf: 'ReporteAcademico', ranges: list
+    ) -> None:
+        """Tabla de rangos de limites de variables."""
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_text_color(0, 51, 102)
+        pdf.cell(0, 5, "Rangos de Limites de Variables", new_x=XPos.LEFT, new_y=YPos.NEXT)
+        pdf.ln(1)
+        
+        w = [0.28, 0.24, 0.24, 0.24]
+        pdf.set_fill_color(0, 51, 102)
+        pdf.rect(MARGIN, pdf.get_y(), CONTENT_WIDTH, 5, 'F')
+        pdf.set_font('Helvetica', 'B', 7)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(w[0] * CONTENT_WIDTH, 5, "Variable", align=Align.C)
+        pdf.cell(w[1] * CONTENT_WIDTH, 5, "Actual", align=Align.C)
+        pdf.cell(w[2] * CONTENT_WIDTH, 5, "Minimo", align=Align.C)
+        pdf.cell(w[3] * CONTENT_WIDTH, 5, "Maximo", align=Align.C)
+        pdf.ln(5)
+        
+        pdf.set_font('Helvetica', '', 7)
+        pdf.set_text_color(0, 0, 0)
+        for r in ranges:
+            lower_str = f"{r.lower:.4f}" if r.lower is not None else "-inf"
+            upper_str = f"{r.upper:.4f}" if r.upper is not None else "+inf"
+            name = str(r.name)[:20]
+            pdf.cell(w[0] * CONTENT_WIDTH, 4, name, align=Align.C)
+            pdf.cell(w[1] * CONTENT_WIDTH, 4, f"{r.current:.4f}", align=Align.C)
+            pdf.cell(w[2] * CONTENT_WIDTH, 4, lower_str, align=Align.C)
+            pdf.cell(w[3] * CONTENT_WIDTH, 4, upper_str, align=Align.C)
+            pdf.ln(4)
+        
+        pdf.ln(1)
+    
+    def _build_interpretacion_sensibilidad(self, pdf: 'ReporteAcademico') -> None:
+        """Construye la interpretacion del analisis de sensibilidad."""
         pdf.set_font('Helvetica', 'B', 8)
         pdf.set_text_color(0, 51, 102)
         pdf.cell(0, 5, "Interpretacion:", new_x=XPos.LEFT, new_y=YPos.NEXT)
@@ -626,18 +762,15 @@ class LPAnalysis:
         
         pdf.set_font('Helvetica', '', 7)
         pdf.set_text_color(0, 0, 0)
-        
         interpretations = [
             "Restricciones ACTIVAS (holgura = 0): Utilizan completamente el recurso.",
             "Restricciones NO ACTIVAS (holgura > 0): Recurso disponible sin usar.",
             "Precio Sombra > 0: Aumentar el RHS mejora el valor objetivo.",
             "Precio Sombra = 0: La restriccion no limita el problema.",
         ]
-        
         for item in interpretations:
             pdf.cell(5, 4, "-")
             pdf.cell(0, 4, item, new_x=XPos.LEFT, new_y=YPos.NEXT)
-        
         pdf.ln(3)
 
     def _build_grafico(self, pdf: 'ReporteAcademico') -> None:
@@ -765,7 +898,9 @@ class LPAnalysis:
             ax.grid(True, alpha=0.3, linestyle='--')
             ax.axhline(y=0, color='black', linewidth=1)
             ax.axvline(x=0, color='black', linewidth=1)
-            ax.legend(loc='upper right', fontsize=8, framealpha=0.9)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend(loc='upper right', fontsize=8, framealpha=0.9)
             
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
                 plt.savefig(tmp.name, dpi=300, bbox_inches='tight', facecolor='white')
@@ -1035,7 +1170,7 @@ class LPAnalysis:
                 for warn in warnings[:5]:
                     pdf.cell(5, 4, "-")
                     pdf.cell(0, 4, warn[:60], new_x=XPos.LEFT, new_y=YPos.NEXT)
-        except Exception as e:
+        except Exception:
             pdf.set_text_color(100, 100, 100)
             pdf.cell(0, 5, "Error en validacion", new_x=XPos.LEFT, new_y=YPos.NEXT)
         
@@ -1146,9 +1281,10 @@ class LPAnalysis:
         
         pdf.set_font('Helvetica', '', 8)
         
-        max_bound_viol = getattr(self.solution, 'max_bound_viol', 0)
-        max_constr_viol = getattr(self.solution, 'max_constraint_viol', 0)
-        condition_num = getattr(self.solution, 'condition_number', None)
+        nq = self.solution.numerical_quality
+        max_bound_viol = nq.max_bound_viol if nq else 0
+        max_constr_viol = nq.max_constraint_viol if nq else 0
+        condition_num = nq.condition_number if nq else None
         
         metrics = [
             ("Violacion max. limites", f"{max_bound_viol:.2e}"),
@@ -1199,7 +1335,7 @@ class LPAnalysis:
             for point in progress_log[:20]:
                 pdf.cell(w[0], 3, str(point.iteration), align=Align.C)
                 pdf.cell(w[1], 3, f"{point.objective:.4f}", align=Align.C)
-                pdf.cell(w[2], 3, f"{point.infeasibility:.2e}", align=Align.C)
+                pdf.cell(w[2], 3, f"{point.gap:.2e}", align=Align.C)
                 pdf.cell(w[3], 3, f"{point.time:.2f}s", align=Align.C)
                 pdf.ln(3)
         else:

@@ -1,6 +1,5 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Any
-from .constants import OPTIMALITY_TOLERANCE
 
 # Import sensitivity analysis if available
 try:
@@ -24,10 +23,15 @@ class ProgressPoint:
 
 @dataclass
 class NumericalQuality:
-    """Métricas de calidad numérica."""
+    """Métricas de calidad numérica y MILP."""
     max_bound_viol: float = 0.0
     max_constraint_viol: float = 0.0
     condition_number: Optional[float] = None
+    mip_gap: float = 0.0
+    first_feasible_time: float = 0.0
+    nodes_per_second: float = 0.0
+    cuts_generated: int = 0
+    presolve_reduction: float = 0.0
 
 
 @dataclass

@@ -3,12 +3,11 @@ Solver CBC (COIN-OR) para problemas de programacion lineal.
 Implementacion usando PuLP.
 """
 
-import time
 from typing import Optional
 
 import pulp
 from pulp import LpProblem, LpVariable, LpMinimize, LpMaximize, LpBinary, LpContinuous, LpInteger, LpStatus
-from ..core import LinearProblem, Solution, VariableBound
+from ..core import LinearProblem, Solution
 from ..matrix import LPBuilder
 from .base import BaseSolver, SolverStats, SolverCapabilities
 
@@ -40,7 +39,7 @@ class CBCSolver(BaseSolver):
     def solver_version(self) -> str:
         try:
             return f"PuLP {pulp.__version__}"
-        except:
+        except Exception:
             return "PuLP"
     
     @property
@@ -112,8 +111,6 @@ class CBCSolver(BaseSolver):
                 variables={},
             )
         
-        start_time = time.perf_counter()
-        
         try:
             prob = self._build_problem(self.problem)
             
@@ -129,8 +126,6 @@ class CBCSolver(BaseSolver):
             solver = pulp.PULP_CBC_CMD(msg=self.config.verbose, options=solver_options)
             
             prob.solve(solver)
-            
-            solve_time = time.perf_counter() - start_time
             
             status_map = {
                 "Optimal": "OPTIMAL",
@@ -154,8 +149,10 @@ class CBCSolver(BaseSolver):
                 obj_value = float(obj_val) if obj_val is not None else None
                 try:
                     self._iterations = getattr(prob.solver, 'iterations', 0) or 0
-                except:
+                except Exception as e:
                     self._iterations = 0
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"No se pudieron extraer iteraciones de CBC: {e}")
                 
                 # Try to get dual values and reduced costs
                 try:
@@ -165,8 +162,9 @@ class CBCSolver(BaseSolver):
                     for var in prob.variables():
                         if hasattr(var, 'dj'):
                             reduced_costs[var.name] = var.dj
-                except:
-                    pass
+                except Exception as e:
+                    logger = __import__('logging').getLogger(__name__)
+                    logger.debug(f"No se pudieron extraer duales/reduced costs de CBC: {e}")
             
             self._solution = Solution(
                 status=status,
@@ -174,6 +172,7 @@ class CBCSolver(BaseSolver):
                 variables=variables,
                 dual_values=dual_values if dual_values else None,
                 reduced_costs=reduced_costs if reduced_costs else None,
+                numerical_quality=self._build_numerical_quality(prob),
             )
             
             return self._solution
@@ -184,6 +183,19 @@ class CBCSolver(BaseSolver):
                 objective_value=None,
                 variables={},
             )
+    
+    def _build_numerical_quality(self, prob) -> object:
+        """Construye NumericalQuality con metricas MILP de CBC."""
+        try:
+            from ..core import NumericalQuality
+            nodes = self._nodes
+            runtime = max(getattr(self.stats, 'solve_time', 0.001), 0.001)
+            return NumericalQuality(
+                mip_gap=0.0,
+                nodes_per_second=nodes / runtime if nodes > 0 else 0.0,
+            )
+        except Exception:
+            return None
     
     def get_stats(self) -> SolverStats:
         """Obtiene estadisticas de la resolucion."""

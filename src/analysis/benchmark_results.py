@@ -3,13 +3,74 @@ Exportacion de resultados de benchmarking.
 Genera reportes y tablas (la visualizacion esta en src.visualization).
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from pathlib import Path
-import json
 from datetime import datetime
 
-from src.solver.benchmark import BenchmarkRunner, BenchmarkResult
-from src.visualization import BenchmarkPlotter, PlotStyle
+import numpy as np
+
+from src.solver.benchmark import BenchmarkRunner
+# Import BenchmarkPlotter in function to avoid circular import
+# from src.visualization import BenchmarkPlotter
+
+
+def performance_profile(
+    results: List,
+    time_col: str = "total_time",
+    solver_col: str = "solver_name",
+    tau_max: float = 10.0,
+    num_points: int = 100,
+) -> Dict[str, tuple]:
+    """Calcula perfiles de Dolan-More a partir de resultados de benchmark.
+
+    Para cada problema, calcula la razon del tiempo de cada solver contra
+    el mejor tiempo. Luego genera la funcion de distribucion acumulada
+    rho(tau) = proporcion de problemas resueltos con razon <= tau.
+
+    Args:
+        results: Lista de objetos con atributos problem_name, solver_name, total_time.
+        time_col: Nombre del atributo de tiempo (default: total_time).
+        solver_col: Nombre del atributo del solver (default: solver_name).
+        tau_max: Maximo valor de tau a considerar.
+        num_points: Numero de puntos para la curva.
+
+    Returns:
+        Dict con {solver_name: (tau_values, rho_values)}.
+    """
+    problemas = {}
+    for r in results:
+        prob = getattr(r, "problem_name", "")
+        solver = getattr(r, solver_col, "")
+        tiempo = getattr(r, time_col, 0.0)
+        if prob not in problemas:
+            problemas[prob] = {}
+        if solver not in problemas[prob] or tiempo < problemas[prob][solver]:
+            problemas[prob][solver] = tiempo
+
+    solvers_set = set()
+    for prob_data in problemas.values():
+        solvers_set.update(prob_data.keys())
+    solvers_list = sorted(solvers_set)
+
+    perfiles = {}
+    for solver in solvers_list:
+        ratios = []
+        for prob_data in problemas.values():
+            if solver in prob_data:
+                best_time = min(prob_data.values())
+                if best_time > 0:
+                    ratios.append(prob_data[solver] / best_time)
+        if not ratios:
+            continue
+        ratios.sort()
+        tau_values = np.linspace(1.0, tau_max, num_points)
+        rho_values = [
+            sum(1 for r in ratios if r <= tau) / len(ratios)
+            for tau in tau_values
+        ]
+        perfiles[solver] = (tau_values, rho_values)
+
+    return perfiles
 
 
 class ResultsExporter:
@@ -25,24 +86,24 @@ class ResultsExporter:
         lines = [
             "# Reporte de Benchmarking",
             f"\nFecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            f"\n## Resumen",
+            "\n## Resumen",
             f"- Total de pruebas: {self.summary['total_benchmarks']}",
             f"- Exitosas: {self.summary['successful']}",
             f"- Fallidas: {self.summary['failed']}",
-            f"\n## Por Solver",
+            "\n## Por Solver",
         ]
         
-        lines.append(f"\n| Solver | Pruebas | Exitosas | Tiempo Promedio |")
-        lines.append(f"|--------|---------|----------|-----------------|")
+        lines.append("\n| Solver | Pruebas | Exitosas | Tiempo Promedio |")
+        lines.append("|--------|---------|----------|-----------------|")
         
         for solver, data in self.summary["by_solver"].items():
             avg_time = data["avg_time"] * 1000
             lines.append(f"| {solver} | {data['runs']} | {data['successful']} | {avg_time:.2f}ms |")
         
-        lines.append(f"\n## Detalle de Resultados")
+        lines.append("\n## Detalle de Resultados")
         
-        lines.append(f"\n| Problema | Solver | Estado | Valor Obj. | Tiempo |")
-        lines.append(f"|----------|--------|--------|------------|--------|")
+        lines.append("\n| Problema | Solver | Estado | Valor Obj. | Tiempo |")
+        lines.append("|----------|--------|--------|------------|--------|")
         
         for r in self.results:
             status_icon = "OK" if r.solution.is_optimal() else "X"
@@ -57,6 +118,8 @@ class ResultsExporter:
         """Exporta resultados a formato HTML."""
         plots_html = ""
         if include_plots and plots_dir:
+            # Import here to avoid circular import
+            from src.visualization.benchmark_plots import BenchmarkPlotter
             plots_dir.mkdir(parents=True, exist_ok=True)
             plotter = BenchmarkPlotter(self.runner)
             paths = {

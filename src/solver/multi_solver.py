@@ -8,7 +8,6 @@ import time
 
 from ..core import LinearProblem, Solution
 from ..parser import MultiLPParser
-from ..matrix import LPBuilder
 from .base import BaseSolver, SolverRegistry
 
 

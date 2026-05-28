@@ -43,7 +43,6 @@ try:
     from .highs_solver import HiGHSSolver
     SolverRegistry.register("highs", HiGHSSolver, available=True)
 except ImportError as e:
-    import types
     class HiGHSSolver:
         pass
     HiGHSSolver.solver_name = "highs"
@@ -55,7 +54,6 @@ try:
     from .glpk_solver import GLPKSolver
     SolverRegistry.register("glpk", GLPKSolver, available=True)
 except ImportError as e:
-    import types
     class GLPKSolver:
         pass
     GLPKSolver.solver_name = "glpk"
@@ -72,7 +70,6 @@ try:
         SolverRegistry.register("cbc", CBCSolver, available=False)
         SolverRegistry.set_unavailable("cbc", "PULP_CBC_CMD not found")
 except ImportError as e:
-    import types
     class CBCSolver:
         pass
     CBCSolver.solver_name = "cbc"
@@ -85,7 +82,6 @@ try:
     from .scip import SCIPSolver
     SolverRegistry.register("scip", SCIPSolver, available=True)
 except ImportError as e:
-    import types
     class SCIPSolver:
         pass
     SCIPSolver.solver_name = "scip"
@@ -100,7 +96,6 @@ try:
     if not _ecos_avail:
         SolverRegistry.set_unavailable("ecos", "ecos package not installed")
 except ImportError as e:
-    import types
     class ECOSSolver:
         pass
     ECOSSolver.solver_name = "ecos"
@@ -115,7 +110,6 @@ try:
     if not _osqp_avail:
         SolverRegistry.set_unavailable("osqp", "osqp package not installed")
 except ImportError as e:
-    import types
     class OSQPSolver:
         pass
     OSQPSolver.solver_name = "osqp"
@@ -130,7 +124,6 @@ try:
     if not _cvxopt_avail:
         SolverRegistry.set_unavailable("cvxopt", "cvxopt package not installed")
 except ImportError as e:
-    import types
     class CVXOPTSolver:
         pass
     CVXOPTSolver.solver_name = "cvxopt"
@@ -145,7 +138,6 @@ try:
     if not _scs_avail:
         SolverRegistry.set_unavailable("scs", "scs package not installed")
 except ImportError as e:
-    import types
     class SCSSolver:
         pass
     SCSSolver.solver_name = "scs"
@@ -160,7 +152,6 @@ try:
     if not _ipopt_avail:
         SolverRegistry.set_unavailable("ipopt", "casadi package not installed")
 except ImportError as e:
-    import types
     class IpoptSolver:
         pass
     IpoptSolver.solver_name = "ipopt"

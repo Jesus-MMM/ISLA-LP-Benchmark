@@ -9,7 +9,6 @@ precios sombra y graficos de region factible para problemas de 2 variables.
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Optional, List
 import platform
 import sys
 import tempfile
@@ -240,7 +239,6 @@ class MultiLPAnalysis:
         """Construye las estadisticas del resumen."""
         total = len(self.results.results)
         exitosos = len(self.results.get_successful_results())
-        fallidos = len(self.results.get_failed_results())
 
         optimos = sum(1 for r in self.results.results
                       if r.solution.status == 'OPTIMAL')
@@ -416,6 +414,9 @@ class MultiLPAnalysis:
         # Solucion optima
         self._build_solucion(pdf, result)
 
+        # Analisis de sensibilidad
+        self._build_sensibilidad(pdf, result)
+
         # Grafico si tiene 2 variables
         if len(result.problem.variables) == 2:
             self._build_grafico(pdf, result)
@@ -576,6 +577,86 @@ class MultiLPAnalysis:
             pdf.cell(w[1], 6, f"{value:.4f}", align=Align.C)
             pdf.cell(w[2], 6, "0.0000", align=Align.C)
             pdf.ln(6)
+
+    def _build_sensibilidad(
+        self, pdf: 'ReporteAcademicoMulti',
+        result: ProblemResult
+    ) -> None:
+        """Construye la seccion de analisis de sensibilidad."""
+        # Intentar obtener sensibilidad desde la solucion
+        sens = getattr(result.solution, 'sensitivity', None)
+        if sens is None:
+            return
+
+        has_data = (getattr(sens, 'objective_ranges', None) or
+                    getattr(sens, 'rhs_ranges', None) or
+                    getattr(sens, 'bound_ranges', None))
+        if not has_data:
+            return
+
+        # Verificar espacio
+        if pdf.get_y() > PAGE_HEIGHT - 60:
+            pdf.add_page()
+            self.page_count += 1
+
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.set_text_color(*COLOR_PRIMARY)
+        pdf.cell(0, 8, "Analisis de Sensibilidad:", new_y=YPos.NEXT)
+        pdf.ln(3)
+
+        obj_ranges = getattr(sens, 'objective_ranges', None) or []
+        rhs_ranges = getattr(sens, 'rhs_ranges', None) or []
+
+        if obj_ranges:
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_text_color(*COLOR_PRIMARY)
+            pdf.cell(0, 6, "Rangos de Coeficientes Objetivo", new_y=YPos.NEXT)
+            pdf.ln(2)
+
+            w = [55, 40, 40, 40]
+            pdf.set_fill_color(*COLOR_BG_HEADER)
+            pdf.set_font('Helvetica', 'B', 8)
+            pdf.set_text_color(255, 255, 255)
+            for i, h in enumerate(["Variable", "Actual", "Minimo", "Maximo"]):
+                pdf.cell(w[i], 6, h, align=Align.C, fill=True)
+            pdf.ln(6)
+
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_text_color(0, 0, 0)
+            for r in obj_ranges:
+                lower_str = f"{r.lower:.4f}" if r.lower is not None else "-∞"
+                upper_str = f"{r.upper:.4f}" if r.upper is not None else "+∞"
+                pdf.cell(w[0], 5, str(r.name)[:18], align=Align.C)
+                pdf.cell(w[1], 5, f"{r.current:.4f}", align=Align.C)
+                pdf.cell(w[2], 5, lower_str, align=Align.C)
+                pdf.cell(w[3], 5, upper_str, align=Align.C)
+                pdf.ln(5)
+
+        if rhs_ranges:
+            pdf.ln(3)
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_text_color(*COLOR_PRIMARY)
+            pdf.cell(0, 6, "Rangos de Lados Derechos (RHS)", new_y=YPos.NEXT)
+            pdf.ln(2)
+
+            w = [55, 40, 40, 40]
+            pdf.set_fill_color(*COLOR_BG_HEADER)
+            pdf.set_font('Helvetica', 'B', 8)
+            pdf.set_text_color(255, 255, 255)
+            for i, h in enumerate(["Restriccion", "Actual", "Minimo", "Maximo"]):
+                pdf.cell(w[i], 6, h, align=Align.C, fill=True)
+            pdf.ln(6)
+
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_text_color(0, 0, 0)
+            for r in rhs_ranges:
+                lower_str = f"{r.lower:.4f}" if r.lower is not None else "-∞"
+                upper_str = f"{r.upper:.4f}" if r.upper is not None else "+∞"
+                pdf.cell(w[0], 5, str(r.name)[:18], align=Align.C)
+                pdf.cell(w[1], 5, f"{r.current:.4f}", align=Align.C)
+                pdf.cell(w[2], 5, lower_str, align=Align.C)
+                pdf.cell(w[3], 5, upper_str, align=Align.C)
+                pdf.ln(5)
 
     def _build_grafico(
         self, pdf: 'ReporteAcademicoMulti',

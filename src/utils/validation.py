@@ -5,7 +5,7 @@ Validador de problemas de programación lineal.
 from dataclasses import dataclass, field
 from typing import Optional
 
-from ..core import LinearProblem, LinearConstraint
+from ..core import LinearProblem
 
 
 @dataclass
@@ -15,6 +15,9 @@ class ValidationIssue:
     code: str
     message: str
     location: Optional[str] = None  # "objective", "constraint", "bound", etc.
+    line: Optional[int] = None
+    column: Optional[int] = None
+    context: Optional[str] = None
 
 
 @dataclass
@@ -87,7 +90,7 @@ def _validate_objective(problem: LinearProblem) -> list[ValidationIssue]:
     if not problem.objective:
         issues.append(ValidationIssue(
             severity="ERROR",
-            code="OBJ001",
+            code="VAL-001",
             message="La función objetivo no puede estar vacía",
             location="objective"
         ))
@@ -96,7 +99,7 @@ def _validate_objective(problem: LinearProblem) -> list[ValidationIssue]:
     if not problem.variables:
         issues.append(ValidationIssue(
             severity="ERROR",
-            code="OBJ002",
+            code="VAL-001",
             message="No hay variables definidas",
             location="objective"
         ))
@@ -109,7 +112,7 @@ def _validate_objective(problem: LinearProblem) -> list[ValidationIssue]:
     if vars_not_in_problem:
         issues.append(ValidationIssue(
             severity="WARNING",
-            code="OBJ003",
+            code="VAL-005",
             message=f"Variables en objetivo no definidas: {vars_not_in_problem}",
             location="objective"
         ))
@@ -118,7 +121,7 @@ def _validate_objective(problem: LinearProblem) -> list[ValidationIssue]:
     if zero_coeffs:
         issues.append(ValidationIssue(
             severity="WARNING",
-            code="OBJ004",
+            code="VAL-005",
             message=f"Variables con coeficiente cero: {zero_coeffs}",
             location="objective"
         ))
@@ -133,7 +136,7 @@ def _validate_constraints(problem: LinearProblem) -> list[ValidationIssue]:
     if not problem.constraints:
         issues.append(ValidationIssue(
             severity="ERROR",
-            code="CON001",
+            code="VAL-001",
             message="Se requiere al menos una restricción",
             location="constraints"
         ))
@@ -145,7 +148,7 @@ def _validate_constraints(problem: LinearProblem) -> list[ValidationIssue]:
         if not constraint.coefficients:
             issues.append(ValidationIssue(
                 severity="ERROR",
-                code="CON002",
+                code="VAL-003",
                 message=f"Restricción {i} sin coeficientes",
                 location=loc
             ))
@@ -158,7 +161,7 @@ def _validate_constraints(problem: LinearProblem) -> list[ValidationIssue]:
         if vars_not_in_problem:
             issues.append(ValidationIssue(
                 severity="ERROR",
-                code="CON003",
+                code="VAL-005",
                 message=f"Restricción {i}: variables no definidas: {vars_not_in_problem}",
                 location=loc
             ))
@@ -166,7 +169,7 @@ def _validate_constraints(problem: LinearProblem) -> list[ValidationIssue]:
         if constraint.sense not in ("<=", ">=", "="):
             issues.append(ValidationIssue(
                 severity="ERROR",
-                code="CON004",
+                code="PARSE-003",
                 message=f"Restricción {i}: sentido inválido '{constraint.sense}'",
                 location=loc
             ))
@@ -181,7 +184,7 @@ def _validate_variables(problem: LinearProblem) -> list[ValidationIssue]:
     if not problem.variables:
         issues.append(ValidationIssue(
             severity="ERROR",
-            code="VAR001",
+            code="VAL-001",
             message="No hay variables definidas",
             location="variables"
         ))
@@ -190,17 +193,22 @@ def _validate_variables(problem: LinearProblem) -> list[ValidationIssue]:
     if len(problem.variables) > 1000:
         issues.append(ValidationIssue(
             severity="WARNING",
-            code="VAR002",
+            code="VAL-005",
             message=f"El problema tiene {len(problem.variables)} variables (puede ser lento)",
             location="variables"
         ))
 
-    duplicate_vars = [v for v in problem.variables if problem.variables.count(v) > 1]
+    seen = set()
+    duplicate_vars = set()
+    for v in problem.variables:
+        if v in seen:
+            duplicate_vars.add(v)
+        seen.add(v)
     if duplicate_vars:
         issues.append(ValidationIssue(
             severity="ERROR",
-            code="VAR003",
-            message=f"Variables duplicadas: {set(duplicate_vars)}",
+            code="VAL-002",
+            message=f"Variables duplicadas: {duplicate_vars}",
             location="variables"
         ))
 
@@ -218,7 +226,7 @@ def _validate_bounds(problem: LinearProblem) -> list[ValidationIssue]:
             if bound.lower > bound.upper:
                 issues.append(ValidationIssue(
                     severity="ERROR",
-                    code="BND001",
+                    code="VAL-004",
                     message=f"Variable {var}: límite inferior ({bound.lower}) > límite superior ({bound.upper})",
                     location=loc
                 ))
@@ -226,7 +234,7 @@ def _validate_bounds(problem: LinearProblem) -> list[ValidationIssue]:
         if bound.lower is not None and bound.lower == bound.upper:
             issues.append(ValidationIssue(
                 severity="WARNING",
-                code="BND002",
+                code="VAL-004",
                 message=f"Variable {var}: límite inferior = superior (variable fija)",
                 location=loc
             ))
@@ -241,7 +249,7 @@ def _validate_bounds(problem: LinearProblem) -> list[ValidationIssue]:
     if unbound_vars:
         issues.append(ValidationIssue(
             severity="WARNING",
-            code="BND003",
+            code="VAL-005",
             message=f"Variables sin límites explícitos (se usará no negatividad): {unbound_vars[:5]}{'...' if len(unbound_vars) > 5 else ''}",
             location="bounds"
         ))

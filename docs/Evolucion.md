@@ -1,6 +1,6 @@
 # ISLA LP Benchmark - Evolución del Proyecto
 
-## Estado: Fases 1-5 Completadas ✅
+## Estado: Fases 1-6 Completadas ✅ (v1.8.2)
 
 ### Roadmap Completado
 
@@ -11,11 +11,155 @@
 | 3. Benchmark orchestrator | Terminado | BenchmarkRunner con warmup, métricas |
 | 4. Export/Visualización | Terminado | CSV, JSON, PDF plots, Markdown |
 | 5. Reportes y Docs | Terminado | README actualizado |
-| 6. Containerization | Terminado | Dockerfile Alpine + docker-compose |
+| 6. Containerization | Terminado | Dockerfile Slim + docker-compose + CI workflow |
+| 7. Tests y CI/CD | Terminado | 400+ tests, coverage 90%+, ruff lint |
+| 8. Logging profesional | Terminado | --log-level, except:pass eliminados |
+| 9. ParallelBenchmarkRunner | Terminado | Ejecucion aislada por proceso con timeout |
+| 10. Metricas MILP | Terminado | mip_gap, nodes_per_second, cuts_generated |
+| 11. ProblemCache | Terminado | Cache SHA256 con TTL 24h |
+| 12. Perfiles Dolan-More | Terminado | performance_profile() y graficos |
+| 13. Pruebas Estadisticas | Terminado | Friedman, Nemenyi, ANOVA |
+| 14. Interoperabilidad | Terminado | Soporte formato MPS, ProblemGenerator |
+| 15. Interfaces Modernas | Terminado | REPL interactivo, Web App (FastAPI + HTMX) |
 
 ---
 
 ## Historial de Cambios
+
+### v1.8.2 (2026-05-28)
+
+#### CLI Colorido y Documentacion
+- CLI completamente colorido con `rich-argparse` (ayuda con colores, banner de bienvenida)
+- Convertidas todas las salidas `print()` a Rich (tablas, paneles, markup)
+- Banner de bienvenida al iniciar `isla` o al ejecutar `--version`
+- Actualizada toda la documentacion a v1.8.2
+
+#### Correcciones en Benchmark
+- Suprimidas excepciones `Thread-1` del hilo de refresco de Rich durante benchmark
+- Silenciado banner de Ipopt via `ipopt.sb`
+- Import perezoso de `gurobipy` para reducir ruido en consola
+
+### v1.8.0 (2026-05-27)
+
+#### Interfaces y Experiencia de Usuario
+- Nuevo modo REPL interactivo (`--repl`) para exploracion rapida de problemas
+- Implementacion de Web App basada en FastAPI + HTMX para visualización de resultados
+- Integracion de comandos de carga MPS en el REPL
+
+#### v1.7.0 (2026-05-27)
+
+#### Interoperabilidad y Estándares Industriales
+- Implementacion de `MPSParser` para soporte de formato industrial MPS
+- Nueva utilidad `ProblemGenerator` para creación de problemas sintéticos
+- Extension de `LPExporter` para exportación a formato MPS
+- Correccion de bugs en detección de marcadores INTORG/INTEND en MPS
+
+### v1.8.0 (2026-05-27)
+
+#### Interfaces y Experiencia de Usuario
+- Nuevo modo REPL interactivo (`--repl`) para exploracion rapida de problemas
+- Implementacion de Web App basada en FastAPI + HTMX para visualización de resultados
+- Integracion de comandos de carga MPS en el REPL
+
+#### v1.7.0 (2026-05-27)
+
+#### Interoperabilidad y Estándares Industriales
+- Implementacion de `MPSParser` para soporte de formato industrial MPS
+- Nueva utilidad `ProblemGenerator` para creación de problemas sintéticos
+- Extension de `LPExporter` para exportación a formato MPS
+- Correccion de bugs en detección de marcadores INTORG/INTEND en MPS
+
+### v1.6.0 (2026-05-26)
+
+#### ParallelBenchmarkRunner
+- Nueva clase `ParallelBenchmarkRunner` con `ProcessPoolExecutor`
+- Ejecucion aislada por proceso para proteger contra segfaults y fugas de memoria
+- Timeout configurable, medicion de memoria psutil por worker
+- `ParallelBenchmarkConfig` dataclass
+
+#### ProblemCache
+- Nueva clase `ProblemCache` en `src/utils/cache.py`
+- Hash SHA256 del contenido del archivo
+- Cache de problemas parseados (pickle) y resultados (JSON)
+- TTL configurable (default 24h), invalidacion manual
+
+#### Metricas MILP en NumericalQuality
+- Campos agregados: `mip_gap`, `first_feasible_time`, `nodes_per_second`, `cuts_generated`, `presolve_reduction`
+- Gurobi: extraccion de MIPGap, CutCount, NodeCount/Runtime
+- HiGHS: extraccion de mip_gap y node_count de hp.getInfo()
+- SCIP: metodo `_build_numerical_quality()` con getGap(), getNNodes()
+- CBC: metodo `_build_numerical_quality()` con nodes_per_second
+
+#### Perfiles de Rendimiento (Dolan-More)
+- Nueva funcion `performance_profile()` en `benchmark_results.py`
+- Calculo de ratios de tiempo vs mejor solver y funcion de distribucion acumulada
+- Grafico `plot_performance_profile()` con datos reales (no simulacion)
+- Integrado en reporte PDF benchmark
+
+#### Pruebas Estadisticas
+- Nuevo modulo `src/analysis/statistics.py`
+- `friedman_test()`: estadistico Q, p-valor via chi-cuadrado
+- `nemenyi_posthoc()`: diferencia critica, matriz pairwise
+- `anova_one_way()`: F-test via scipy.stats.f_oneway
+- Seccion "Analisis Estadistico" en reporte PDF benchmark
+
+#### CI Fix
+- Reemplazado `package-mode = false` por `packages = [{include = "src"}]` en pyproject.toml
+- Corrige error `Building a package is not possible in non-package mode` en workflows CI
+
+#### Documentacion
+- README actualizado a v1.6.0
+- Guias de usuario, desarrollador y matematica actualizadas
+- 277 tests pasando, ruff check limpio
+
+### v1.5.0 (2026-05-26)
+
+#### MatrixConverter
+- Nueva clase `MatrixConverter` con 5 metodos estaticos: `to_highs`, `to_glpk`, `to_cvxopt`, `to_osqp`, `to_scipy`
+- Solvers HiGHS, GLPK, CVXOPT, OSQP refactorizados para delegar conversion de matrices a `MatrixConverter`
+- 31 tests para MatrixConverter (277 tests total)
+
+#### Analisis de Sensibilidad Real
+- Nuevo modulo `src/analysis/sensitivity.py` con `SensitivityAnalysis`
+- Extractores nativos: `extract_highs_sensitivity()` (via `hp.getRanging()`), `extract_glpk_sensitivity()` (via API nativa), `extract_gurobi_sensitivity()` (via `getAttr`)
+- `SensitivityRange` dataclass con rangos objetivo, RHS, precios sombra y costos reducidos
+
+#### Reportes PDF
+- Tablas numericas de sensibilidad en `LPAnalysis`: rangos objetivo, RHS y limites
+- Seccion de sensibilidad en `MultiLPAnalysis` por problema
+
+#### Limpieza de Codigo
+- 89 errores de ruff corregidos (E722, E741, F401, F541, F841) en 25 archivos
+- `ruff check src/ tests/` produce 0 errores
+
+### v1.4.0 (2026-05-26)
+
+#### Infraestructura Docker
+- Migracion de `python:3.14-alpine` a `python:3.12-slim` con `coinor-cbc` preinstalado
+- `docker-compose.yml` simplificado con servicios `isla-lp`, `solve`, `benchmark`, `list-solvers`
+- Variable de entorno `GRB_LICENSE_FILE` para licencias comerciales
+- Workflow CI/CD de Docker (build + push a ghcr.io)
+
+#### CLI y Entrypoint
+- Entrypoint `isla` registrado en `pyproject.toml` (`[project.scripts]`)
+- Version del proyecto actualizada a 1.4.0
+
+### v1.3.0 (2026-05-26)
+
+#### Correcciones Criticas
+- Hotfixes: NameError en benchmark.py, imports rotos a sensitivity, exporter.py, validation.py
+- CI pipeline actualizado: matriz Python 3.12-3.13, `--cov-fail-under=90`
+- `gurobipy` agregado a requirements.txt
+
+#### Refactorizacion y Mejoras
+- Eliminados 18+ bloques `except: pass` reemplazados con logging profesional via `get_logger()`
+- Flag `--log-level` con soporte DEBUG/INFO/WARNING/ERROR/CRITICAL
+- Acceso a duales en HiGHS corregido (eliminada redundancia, agregada guarda de indice)
+- `casadi` movido a dependencias opcionales (`pip install isla-lp-benchmark[ipopt]`)
+- Semicolons `;` soportados como terminadores de linea en el parser LP
+
+#### Tests
+- Suite expandida de 10 a 246 tests. Coverage: core ~100%, parser ~92%
 
 ### v1.2.0 (2026-05-13)
 

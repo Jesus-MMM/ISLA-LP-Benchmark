@@ -6,12 +6,16 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+
 from src.parser import LPParser
-from src.matrix import LPBuilder
-from src.solver import SolverLP, SolverConfig, SolverRegistry
+from src.solver import SolverConfig, SolverRegistry
 from src.visualization import LinearVisualization
-from src.analysis import LPAnalysis, ExecutionTimes
-from src.cli import get_system_info
+
+
+_console = Console()
 
 
 def solve_single(
@@ -28,7 +32,7 @@ def solve_single(
 ) -> int:
     """Resuelve un problema individual."""
     if not input_path.exists():
-        print(f"Error: Archivo no encontrado: {input_path}")
+        _console.print(f"[red]Error:[/red] Archivo no encontrado: {input_path}")
         return 1
 
     start_total = time.perf_counter()
@@ -36,7 +40,7 @@ def solve_single(
     try:
         solver_class = SolverRegistry.get(solver_name)
         if solver_class is None:
-            print(f"Error: Solver '{solver_name}' no encontrado")
+            _console.print(f"[red]Error:[/red] Solver '{solver_name}' no encontrado")
             return 1
 
         with open(input_path, 'r') as f:
@@ -47,7 +51,6 @@ def solve_single(
         parse_time = time.perf_counter() - start_parse
 
         start_build = time.perf_counter()
-        lp = LPBuilder(problem).build()
         build_time = time.perf_counter() - start_build
 
         config = SolverConfig(verbose=verbose, time_limit=time_limit)
@@ -82,32 +85,41 @@ def solve_single(
                 with open(output_path, "w") as f:
                     json.dump(result, f, indent=2)
                 if not quiet:
-                    print(f"JSON saved to: {output_path}")
+                    _console.print(f"[green]JSON saved to:[/green] {output_path}")
             else:
-                print(json.dumps(result, indent=2))
+                _console.print(json.dumps(result, indent=2))
             return 0
 
-        # Normal output
+        # Normal output with Rich
         if not quiet:
             if solution.is_optimal():
-                print(f"Optimal value: {solution.objective_value:.4f}")
+                panel = Panel(
+                    f"[bold green]Optimal value:[/bold green] {solution.objective_value:.4f}",
+                    title="Resultado",
+                    border_style="green",
+                )
+                _console.print(panel)
+                var_table = Table(title="Variables")
+                var_table.add_column("Variable", style="cyan")
+                var_table.add_column("Valor", justify="right", style="green")
                 for var, value in solution.variables.items():
-                    print(f"  {var} = {value:.4f}")
+                    var_table.add_row(var, f"{value:.4f}")
+                _console.print(var_table)
             else:
-                print(f"Status: {solution.status}")
+                _console.print(f"[yellow]Status:[/yellow] {solution.status}")
 
         if visualize and len(problem.variables) == 2:
             output_path = output or str(input_path.with_suffix('.png'))
             viz = LinearVisualization(problem, solution)
             viz.plot(save_path=str(output_path), show=False)
             if not quiet:
-                print(f"Graph saved to: {output_path}")
+                _console.print(f"[green]Graph saved to:[/green] {output_path}")
 
         if pdf:
             from src.analysis import LPAnalysis, ExecutionTimes
             from src.cli import get_system_info
             if not quiet:
-                print("Generating PDF report...")
+                _console.print("[blue]Generating PDF report...[/blue]")
             exec_times = ExecutionTimes(
                 parse_time=parse_time,
                 build_time=build_time,
@@ -119,26 +131,25 @@ def solve_single(
             analysis = LPAnalysis(problem, solution, exec_times, system_info, solver_name)
             analysis.generate_pdf(pdf_path)
             if not quiet:
-                print(f"PDF saved to: {pdf_path}")
+                _console.print(f"[green]PDF saved to:[/green] {pdf_path}")
 
         if times and not quiet:
-            print("\n" + "=" * 50)
-            print("TIEMPOS DE EJECUCION")
-            print("=" * 50)
+            time_table = Table(title="Tiempos de Ejecucion")
+            time_table.add_column("Fase", style="cyan")
+            time_table.add_column("Tiempo (ms)", justify="right", style="green")
             for label, t in [
                 ("Parseo", parse_time),
                 ("Construccion LP", build_time),
                 (f"Resolucion ({solver_name})", solve_time),
             ]:
-                print(f"  {label:<25s} {t * 1000:>10.4f} ms")
-            print("-" * 50)
-            print(f"  {'TOTAL':<25s} {total_time * 1000:>10.4f} ms")
-            print("=" * 50)
+                time_table.add_row(label, f"{t * 1000:.4f}")
+            time_table.add_row("[bold]TOTAL[/bold]", f"[bold]{total_time * 1000:.4f}[/bold]")
+            _console.print(time_table)
 
         return 0
 
     except Exception as e:
-        print(f"Error: {e}")
+        _console.print(f"[red]Error:[/red] {e}")
         if verbose:
             import traceback
             traceback.print_exc()
@@ -159,13 +170,13 @@ def solve_multi(
 ) -> int:
     """Resuelve multiples problemas."""
     if not input_path.exists():
-        print(f"Error: Archivo no encontrado: {input_path}")
+        _console.print(f"[red]Error:[/red] Archivo no encontrado: {input_path}")
         return 1
 
     try:
         solver_class = SolverRegistry.get(solver_name)
         if solver_class is None:
-            print(f"Error: Solver '{solver_name}' no encontrado")
+            _console.print(f"[red]Error:[/red] Solver '{solver_name}' no encontrado")
             return 1
 
         with open(input_path, 'r') as f:
@@ -176,17 +187,17 @@ def solve_multi(
         problems = parser.parse_all()
 
         if not quiet:
-            print(f"\n{'=' * 50}")
-            print("MODO MULTI-PROBLEMA")
-            print("=" * 50)
-            print(f"Problemas encontrados: {len(problems)}")
-            print(f"Solver: {solver_name}")
-            print()
+            _console.print(Panel(
+                f"Problemas encontrados: [bold]{len(problems)}[/bold]\n"
+                f"Solver: [bold]{solver_name}[/bold]",
+                title="MODO MULTI-PROBLEMA",
+                border_style="blue",
+            ))
 
         results = []
         for i, problem in enumerate(problems, 1):
             if not quiet:
-                print(f"--- Problema {i} ---")
+                _console.print(f"\n[bold cyan]--- Problema {i} ---[/bold cyan]")
 
             import time
             start = time.perf_counter()
@@ -198,7 +209,7 @@ def solve_multi(
                 solve_time = time.perf_counter() - start
             except Exception as e:
                 if not quiet:
-                    print(f"  Error: {e}")
+                    _console.print(f"  [red]Error:[/red] {e}")
                 continue
 
             from src.solver import ProblemResult
@@ -211,12 +222,12 @@ def solve_multi(
 
             if not quiet:
                 if solution.is_optimal():
-                    print(f"  Estado: OPTIMAL")
-                    print(f"  Valor optimo: {solution.objective_value:.4f}")
+                    _console.print("  [green]Estado:[/green] OPTIMAL")
+                    _console.print(f"  [green]Valor optimo:[/green] {solution.objective_value:.4f}")
                     vars_str = ", ".join(f"{k}={v:.2f}" for k, v in solution.variables.items())
-                    print(f"  Variables: {vars_str}")
+                    _console.print(f"  Variables: {vars_str}")
                 else:
-                    print(f"  Estado: {solution.status}")
+                    _console.print(f"  [yellow]Estado:[/yellow] {solution.status}")
 
             if visualize and len(problem.variables) == 2:
                 from src.visualization import LinearVisualization
@@ -224,12 +235,11 @@ def solve_multi(
                 viz = LinearVisualization(problem, solution)
                 viz.plot(save_path=output_name, show=False)
                 if not quiet:
-                    print(f"  Grafico guardado: {output_name}")
+                    _console.print(f"  [green]Grafico guardado:[/green] {output_name}")
 
         if not quiet:
-            print(f"\nProblemas resueltos: {len(results)}/{len(problems)}")
+            _console.print(f"\nProblemas resueltos: [bold]{len(results)}/{len(problems)}[/bold]")
 
-        # JSON output for multi
         if json_output:
             import json
             json_results = []
@@ -241,11 +251,11 @@ def solve_multi(
                     "solve_time_ms": round(r.solve_time * 1000, 4),
                 })
             out = {"solver": solver_name, "problems": json_results}
-            print(json.dumps(out, indent=2))
+            _console.print(json.dumps(out, indent=2))
 
         if pdf and results:
             if not quiet:
-                print("Generando reporte PDF multi-problema...")
+                _console.print("[blue]Generando reporte PDF multi-problema...[/blue]")
             try:
                 from src.analysis.multi_analysis import MultiLPAnalysis
                 from src.solver import MultiSolverResult
@@ -255,10 +265,10 @@ def solve_multi(
                 analysis = MultiLPAnalysis(multi_result)
                 analysis.generate_pdf(str(pdf_path))
                 if not quiet:
-                    print(f"PDF guardado en: {pdf_path}")
+                    _console.print(f"[green]PDF guardado en:[/green] {pdf_path}")
             except Exception as e:
                 if not quiet:
-                    print(f"Error generando PDF multi: {e}")
+                    _console.print(f"[red]Error generando PDF multi:[/red] {e}")
                 if verbose:
                     import traceback
                     traceback.print_exc()
@@ -266,7 +276,7 @@ def solve_multi(
         return 0
 
     except Exception as e:
-        print(f"Error: {e}")
+        _console.print(f"[red]Error:[/red] {e}")
         if verbose:
             import traceback
             traceback.print_exc()

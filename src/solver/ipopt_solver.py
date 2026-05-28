@@ -3,8 +3,6 @@ Solver Ipopt para problemas de programacion lineal.
 Implementacion usando CasADi (interfaz Python a Ipopt).
 """
 
-import time
-
 try:
     import casadi as ca
     _is_solver_available = True
@@ -40,7 +38,7 @@ class IpoptSolver(BaseSolver):
         if _is_solver_available:
             try:
                 return ca.__version__
-            except:
+            except Exception:
                 return "casadi"
         return "casadi (not installed)"
 
@@ -57,8 +55,6 @@ class IpoptSolver(BaseSolver):
                 objective_value=None,
                 variables={},
             )
-
-        start_time = time.perf_counter()
 
         if problem.is_mip:
             return Solution(
@@ -116,6 +112,7 @@ class IpoptSolver(BaseSolver):
             if not self.config.verbose:
                 opts["ipopt.print_level"] = 0
                 opts["print_time"] = 0
+                opts["ipopt.sb"] = "yes"
             else:
                 opts["ipopt.print_level"] = 5
             if self.config.time_limit is not None and self.config.time_limit > 0:
@@ -124,8 +121,6 @@ class IpoptSolver(BaseSolver):
             opti.solver("ipopt", opts)
 
             sol = opti.solve()
-
-            solve_time = time.perf_counter() - start_time
 
             variables = {}
             for i, var in enumerate(variables_list):
@@ -154,7 +149,6 @@ class IpoptSolver(BaseSolver):
             )
 
         except Exception as e:
-            solve_time = time.perf_counter() - start_time
             err_str = str(e)
             status = "ERROR"
             if "Infeasible" in err_str or "infeasible" in err_str:

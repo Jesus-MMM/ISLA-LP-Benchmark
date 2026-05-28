@@ -1,4 +1,5 @@
-# Guia del Desarrollador - ISLA LP Benchmark v1.2.1
+# Guia del Desarrollador - ISLA LP Benchmark v1.8.2
+
 
 Esta guia es para **desarrolladores** que quieren extender o integrar el proyecto.
 
@@ -24,6 +25,7 @@ src/
 │   ├── scs_solver.py         # SCSSolver (scs)
 │   ├── ipopt_solver.py       # IpoptSolver (casadi)
 │   ├── benchmark.py          # BenchmarkRunner, BenchmarkConfig
+│   ├── parallel_benchmark.py # ParallelBenchmarkRunner (ProcessPoolExecutor)
 │   ├── multi_solver.py       # MultiSolverResult
 │   └── __init__.py           # Registro de todos los solvers
 ├── analysis/                 # Analisis y reportes
@@ -31,9 +33,12 @@ src/
 │   ├── benchmark_report.py   # BenchmarkReport - PDF benchmark
 │   ├── benchmark_results.py  # ResultsExporter, export_benchmark_results
 │   ├── multi_analysis.py     # MultiLPAnalysis - reporte multi-problema
+│   ├── sensitivity.py        # SensitivityAnalysis - sensibilidad nativa
+│   ├── statistics.py         # Pruebas estadisticas (Friedman, Nemenyi, ANOVA)
 │   └── __init__.py
 ├── parser/                   # Parsing de archivos
 │   ├── lp_parser.py          # LPParser - formato texto propio
+│   ├── mps_parser.py         # MPSParser - formato industrial MPS
 │   ├── cplex_parser.py       # CPLEXParser - formato CPLEX/LP
 │   ├── multi_parser.py       # MultiLPParser - multi-problema
 │   └── __init__.py
@@ -46,17 +51,20 @@ src/
 │   ├── constants.py          # Constantes centralizadas
 │   ├── verification.py       # verify_solution, compare_solutions
 │   └── __init__.py
-├── matrix/                   # Construccion Polars
+├── matrix/                   # Construccion y conversion
 │   ├── builder.py            # LPBuilder
 │   ├── matrix.py             # PolarsLP
+│   ├── converter.py          # MatrixConverter
 │   └── __init__.py
 ├── visualization/            # Graficos 2D
 │   ├── visualization.py      # LinearVisualization
+│   ├── benchmark_plots.py    # BenchmarkPlotter (perfiles Dolan-More, tasas exito)
 │   └── __init__.py
 └── utils/                    # Utilidades
     ├── validation.py         # LPValidator
     ├── exporter.py           # LPExporter
     ├── logging.py            # ExecutionTimes
+    ├── cache.py              # ProblemCache (SHA256, TTL)
     └── __init__.py
 ```
 
@@ -286,6 +294,87 @@ runner.export_csv(Path("results.csv"))
 runner.export_json(Path("results.json"))
 ```
 
+## ParallelBenchmarkRunner
+
+Ejecuta benchmarks con procesos independientes para aislar cada ejecucion:
+
+```python
+from src.solver.parallel_benchmark import ParallelBenchmarkRunner, ParallelBenchmarkConfig
+
+config = ParallelBenchmarkConfig(
+    timeout=300,         # Timeout por ejecucion (segundos)
+    max_workers=4,       # Procesos paralelos
+    collect_memory=True, # Medir memoria por proceso
+)
+
+runner = ParallelBenchmarkRunner(config)
+results = runner.run(problems, solvers)
+
+# Resumen
+summary = runner.get_summary()
+runner.print_summary()
+```
+
+## ProblemCache
+
+Cachea problemas parseados y resultados de solvers con hash SHA256:
+
+```python
+from src.utils.cache import ProblemCache
+
+cache = ProblemCache(ttl_hours=24)
+
+# Cachear problema parseado
+cache.set_parsed("hash_del_archivo", problem)
+
+# Recuperar
+cached = cache.get_parsed("hash_del_archivo")
+
+# Cachear resultado
+cache.set_result("hash", solver_name, result)
+
+# Estadisticas
+stats = cache.get_stats()
+print(stats)  # {parsed: 5, results: 12}
+```
+
+## Perfiles de Rendimiento (Dolan-More)
+
+```python
+from src.analysis.benchmark_results import performance_profile
+from src.visualization.benchmark_plots import BenchmarkPlotter
+
+# Calcular perfiles
+perfiles = performance_profile(results, tau_max=10.0)
+
+# Graficar
+plotter = BenchmarkPlotter(runner)
+plotter.plot_performance_profile(save_path="profile.png")
+```
+
+## Pruebas Estadisticas
+
+```python
+from src.analysis.statistics import friedman_test, nemenyi_posthoc, anova_one_way
+import numpy as np
+
+# Matriz (n_problemas, n_solvers) con tiempos
+data = np.array([[...], [...]])
+
+# Friedman
+result = friedman_test(data)
+print(f"Q = {result['statistic']:.4f}, p = {result['p_value']:.6f}")
+
+# Nemenyi post-hoc
+nemenyi = nemenyi_posthoc(np.array(result['avg_ranks']), n_problems=10)
+print(f"CD = {nemenyi['critical_difference']:.4f}")
+
+# ANOVA
+groups = [data[:, 0], data[:, 1], data[:, 2]]
+anova = anova_one_way(groups)
+print(f"F = {anova['statistic']:.4f}, p = {anova['p_value']:.6f}")
+```
+
 ## Verificacion de Soluciones
 
 ### verify_solution()
@@ -332,6 +421,32 @@ paths = export_benchmark_results(
 )
 # Retorna: {"json": Path(...), "csv": Path(...), "md": Path(...), "html": Path(...)}
 ```
+
+### LPExporter (exporter.py)
+
+Exporta problemas a formato CPLEX/LP y MPS.
+
+```python
+from src.utils.exporter import LPExporter
+
+# Exportar a formato LP
+exporter = LPExporter(problem)
+lp_text = exporter.export()
+
+# Exportar a formato MPS
+mps_text = exporter.export_mps()
+
+# Guardar en archivos
+exporter.export_to_file("problem.lp")
+exporter.export_to_mps_file("problem.mps")
+```
+
+**Parámetros del exportador:**
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `problem` | LinearProblem | requerido | Problema a exportar |
+| `precision` | int | 6 | Decimales en coeficientes |
+| `include_names` | bool | True | Incluir nombres de variables/restricciones |
 
 ## Analisis Multi-Problema
 
@@ -405,6 +520,80 @@ class MiParser:
         return LinearProblem(...)
 ```
 
+### MPSParser (mps_parser.py)
+
+Parsea el formato MPS estándar de la industria para problemas de optimización lineal.
+
+```python
+from src.parser.mps_parser import MPSParser
+
+# Parsear desde archivo
+parser = MPSParser()
+problem = parser.parse_file("problema.mps")
+
+# Parsear desde string
+problem = MPSParser().parse(mps_text)
+```
+
+**Secciones soportadas:**
+- `NAME` — nombre del problema
+- `ROWS` — definición de restricciones (N, L, G, E)
+- `COLUMNS` — coeficientes por columna
+- `RHS` — lados derechos
+- `BOUNDS` — limites de variables
+- `RANGES` — rangos para restricciones
+- `MARKER` — `INTORG`/`INTEND` para variables enteras
+
+```python
+# Uso programático
+from src.parser.mps_parser import MPSParser
+
+parser = MPSParser()
+problem = parser.parse(mps_content)
+
+# Acceder a problemas parseados
+print(problem.sense)      # "max" o "min"
+print(problem.variables)  # lista de nombres de variables
+print(problem.constraints) # lista de LinearConstraint
+```
+
+### ProblemGenerator (problem_generator.py)
+
+Genera problemas sintéticos para testing y benchmarking.
+
+```python
+from src.utils.problem_generator import ProblemGenerator
+
+gen = ProblemGenerator(seed=42)
+
+# Problema LP aleatorio
+lp = gen.generate_lp(n_vars=20, n_constraints=10, density=0.3)
+
+# Problema MILP aleatorio  
+milp = gen.generate_milp(n_vars=15, n_constraints=8, n_int_vars=5)
+
+# Problema estilo Netlib
+netlib_like = gen.generate_netlib_like("creators")
+
+# Problema mal condicionado
+ill = gen.generate_ill_conditioned()
+
+# Exportar a formatos
+lp.to_lp()   # Formato CPLEX/LP
+lp.to_mps()  # Formato MPS
+```
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `n_vars` | int | 10 | Número de variables |
+| `n_constraints` | int | 5 | Número de restricciones |
+| `density` | float | 0.3 | Densidad de la matriz (0-1) |
+| `n_int_vars` | int | 0 | Variables enteras (para MILP) |
+| `coeff_range` | tuple | (-10, 10) | Rango de coeficientes |
+| `rhs_range` | tuple | (-100, 100) | Rango de RHS |
+| `seed` | int | None | Semilla aleatoria |
+
 ### Agregar Visualizacion
 
 ```python
@@ -414,6 +603,49 @@ viz = BenchmarkVisualizer(runner)
 viz.plot_times_comparison(save_path="times.png")
 viz.plot_memory_comparison(save_path="memory.png")
 ```
+
+## Sistema de Logging
+
+El proyecto usa Python logging con nivel configurable via CLI (`--log-level`).
+
+### Configuracion por Defecto
+
+```python
+from src.utils.logging import get_logger, set_default_level, LogLevel
+
+# Obtener logger para el modulo actual
+logger = get_logger(__name__)
+
+# Cambiar nivel global
+set_default_level(LogLevel.DEBUG)
+
+# Uso en el modulo
+logger.debug("Mensaje detallado")
+logger.info("Proceso completado")
+logger.warning("Situacion inesperada")
+logger.error("Error recuperable")
+```
+
+### Uso en Solvers
+
+```python
+from src.utils.logging import get_logger
+
+logger = get_logger(__name__)
+
+try:
+    resultado = operacion_riesgosa()
+except Exception as e:
+    logger.debug(f"Error en operacion: {e}")
+    # Continuar con valor por defecto
+    resultado = None
+```
+
+### Buenas Practicas
+
+- Usar `get_logger(__name__)` en cada modulo (sigue la jerarquia del paquete)
+- NO usar `print()` ni `except: pass` — reemplazar con `logger.debug()`
+- El nivel `--log-level=DEBUG` activa toda la informacion de diagnostico
 
 ## Patrones Comunes
 

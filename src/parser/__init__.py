@@ -8,5 +8,6 @@ that can be used by optimization solvers like Gurobi.
 
 from .lp_parser import LPParser
 from .multi_parser import MultiLPParser
+from .mps_parser import MPSParser
 
-__all__ = ["LPParser", "MultiLPParser"]
+__all__ = ["LPParser", "MultiLPParser", "MPSParser"]

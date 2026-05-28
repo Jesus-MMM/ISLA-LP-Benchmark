@@ -1,4 +1,4 @@
-# Guia Matematica - ISLA LP Benchmark v1.2.1
+# Guia Matematica - ISLA LP Benchmark v1.8.2
 
 Esta guia es para **matematicos e investigadores** que quieren entender la teoria detras del sistema.
 
@@ -246,16 +246,100 @@ config = BenchmarkConfig(
 
 ---
 
+## Perfiles de Rendimiento (Dolan-More)
+
+El perfil de rendimiento (Dolan & More, 2002) es una herramienta estandar para comparar el desempeno de solvers en una coleccion de problemas.
+
+### Definicion
+
+Para cada solver `s` y problema `p`, sea `t_{p,s}` el tiempo de ejecucion. Se define la **razon de rendimiento**:
+
+```
+r_{p,s} = t_{p,s} / min_{s'} t_{p,s'}
+```
+
+La **funcion de distribucion acumulada** del solver `s` es:
+
+```
+rho_s(tau) = (1 / n_p) * |{p : r_{p,s} <= tau}|
+```
+
+Donde `n_p` es el numero total de problemas.
+
+### Interpretacion
+
+- `rho_s(1)`: fraccion de problemas donde el solver `s` es el mas rapido
+- `rho_s(tau)`: fraccion de problemas resueltos dentro de un factor `tau` del mejor tiempo
+- Un solver con curva mas alta es preferible (resuelve mas problemas dentro de un factor dado)
+
+### Uso en el Sistema
+
+```python
+from src.analysis.benchmark_results import performance_profile
+
+perfiles = performance_profile(results, tau_max=10.0, num_points=100)
+# Retorna {solver: (tau_values, rho_values)}
+```
+
+## Pruebas Estadisticas para Comparacion de Solvers
+
+### Test de Friedman
+
+El test de Friedman es una prueba no parametrica para detectar diferencias significativas entre k solvers en n problemas.
+
+**Hipotesis nula**: Todos los solvers tienen el mismo rendimiento (rangos promedio iguales).
+
+**Estadistico Q**:
+
+```
+Q = (12n) / (k(k+1)) * sum(R_j^2) - 3n(k+1)
+```
+
+Donde `R_j` es el rango promedio del solver `j`. Bajo la hipotesis nula, `Q` sigue una distribucion chi-cuadrado con `k-1` grados de libertad.
+
+### Test Post-hoc de Nemenyi
+
+Cuando Friedman rechaza la hipotesis nula, Nemenyi identifica que pares de solvers son significativamente diferentes.
+
+**Diferencia critica (CD)**:
+
+```
+CD = q_alpha * sqrt(k(k+1) / 6n)
+```
+
+Donde `q_alpha` es el valor critico de la distribucion de rangos estudentizados. Si la diferencia de rangos promedio entre dos solvers excede CD, son significativamente distintos.
+
+### ANOVA de una via
+
+ANOVA parametrico que compara las medias de k grupos:
+
+```
+F = (SSB / (k-1)) / (SSW / (N-k))
+```
+
+Donde SSB es la varianza entre grupos y SSW la varianza dentro de grupos. Util cuando los datos cumplen normalidad y homogeneidad de varianzas.
+
+### Uso en el Sistema
+
+```python
+from src.analysis.statistics import friedman_test, nemenyi_posthoc
+
+data = np.array([...])  # (n_problemas, n_solvers)
+friedman = friedman_test(data)
+nemenyi = nemenyi_posthoc(np.array(friedman['avg_ranks']), n_problems=data.shape[0])
+```
+
 ## Referencias
 
-1. Dantzig, G. B. (1963). *Linear Programming and Extensions*. Princeton University Press.
-2. Bertsimas, D., & Tsitsiklis, J. N. (1997). *Introduction to Linear Optimization*. Athena Scientific.
-3. Boyd, S. et al. (2011). *Distributed Optimization and Statistical Learning via ADMM*. Foundations and Trends in ML.
-4. Vandenberghe, L. (2010). *The CVXOPT Linear and Quadratic Programming Solver*.
-5. O'Donoghue, B. et al. (2016). *Conic Optimization via Operator Splitting and Homogeneous Self-Dual Embedding*. JOTA.
-6. Domahidi, A. et al. (2013). *ECOS: An SOCP solver for embedded systems*. ECC.
-7. HiGHS Documentation. *Highs Optimization Solver*.
-8. GLPK Documentation. *GNU Linear Programming Kit*.
-9. COIN-OR Documentation. *CBC*.
+1. Dolan, E. D., & More, J. J. (2002). *Benchmarking optimization software with performance profiles*. Mathematical Programming, 91(2), 201-213.
+2. Dantzig, G. B. (1963). *Linear Programming and Extensions*. Princeton University Press.
+3. Bertsimas, D., & Tsitsiklis, J. N. (1997). *Introduction to Linear Optimization*. Athena Scientific.
+4. Boyd, S. et al. (2011). *Distributed Optimization and Statistical Learning via ADMM*. Foundations and Trends in ML.
+5. Vandenberghe, L. (2010). *The CVXOPT Linear and Quadratic Programming Solver*.
+6. O'Donoghue, B. et al. (2016). *Conic Optimization via Operator Splitting and Homogeneous Self-Dual Embedding*. JOTA.
+7. Domahidi, A. et al. (2013). *ECOS: An SOCP solver for embedded systems*. ECC.
+8. HiGHS Documentation. *Highs Optimization Solver*.
+9. GLPK Documentation. *GNU Linear Programming Kit*.
+10. COIN-OR Documentation. *CBC*.
 
 Para detalles de API, ver [README.md](../README.md).

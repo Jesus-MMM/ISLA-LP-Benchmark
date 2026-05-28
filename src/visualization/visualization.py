@@ -262,7 +262,7 @@ class LinearVisualization:
                 x_vals, y_vals = self._get_line_points(c, x_min, x_max, y_min, y_max)
                 linestyle = '-' if c.sense == "<=" else ('--' if c.sense == ">=" else ':')
                 ax.plot(x_vals, y_vals, linestyle=linestyle, color='gray', 
-                       linewidth=1.5, alpha=0.6, label=f'Bound')
+                       linewidth=1.5, alpha=0.6, label='Bound')
         
         intersections = []
         for i, c1 in enumerate(all_constraints):
@@ -337,7 +337,9 @@ class LinearVisualization:
             plt.savefig(save_path, dpi=150, bbox_inches='tight', facecolor='white')
         
         if show:
-            plt.show()
+            import matplotlib
+            if matplotlib.get_backend() != 'Agg':
+                plt.show()
         
         plt.close()
 
