@@ -1,0 +1,245 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Optional
+
+
+class ContentType(str, Enum):
+    """Supported content types for report elements."""
+    TITLE = "title"
+    SUBTITLE = "subtitle"
+    HEADING = "heading"
+    PARAGRAPH = "paragraph"
+    IMAGE = "image"
+    TABLE = "table"
+    CHART = "chart"
+    SPACER = "spacer"
+    CITATION = "citation"
+    REFERENCE = "reference"
+    PAGE_BREAK = "page_break"
+    LIST = "list"
+    CODE_BLOCK = "code_block"
+    FORMULA = "formula"
+    NOTE = "note"
+    FOOTER = "footer"
+    HEADER = "header"
+    ABSTRACT = "abstract"
+    CAPTION = "caption"
+    DATA_BLOCK = "data_block"
+    CUSTOM = "custom"
+
+
+@dataclass
+class StyleDefinition:
+    """Defines visual styling for a report element."""
+    font_family: str = "Helvetica"
+    font_size: int = 10
+    bold: bool = False
+    italic: bool = False
+    underline: bool = False
+    color: str = "000000"
+    background_color: Optional[str] = None
+    alignment: str = "left"
+    margin_top: float = 0.0
+    margin_bottom: float = 0.0
+    margin_left: float = 0.0
+    margin_right: float = 0.0
+    padding: float = 0.0
+    border: bool = False
+    border_color: str = "000000"
+    border_width: float = 0.2
+    width: Optional[float] = None
+    height: Optional[float] = None
+    indent: float = 0.0
+    line_height: float = 1.5
+    spacing_before: float = 0.0
+    spacing_after: float = 0.0
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> StyleDefinition:
+        valid_keys = cls.__dataclass_fields__.keys()
+        filtered = {k: v for k, v in data.items() if k in valid_keys}
+        return cls(**filtered)
+
+
+@dataclass
+class TableColumn:
+    header: str
+    width: Optional[float] = None
+    alignment: str = "left"
+    style: Optional[str] = None
+
+
+@dataclass
+class TableDefinition:
+    headers: list[TableColumn] = field(default_factory=list)
+    rows: list[list[str]] = field(default_factory=list)
+    caption: Optional[str] = None
+    style: str = "apa_table"
+    header_style: str = "apa_table_header"
+
+
+@dataclass
+class ImageDefinition:
+    path: str
+    width: Optional[float] = None
+    height: Optional[float] = None
+    caption: Optional[str] = None
+    alignment: str = "center"
+    alt_text: Optional[str] = None
+
+
+@dataclass
+class ChartDefinition:
+    chart_type: str
+    data_key: str
+    width: Optional[float] = None
+    height: Optional[float] = None
+    caption: Optional[str] = None
+    options: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class CitationDefinition:
+    key: str
+    text: Optional[str] = None
+    authors: str = ""
+    year: str = ""
+    title: str = ""
+    source: str = ""
+    doi: Optional[str] = None
+
+
+@dataclass
+class ReferenceDefinition:
+    key: str
+    authors: str = ""
+    year: str = ""
+    title: str = ""
+    journal: Optional[str] = None
+    volume: Optional[str] = None
+    issue: Optional[str] = None
+    pages: Optional[str] = None
+    publisher: Optional[str] = None
+    doi: Optional[str] = None
+    url: Optional[str] = None
+    accessed_date: Optional[str] = None
+
+
+@dataclass
+class PageConfig:
+    width: float = 215.9
+    height: float = 279.4
+    margin_top: float = 15.0
+    margin_bottom: float = 15.0
+    margin_left: float = 15.0
+    margin_right: float = 15.0
+    page_numbering: bool = True
+    header_enabled: bool = True
+    footer_enabled: bool = True
+    orientation: str = "portrait"
+    size: str = "letter"
+
+
+@dataclass
+class ReportElement:
+    """A single element in the report document model."""
+    element_id: str
+    content_type: ContentType
+    content: str
+    language: str = ""
+    style: str = "default"
+    visible: bool = True
+    metadata: dict[str, Any] = field(default_factory=dict)
+    children: list[ReportElement] = field(default_factory=list)
+    condition: Optional[str] = None
+    order: int = 0
+
+    def resolve_content(self, localization_fn, data_context: DataContext) -> str:
+        text = self.content
+        if localization_fn:
+            text = localization_fn(text)
+        if data_context:
+            text = data_context.resolve(text)
+        return text
+
+
+LocaleDict = dict[str, dict[str, str]]
+
+
+@dataclass
+class DataContext:
+    """Runtime data for template variable resolution."""
+    variables: dict[str, Any] = field(default_factory=dict)
+    tables: dict[str, list[list[str]]] = field(default_factory=dict)
+    charts: dict[str, ChartDefinition] = field(default_factory=dict)
+    images: dict[str, ImageDefinition] = field(default_factory=dict)
+    citations: dict[str, CitationDefinition] = field(default_factory=dict)
+    references: dict[str, ReferenceDefinition] = field(default_factory=dict)
+
+    def resolve(self, text: str) -> str:
+        import re
+        def _replace(match):
+            key = match.group(1).strip()
+            value = self.variables.get(key)
+            if value is None:
+                return f"{{{{{key}}}}}"
+            return str(value)
+        return re.sub(r'\{\{(\w+)\}\}', _replace, text)
+
+    def get_or_default(self, key: str, default: Any = "") -> Any:
+        return self.variables.get(key, default)
+
+
+@dataclass
+class RenderContext:
+    """Context passed through the rendering pipeline."""
+    page_config: PageConfig = field(default_factory=PageConfig)
+    data: DataContext = field(default_factory=DataContext)
+    locale: LocaleDict = field(default_factory=dict)
+    current_language: str = "en"
+    fallback_language: str = "en"
+    styles: dict[str, StyleDefinition] = field(default_factory=dict)
+    diagnostics: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[ReportError] = field(default_factory=list)
+
+    def add_warning(self, message: str) -> None:
+        self.warnings.append(message)
+
+    def add_error(self, error: ReportError) -> None:
+        self.errors.append(error)
+
+    def add_diagnostic(self, message: str) -> None:
+        self.diagnostics.append(message)
+
+
+@dataclass
+class DocumentModel:
+    """Intermediate document model representing the entire report."""
+    elements: list[ReportElement] = field(default_factory=list)
+    page_config: PageConfig = field(default_factory=PageConfig)
+    styles: dict[str, StyleDefinition] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    language: str = "en"
+    title: Optional[str] = None
+    author: Optional[str] = None
+    date: Optional[str] = None
+    references: list[ReferenceDefinition] = field(default_factory=list)
+    citations: list[CitationDefinition] = field(default_factory=list)
+
+    def add_element(self, element: ReportElement) -> None:
+        self.elements.append(element)
+
+    def get_elements_by_type(self, content_type: ContentType) -> list[ReportElement]:
+        return [e for e in self.elements if e.content_type == content_type]
+
+    def get_element_by_id(self, element_id: str) -> Optional[ReportElement]:
+        for e in self.elements:
+            if e.element_id == element_id:
+                return e
+        return None
+
+    def remove_element(self, element_id: str) -> None:
+        self.elements = [e for e in self.elements if e.element_id != element_id]

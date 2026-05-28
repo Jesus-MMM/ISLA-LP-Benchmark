@@ -1,0 +1,77 @@
+from typing import Optional
+
+
+class ReportError(Exception):
+    """Base exception for all report engine errors."""
+
+    def __init__(self, message: str, details: Optional[dict] = None):
+        self.message = message
+        self.details = details or {}
+        super().__init__(self.message)
+
+
+class CSVParseError(ReportError):
+    """Error parsing CSV report definition."""
+
+    def __init__(self, message: str, row: Optional[int] = None, file_path: Optional[str] = None):
+        details = {}
+        if row is not None:
+            details["row"] = row
+        if file_path is not None:
+            details["file"] = file_path
+        super().__init__(message, details)
+
+
+class LocalizationError(ReportError):
+    """Error resolving localization key."""
+
+    def __init__(self, key: str, language: str, message: Optional[str] = None):
+        details = {"key": key, "language": language}
+        msg = message or f"Missing localization key '{key}' for language '{language}'"
+        super().__init__(msg, details)
+
+
+class TagParseError(ReportError):
+    """Error parsing rich text tags."""
+
+    def __init__(self, message: str, position: Optional[int] = None, tag: Optional[str] = None):
+        details = {}
+        if position is not None:
+            details["position"] = position
+        if tag is not None:
+            details["tag"] = tag
+        super().__init__(message, details)
+
+
+class DataBindingError(ReportError):
+    """Error resolving data binding."""
+
+    def __init__(self, key: str, message: Optional[str] = None):
+        details = {"key": key}
+        msg = message or f"Missing data binding key '{key}'"
+        super().__init__(msg, details)
+
+
+class StyleNotFoundError(ReportError):
+    """Requested style not found."""
+
+    def __init__(self, style_name: str):
+        super().__init__(f"Style '{style_name}' not found", {"style": style_name})
+
+
+class RenderError(ReportError):
+    """Error during rendering."""
+
+    def __init__(self, message: str, element_id: Optional[str] = None):
+        details = {}
+        if element_id is not None:
+            details["element_id"] = element_id
+        super().__init__(message, details)
+
+
+class ValidationError(ReportError):
+    """Report validation error."""
+
+    def __init__(self, message: str, issues: Optional[list[str]] = None):
+        details = {"issues": issues or []}
+        super().__init__(message, details)
