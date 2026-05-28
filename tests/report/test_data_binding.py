@@ -24,7 +24,7 @@ def test_resolve_variables_missing():
 
 def test_resolve_variables_multiple():
     data = DataContext(variables={"a": "1", "b": "2"})
-    result = resolve_variables("{{a}} + {{b}} = {{sum}}")
+    result = resolve_variables("{{a}} + {{b}} = {{sum}}", data)
     assert result == "1 + 2 = {{sum}}"
 
 
@@ -61,6 +61,8 @@ def test_bind_data_to_element_condition():
         visible=False,
         condition="show_section",
     )
+    # Default visible is True; override with condition
+    element.visible = False
 
     def localize(key):
         return key

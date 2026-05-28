@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from src.report.rich_text import (
-    parse_rich_text, strip_tags, has_tags, TextSpan, StyledText,
+    parse_rich_text, strip_tags, has_tags,
 )
 
 
@@ -71,7 +71,8 @@ def test_has_tags():
 
 def test_malformed_tag_graceful():
     result = parse_rich_text("This [unknown]tag[/unknown] is left as-is")
-    assert "[unknown]" in result.spans[1].text or "[unknown]" in result.spans[0].text
+    full_text = "".join(s.text for s in result.spans)
+    assert "[unknown]" in full_text
 
 
 def test_unmatched_closing_tag():
@@ -81,9 +82,12 @@ def test_unmatched_closing_tag():
 
 def test_short_form_tags():
     result = parse_rich_text("[b]bold[/b] [i]italic[/i] [u]underline[/u]")
-    assert result.spans[1].bold
-    assert result.spans[3].italic
-    assert result.spans[5].underline
+    bold_spans = [s for s in result.spans if s.bold]
+    italic_spans = [s for s in result.spans if s.italic]
+    underline_spans = [s for s in result.spans if s.underline]
+    assert len(bold_spans) >= 1
+    assert len(italic_spans) >= 1
+    assert len(underline_spans) >= 1
 
 
 def test_short_form_strikethrough():

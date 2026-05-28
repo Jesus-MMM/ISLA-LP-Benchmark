@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Optional
 
 from fpdf import FPDF
 from fpdf.enums import Align, XPos, YPos
 
 from ..core.types import (
     DocumentModel, ReportElement, ContentType, StyleDefinition,
-    PageConfig, RenderContext,
+    PageConfig,
 )
 from ..core.exceptions import RenderError, StyleNotFoundError
-from ..rich_text import parse_rich_text, TextSpan
+from ..rich_text import parse_rich_text
 from ..styles import get_style
-from ..apa import APA_STYLES
 from .base import BaseRenderer, RenderResult
 
 
@@ -61,8 +59,9 @@ class ReportPDF(FPDF):
             bg = self._parse_color(style.background_color)
             self.set_fill_color(*bg)
 
+        self.set_x(self.l_margin)
         self.multi_cell(
-            w=0,
+            w=self.w - self.l_margin - self.r_margin,
             h=style.font_size * style.line_height,
             text=text,
             align=self._get_alignment(style.alignment),
@@ -79,6 +78,7 @@ class ReportPDF(FPDF):
         base_font = style.font_family
         base_size = style.font_size
         base_color = self._parse_color(style.color)
+        avail_w = self.w - self.l_margin - self.r_margin
 
         if parsed.is_list and parsed.list_items:
             for item in parsed.list_items:
@@ -86,7 +86,7 @@ class ReportPDF(FPDF):
                 self.set_text_color(*base_color)
                 self.cell(5, base_size * style.line_height, "•")
                 self.multi_cell(
-                    w=0,
+                    w=avail_w - 5,
                     h=base_size * style.line_height,
                     text=item,
                     align=self._get_alignment(align),
@@ -112,8 +112,9 @@ class ReportPDF(FPDF):
 
             text = span.text
             if text:
+                self.set_x(self.l_margin)
                 self.multi_cell(
-                    w=0,
+                    w=avail_w,
                     h=size * style.line_height,
                     text=text,
                     align=self._get_alignment(align),
@@ -175,8 +176,14 @@ class PDFRenderer(BaseRenderer):
         pdf.set_auto_page_break(auto=True, margin=model.page_config.margin_bottom)
 
         elements = [e for e in model.elements if e.visible]
+        needs_page = True
         for element in elements:
+            if needs_page:
+                pdf.add_page()
+                needs_page = False
             self._render_element(pdf, element, all_styles, model)
+            if element.content_type == ContentType.PAGE_BREAK:
+                needs_page = True
 
         return pdf
 

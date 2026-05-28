@@ -133,15 +133,15 @@ def rows_to_elements(rows: list[dict[str, Any]]) -> list[ReportElement]:
         content_type = CONTENT_TYPE_MAP.get(row["type"], ContentType.CUSTOM)
 
         element = ReportElement(
-            element_id=row["id"],
+            element_id=row.get("id", ""),
             content_type=content_type,
-            content=row["content"],
-            style=row["style"],
-            language=row["language"],
-            visible=row["visible"],
-            condition=row["condition"],
-            order=row["order"],
-            metadata=row["metadata"],
+            content=row.get("content", ""),
+            style=row.get("style", "default"),
+            language=row.get("language", ""),
+            visible=row.get("visible", True),
+            condition=row.get("condition") or None,
+            order=row.get("order", 0),
+            metadata=row.get("metadata", {}),
         )
         elements.append(element)
 

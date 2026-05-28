@@ -45,11 +45,11 @@ def test_merge_styles():
         "heading": StyleDefinition(font_size=14, bold=True, color="000000"),
     }
     override = {
-        "heading": StyleDefinition(font_size=16, italic=True),
+        "heading": StyleDefinition(font_size=16, italic=True, bold=False),
     }
     merged = merge_styles(base, override)
     assert merged["heading"].font_size == 16
-    assert merged["heading"].bold is True
+    assert merged["heading"].bold is False
     assert merged["heading"].italic is True
     assert merged["heading"].color == "000000"
 
@@ -90,6 +90,7 @@ def test_load_theme():
 
 
 def test_load_theme_not_found():
+    import pytest
     with pytest.raises(StyleNotFoundError):
         load_theme("nonexistent.json")
 

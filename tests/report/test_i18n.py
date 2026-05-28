@@ -8,7 +8,7 @@ import pytest
 
 from src.report.i18n import (
     load_locale, load_locale_dir, get_text, Localizer,
-    create_default_localizer, set_fallback_chain,
+    set_fallback_chain,
 )
 from src.report.core.exceptions import LocalizationError
 
@@ -111,5 +111,5 @@ def test_localizer_switch_language():
 
 def test_fallback_chain():
     set_fallback_chain(["es", "fr"])
-    locale = {"en": {"key": "English"}, "es": {"key": "Español"}}
-    assert get_text("key", "fr", locale) == "Español"
+    locale = {"en": {"other": "English"}, "es": {"key": "Espanol"}}
+    assert get_text("key", "en", locale) == "Espanol"

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional
 
 from .core.exceptions import TagParseError
@@ -136,12 +135,29 @@ def parse_rich_text(text: str, strict: bool = False) -> StyledText:
         tag_name = match.group(1).lower()
         tag_value = match.group(2)
 
+        if tag_name in ("/b", "/bold", "/i", "/italic", "/u", "/underline",
+                         "/s", "/strikethrough", "/sup", "/superscript",
+                         "/sub", "/subscript", "/color", "/size", "/font"):
+            is_closing = True
+            tag_name = tag_name[1:]
+
         if tag_name not in VALID_TAGS:
             current_span.text += tag_text
             pos = match.end()
             continue
 
         if is_closing:
+            if tag_name == "item":
+                _push_span()
+                current_span = TextSpan(text="__ITEM_SEP__")
+                _push_span()
+                current_span = TextSpan(text="")
+                pos = match.end()
+                continue
+            if tag_name == "list":
+                _push_span()
+                pos = match.end()
+                continue
             if tag_name not in CLOSING_TAGS:
                 current_span.text += tag_text
                 pos = match.end()
@@ -173,9 +189,13 @@ def parse_rich_text(text: str, strict: bool = False) -> StyledText:
                 _push_span()
                 result.is_list = True
                 current_span = TextSpan(text="")
+                pos = match.end()
+                continue
             elif tag_name == "list":
                 _push_span()
                 result.is_list = True
+                pos = match.end()
+                continue
 
         pos = match.end()
 
@@ -192,15 +212,18 @@ def parse_rich_text(text: str, strict: bool = False) -> StyledText:
 
 
 def _extract_list_items(spans: list[TextSpan]) -> list[str]:
-    """Extract list item text from spans."""
     items: list[str] = []
     current: list[str] = []
     for span in spans:
-        if span.text and span.text.strip():
-            current.append(span.text)
-        elif span.text == "\n" and current:
-            items.append(" ".join(current))
-            current = []
+        text = span.text
+        if text == "__ITEM_SEP__":
+            if current:
+                items.append(" ".join(current))
+                current = []
+            continue
+        if not text.strip():
+            continue
+        current.append(text.strip())
     if current:
         items.append(" ".join(current))
     return items

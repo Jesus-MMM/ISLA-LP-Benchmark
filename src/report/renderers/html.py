@@ -3,8 +3,7 @@ from __future__ import annotations
 from html import escape
 
 from ..core.types import DocumentModel, ContentType, StyleDefinition
-from ..rich_text import parse_rich_text, strip_tags
-from ..styles import get_style
+from ..rich_text import parse_rich_text
 from .base import BaseRenderer, RenderResult
 
 
@@ -71,7 +70,6 @@ h3 { font-size: 12pt; font-weight: bold; }
         element,
         styles: dict[str, StyleDefinition],
     ) -> str:
-        style = get_style(element.style, styles)
         content = escape(element.content)
 
         if element.content_type == ContentType.TITLE:

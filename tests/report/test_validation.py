@@ -3,11 +3,9 @@ from __future__ import annotations
 import tempfile
 import os
 
-import pytest
 
 from src.report.validation import ReportValidator, validate_report
 from src.report.core.types import DocumentModel, ReportElement, ContentType
-from src.report.core.exceptions import ValidationError
 
 
 SAMPLE_CSV = """type,id,content,style,language,visible,order

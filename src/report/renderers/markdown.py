@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from ..core.types import DocumentModel, ContentType
 from ..rich_text import strip_tags
-from ..styles import get_style
 from .base import BaseRenderer, RenderResult
 
 

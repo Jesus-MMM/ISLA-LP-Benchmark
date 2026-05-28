@@ -4,7 +4,6 @@ import re
 from typing import Any, Optional
 
 from .core.types import DataContext, ReportElement, DocumentModel
-from .core.exceptions import DataBindingError
 
 
 VARIABLE_PATTERN = re.compile(r'\{\{(\w+(?:\.\w+)*)\}\}')
@@ -64,6 +63,7 @@ def resolve_condition(element: ReportElement, data: DataContext) -> bool:
     Supports truthy/falsy checks.
     {% if variable %} shows element if variable is truthy.
     {% unless variable %} shows element if variable is falsy.
+    Simple variable name checks truthiness directly.
 
     Args:
         element: The report element with optional condition.
@@ -75,24 +75,24 @@ def resolve_condition(element: ReportElement, data: DataContext) -> bool:
     if not element.condition:
         return element.visible
 
-    text = element.condition
+    text = element.condition.strip()
+
     match = CONDITION_PATTERN.match(text)
-    if not match:
+    if match:
+        keyword = match.group(1)
+        var_name = match.group(2)
+        condition_body = match.group(3).strip()
+        value = _resolve_key(var_name, data.variables)
+        is_truthy = bool(value) if value is not None else False
+        if keyword == "if":
+            return is_truthy if condition_body else is_truthy
+        elif keyword == "unless":
+            return not is_truthy if condition_body else not is_truthy
         return element.visible
 
-    keyword = match.group(1)
-    var_name = match.group(2)
-    condition_body = match.group(3).strip()
-
-    value = _resolve_key(var_name, data.variables)
+    value = _resolve_key(text, data.variables)
     is_truthy = bool(value) if value is not None else False
-
-    if keyword == "if":
-        return is_truthy if condition_body else is_truthy
-    elif keyword == "unless":
-        return not is_truthy if condition_body else not is_truthy
-
-    return element.visible
+    return is_truthy
 
 
 def bind_data_to_element(

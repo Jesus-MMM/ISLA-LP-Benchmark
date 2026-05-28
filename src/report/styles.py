@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Optional
+from typing import Optional
 
 from .core.types import StyleDefinition, PageConfig
 from .core.exceptions import StyleNotFoundError
@@ -135,7 +135,9 @@ def merge_styles(
         if name in merged:
             base_dict = merged[name].__dict__
             override_dict = override_style.__dict__
-            merged_dict = {**base_dict, **{k: v for k, v in override_dict.items() if v is not None}}
+            merged_dict = dict(base_dict)
+            for k, v in override_dict.items():
+                merged_dict[k] = v
             merged[name] = StyleDefinition(**merged_dict)
         else:
             merged[name] = override_style

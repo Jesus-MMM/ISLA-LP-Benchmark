@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Optional
+from typing import Optional
 
 from .core.exceptions import LocalizationError
 from .core.types import LocaleDict

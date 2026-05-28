@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
+from src.report.core.exceptions import ReportError
+
 
 class ContentType(str, Enum):
     """Supported content types for report elements."""
