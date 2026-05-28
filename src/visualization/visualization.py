@@ -337,7 +337,9 @@ class LinearVisualization:
             plt.savefig(save_path, dpi=150, bbox_inches='tight', facecolor='white')
         
         if show:
-            plt.show()
+            import matplotlib
+            if matplotlib.get_backend() != 'Agg':
+                plt.show()
         
         plt.close()
 

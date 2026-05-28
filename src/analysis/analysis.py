@@ -898,7 +898,9 @@ class LPAnalysis:
             ax.grid(True, alpha=0.3, linestyle='--')
             ax.axhline(y=0, color='black', linewidth=1)
             ax.axvline(x=0, color='black', linewidth=1)
-            ax.legend(loc='upper right', fontsize=8, framealpha=0.9)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend(loc='upper right', fontsize=8, framealpha=0.9)
             
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
                 plt.savefig(tmp.name, dpi=300, bbox_inches='tight', facecolor='white')

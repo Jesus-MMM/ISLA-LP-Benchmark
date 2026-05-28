@@ -112,6 +112,7 @@ class IpoptSolver(BaseSolver):
             if not self.config.verbose:
                 opts["ipopt.print_level"] = 0
                 opts["print_time"] = 0
+                opts["ipopt.sb"] = "yes"
             else:
                 opts["ipopt.print_level"] = 5
             if self.config.time_limit is not None and self.config.time_limit > 0:

@@ -62,6 +62,7 @@ class HiGHSSolver(BaseSolver):
             variables_list = data["variables"]
             
             hp = highspy.Highs()
+            hp.setOptionValue("output_flag", False)
             
             for lb, ub in zip(data["col_lower"], data["col_upper"]):
                 hp.addVar(lb, ub)

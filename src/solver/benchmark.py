@@ -8,7 +8,9 @@ from typing import Optional, List, Dict, Any
 import time
 import json
 import os
+import sys
 import gc
+import contextlib
 from pathlib import Path
 
 try:
@@ -95,6 +97,34 @@ class BenchmarkConfig:
     cross_validate: bool = True
 
 
+@contextlib.contextmanager
+def _suppress_stdout():
+    """Redirige stdout/stderr a devnull a nivel C y Python.
+    
+    Usa devnull en vez de StringIO porque Rich necesita que
+    sys.stdout soporte fileno() (metodo de terminal).
+    """
+    devnull = os.devnull
+    old_fd1 = os.dup(1)
+    old_fd2 = os.dup(2)
+    old_py_stdout = sys.stdout
+    old_py_stderr = sys.stderr
+    try:
+        with open(devnull, 'w') as dn_fd, open(devnull, 'w') as dn_py:
+            os.dup2(dn_fd.fileno(), 1)
+            os.dup2(dn_fd.fileno(), 2)
+            sys.stdout = dn_py
+            sys.stderr = dn_py
+            yield
+    finally:
+        sys.stdout = old_py_stdout
+        sys.stderr = old_py_stderr
+        os.dup2(old_fd1, 1)
+        os.dup2(old_fd2, 2)
+        os.close(old_fd1)
+        os.close(old_fd2)
+
+
 class BenchmarkRunner:
     """
     Orquestador de benchmarking para solvers de PL.
@@ -115,7 +145,8 @@ class BenchmarkRunner:
     def run(
         self,
         problems: List[tuple[str, str]],
-        solvers: Optional[List[str]] = None
+        solvers: Optional[List[str]] = None,
+        on_result: Optional[callable] = None,
     ) -> List[BenchmarkResult]:
         """
         Ejecuta el benchmark.
@@ -123,6 +154,7 @@ class BenchmarkRunner:
         Args:
             problems: Lista de (nombre, texto_problema)
             solvers: Lista de nombres de solvers. Si es None, usa todos los disponibles.
+            on_result: Callable opcional que se invoca tras cada resultado individual.
             
         Returns:
             Lista de resultados del benchmark.
@@ -152,6 +184,8 @@ class BenchmarkRunner:
                     result = self._run_single(solver_name, problem_name, problem_text)
                     self.results.append(result)
                     problem_results[problem_name].append(result)
+                    if on_result is not None:
+                        on_result(result)
         
         # F6-2: Cross-validation between solvers
         if self.config.cross_validate:
@@ -244,42 +278,44 @@ class BenchmarkRunner:
                 verbose=self.config.verbose,
                 time_limit=self.config.time_limit,
             )
-            try:
-                solver = solver_class(problem, scfg)
-            except TypeError:
-                solver = solver_class(problem)
-                solver.config = scfg
-            
-            # Verificar si el solver soporta MILP si el problema es MIP
-            if problem.is_mip and not solver.capabilities.milp:
-                return BenchmarkResult(
-                    solver_name=solver_name,
-                    problem_name=problem_name,
-                    problem_text=problem_text,
-                    solution=Solution(status="ERROR: Solver does not support MILP", objective_value=None, variables={}),
-                    stats=SolverStats(),
-                    total_time=time.perf_counter() - total_start,
-                    error=" la capacidad de MILP no es soportada por este solver"
-                )
-            
-            # F6-5: Measure memory after solver creation (more accurate per-solver)
-            if self.config.collect_memory and PSUTIL_AVAILABLE:
-                gc.collect()
-                memory_solver_created = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-            
-            # Warmup en la MISMA instancia
-            if self.config.warmup_runs > 0:
-                for _ in range(self.config.warmup_runs):
-                    try:
-                        solver.solve()
-                    except Exception as e:
-                        logger = __import__('logging').getLogger(__name__)
-                        logger.debug(f"Error en warmup run: {e}")
-                # Reiniciar stats pero mantener estado interno
-                solver.reset()
-            
-            solve_start = time.perf_counter()
-            solution = solver.solve()
+            solver_ctx = _suppress_stdout() if not self.config.verbose else contextlib.nullcontext()
+            with solver_ctx:
+                try:
+                    solver = solver_class(problem, scfg)
+                except TypeError:
+                    solver = solver_class(problem)
+                    solver.config = scfg
+                
+                # Verificar si el solver soporta MILP si el problema es MIP
+                if problem.is_mip and not solver.capabilities.milp:
+                    return BenchmarkResult(
+                        solver_name=solver_name,
+                        problem_name=problem_name,
+                        problem_text=problem_text,
+                        solution=Solution(status="ERROR: Solver does not support MILP", objective_value=None, variables={}),
+                        stats=SolverStats(),
+                        total_time=time.perf_counter() - total_start,
+                        error=" la capacidad de MILP no es soportada por este solver"
+                    )
+                
+                # F6-5: Measure memory after solver creation (more accurate per-solver)
+                if self.config.collect_memory and PSUTIL_AVAILABLE:
+                    gc.collect()
+                    memory_solver_created = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+                
+                # Warmup en la MISMA instancia
+                if self.config.warmup_runs > 0:
+                    for _ in range(self.config.warmup_runs):
+                        try:
+                            solver.solve()
+                        except Exception as e:
+                            logger = __import__('logging').getLogger(__name__)
+                            logger.debug(f"Error en warmup run: {e}")
+                    # Reiniciar stats pero mantener estado interno
+                    solver.reset()
+                
+                solve_start = time.perf_counter()
+                solution = solver.solve()
             solve_time = time.perf_counter() - solve_start
             
             stats = solver.get_stats()
@@ -465,26 +501,28 @@ class BenchmarkRunner:
                     r.error or ""
                 ])
     
-    def print_summary(self) -> None:
-        """Imprime un resumen en consola."""
+    def print_summary(self) -> str:
+        """Genera un resumen en texto."""
         summary = self.get_summary()
         
-        print("\n" + "="*60)
-        print("BENCHMARK SUMMARY")
-        print("="*60)
-        print(f"Total de pruebas: {summary['total_benchmarks']}")
-        print(f"Exitosas: {summary['successful']}")
-        print(f"Fallidas: {summary['failed']}")
+        lines = []
+        lines.append("\n" + "="*60)
+        lines.append("BENCHMARK SUMMARY")
+        lines.append("="*60)
+        lines.append(f"Total de pruebas: {summary.get('total_benchmarks', 0)}")
+        lines.append(f"Exitosas: {summary.get('successful', 0)}")
+        lines.append(f"Fallidas: {summary.get('failed', 0)}")
         
-        print("\nPor Solver:")
-        print("-"*60)
-        print(f"{'Solver':<15} {'Runs':<8} {'Exitosos':<10} {'Tiempo Promedio':<15}")
-        print("-"*60)
+        lines.append("\nPor Solver:")
+        lines.append("-"*60)
+        lines.append(f"{'Solver':<15} {'Runs':<8} {'Exitosos':<10} {'Tiempo Promedio':<15}")
+        lines.append("-"*60)
         
         for solver, data in summary["by_solver"].items():
-            print(f"{solver:<15} {data['runs']:<8} {data['successful']:<10} {data['avg_time']*1000:.6f}ms")
+            lines.append(f"{solver:<15} {data['runs']:<8} {data['successful']:<10} {data['avg_time']*1000:.6f}ms")
         
-        print("\n" + "="*60)
+        lines.append("\n" + "="*60)
+        return "\n".join(lines)
 
 
 def run_quick_benchmark(

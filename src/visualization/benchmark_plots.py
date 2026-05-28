@@ -160,7 +160,9 @@ class BenchmarkPlotter:
         ax.set_title('Perfil de Rendimiento (Dolan-Moré)', fontsize=14, fontweight='bold')
         ax.set_xlim(1.0, 10.0)
         ax.set_ylim(0, 1.05)
-        ax.legend(loc='lower right')
+        handles, _ = ax.get_legend_handles_labels()
+        if handles:
+            ax.legend(loc='lower right')
         ax.grid(True, alpha=self.style.grid_alpha, linestyle='--')
         
         plt.tight_layout()
@@ -212,7 +214,7 @@ class BenchmarkPlotter:
                 if r.problem_name == problem and r.solution.is_optimal():
                     problem_times[problem].append(r.total_time * 1000)
         
-        ax3.boxplot([problem_times[p] for p in problems], labels=problems)
+        ax3.boxplot([problem_times[p] for p in problems], tick_labels=problems)
         ax3.set_ylabel('Tiempo (ms)')
         ax3.set_title('Distribución de Tiempos por Problema')
         ax3.tick_params(axis='x', rotation=45)

@@ -827,7 +827,8 @@ class BenchmarkReport:
             try:
                 import numpy as np
                 data = np.array([times, memories, iterations, nodes])
-                corr = np.corrcoef(data)
+                with np.errstate(all='ignore'):
+                    corr = np.corrcoef(data)
                 
                 labels = ['Tiempo', 'Memoria', 'Iter', 'Nodos']
                 
