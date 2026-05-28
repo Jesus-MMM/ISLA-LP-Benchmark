@@ -18,8 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY pyproject.toml .
 
 RUN poetry config virtualenvs.create false && \
-    poetry lock --no-update && \
-    poetry install --no-interaction --no-ansi
+    poetry install --with dev --no-interaction --no-ansi
 
 FROM python:3.12-slim
 
