@@ -1,4 +1,4 @@
-# Guia de Usuario - ISLA LP Benchmark v1.8.1
+# Guia de Usuario - ISLA LP Benchmark v1.8.2
 
 
 Esta guia es para **usuarios finales** que quieren resolver y comparar problemas de Programacion Lineal.

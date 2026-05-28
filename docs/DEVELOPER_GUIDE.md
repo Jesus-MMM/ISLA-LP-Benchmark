@@ -1,4 +1,4 @@
-# Guia del Desarrollador - ISLA LP Benchmark v1.8.1
+# Guia del Desarrollador - ISLA LP Benchmark v1.8.2
 
 
 Esta guia es para **desarrolladores** que quieren extender o integrar el proyecto.

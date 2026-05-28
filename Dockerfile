@@ -1,5 +1,5 @@
 # ============================================================
-# ISLA LP Benchmark v1.8.1 — Docker Image
+# ISLA LP Benchmark v1.8.2 — Docker Image
 # Uses python:3.12-slim (lightweight, wide compatibility)
 # ============================================================
 

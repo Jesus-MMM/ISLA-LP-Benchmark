@@ -1,6 +1,6 @@
 # ISLA LP Benchmark - Evolución del Proyecto
 
-## Estado: Fases 1-6 Completadas ✅ (v1.8.1)
+## Estado: Fases 1-6 Completadas ✅ (v1.8.2)
 
 ### Roadmap Completado
 
@@ -26,13 +26,13 @@
 
 ## Historial de Cambios
 
-### v1.8.1 (2026-05-28)
+### v1.8.2 (2026-05-28)
 
 #### CLI Colorido y Documentacion
 - CLI completamente colorido con `rich-argparse` (ayuda con colores, banner de bienvenida)
 - Convertidas todas las salidas `print()` a Rich (tablas, paneles, markup)
 - Banner de bienvenida al iniciar `isla` o al ejecutar `--version`
-- Actualizada toda la documentacion a v1.8.1
+- Actualizada toda la documentacion a v1.8.2
 
 #### Correcciones en Benchmark
 - Suprimidas excepciones `Thread-1` del hilo de refresco de Rich durante benchmark

@@ -1,4 +1,4 @@
-# ISLA LP Benchmark v1.8.1
+# ISLA LP Benchmark v1.8.2
 
 ## Resumen del Proyecto
 
@@ -403,7 +403,7 @@ Salida (ejemplo en terminal con Rich):
 ```
 ┌────────────────────────────────────────────┐
 │            ISLA LP Benchmark               │
-│     v1.8.1 - Solucionador de PL            │
+│     v1.8.2 - Solucionador de PL            │
 │  Soporta LP/MILP con 10+ motores           │
 └────────────────────────────────────────────┘
 
@@ -3011,7 +3011,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 **Version actual: 1.8.1**
 
-### Changelog v1.8.1
+### Changelog v1.8.2
 
 - CLI con Rich mejorado: ayuda con secciones en paneles (`_RichArgumentParser.print_help()`) y banner de bienvenida (`_print_banner()`)
 - `_suppress_stdout()` en benchmark: silencia salida C (fd 1/2) y Python (sys.stdout/stderr) para eliminar "Thread-1 exceptions"

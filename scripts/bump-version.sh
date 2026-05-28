@@ -29,7 +29,36 @@ if [[ ! $BUMP_TYPE =~ ^(major|minor|patch)$ ]]; then
     echo "Valores permitidos: major, minor, patch"
     exit 1
 fi
+# Verificar cambios sin guardar en working directory
+UNSTAGED_CHANGES=$(git diff --name-only 2>/dev/null)
+if [[ ! -z "$UNSTAGED_CHANGES" ]]; then
+    echo -e "${RED} Error: Hay cambios sin guardar en el directorio de trabajo${NC}"
+    echo ""
+    echo "Archivos modificados sin guardar:"
+    echo "$UNSTAGED_CHANGES" | sed 's/^/  - /'
+    echo ""
+    echo "Soluciona esto con:"
+    echo "  git add .           # Guardar cambios"
+    echo "  git commit -m '...' # Hacer commit"
+    echo "  O"
+    echo "  git stash           # Descartar cambios temporalmente"
+    exit 1
+fi
 
+# Verificar cambios en staging (index)
+STAGED_CHANGES=$(git diff --cached --name-only 2>/dev/null)
+if [[ ! -z "$STAGED_CHANGES" ]]; then
+    echo -e "${RED} Error: Hay cambios en staging${NC}"
+    echo ""
+    echo "Archivos en staging:"
+    echo "$STAGED_CHANGES" | sed 's/^/  - /'
+    echo ""
+    echo "Soluciona esto con:"
+    echo "  git commit -m '...' # Hacer commit"
+    echo "  O"
+    echo "  git reset HEAD      # Deshacer staging"
+    exit 1
+fi
 # Obtener versión actual de pyproject.toml
 CURRENT_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
 
@@ -68,7 +97,7 @@ echo -e "${GREEN} Actualizado pyproject.toml${NC}"
 
 # Generar requirements.txt desde pyproject.toml si pip-tools está disponible
 if command -v pip-compile &> /dev/null; then
-    echo -e "${YELLOW}🔄 Regenerando requirements.txt...${NC}"
+    echo -e "${YELLOW} Regenerando requirements.txt...${NC}"
     pip-compile pyproject.toml --output-file=requirements.txt --quiet 2>/dev/null || {
         echo -e "${YELLOW}  No se pudo regenerar requirements.txt automáticamente${NC}"
         echo "   Ejecuta: pip-compile pyproject.toml --output-file=requirements.txt"
