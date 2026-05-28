@@ -98,6 +98,120 @@ python -m src.cli data/problem_multi.txt --multi
 - Incluir descripción del problema y solución
 - Referenciar issues si aplica
 - Mantener PRs pequeños y enfocados
+
+## Versionado Semántico (SemVer)
+
+Este proyecto utiliza **Versionado Semántico (SemVer)**: `MAJOR.MINOR.PATCH`
+
+### Formato de Commits (Conventional Commits)
+
+Los mensajes de commit deben seguir el estándar para automatizar el versionado:
+
+```
+<tipo>(<alcance>): <descripción>
+
+<cuerpo>
+<pie>
+```
+
+#### Tipos de commit y versionado asociado:
+
+| Tipo | Versión | Ejemplo |
+|------|---------|---------|
+| `feat:` | **MINOR** ↑ | `feat(solver): agregar nuevo algoritmo` |
+| `fix:` | **PATCH** ↑ | `fix(parser): corregir error de parseo LP` |
+| `feat!:` | **MAJOR** ↑ | `feat!(api): cambiar estructura de respuesta` |
+| `perf:` | **PATCH** ↑ | `perf(benchmark): optimizar cálculos` |
+| `docs:` | Sin cambio | `docs: actualizar README` |
+| `style:` | Sin cambio | `style: formatear código con ruff` |
+| `refactor:` | Sin cambio | `refactor(core): reorganizar módulos` |
+| `test:` | Sin cambio | `test(solver): agregar casos de prueba` |
+| `chore:` | Sin cambio | `chore: actualizar dependencias` |
+
+#### Ejemplos válidos:
+
+```bash
+# Feature nueva (MINOR: 1.8.1 → 1.9.0)
+git commit -m "feat(solver): agregar soporte para MILP"
+
+# Bug fix (PATCH: 1.8.1 → 1.8.2)
+git commit -m "fix(parser): corregir parsing de restricciones vacías"
+
+# Breaking change (MAJOR: 1.8.1 → 2.0.0)
+git commit -m "feat(api)!: cambiar formato de entrada de problemas"
+
+# Sin impacto en versión
+git commit -m "docs: mejorar guía de usuario"
+```
+
+### Proceso de Release
+
+#### 1. Para desarrolladores (crear nueva versión):
+
+```bash
+# Asegurarse de estar en main y sincronizado
+git checkout main
+git pull origin main
+
+# Ejecutar script de bump
+./scripts/bump-version.sh minor   # o major/patch
+
+# El script:
+# - Actualiza pyproject.toml
+# - Regenera requirements.txt
+# - Crea commit
+# - Crea tag v1.9.0
+# - Muestra instrucciones de push
+
+# Push de cambios y tag
+git push origin
+git push origin v1.9.0
+```
+
+#### 2. GitHub Actions (automático):
+
+- Detecta nuevo tag `v*`
+- Valida que coincida con `pyproject.toml`
+- Genera changelog automáticamente desde commits
+- Crea Release en GitHub
+- Construye y publica imagen Docker con etiquetas:
+  - `v1.9.0` (semver exact)
+  - `1.9` (major.minor)
+  - `latest` (si es en main)
+  - `sha-abc123` (commit)
+
+### Ramas y versionado
+
+- **`main`**: Rama de producción. Tags v* aquí crean releases estables
+- **`Debug`**: Rama de desarrollo. Para PRs y testing
+- **feature/\***: Ramas de features. Se mezclan en Debug
+
+### Checklist antes de release
+
+- [ ] Todos los tests pasan: `pytest tests/ -v --cov=src --cov-fail-under=90`
+- [ ] Linting correcto: `ruff check src/ tests/`
+- [ ] Commits siguen Conventional Commits
+- [ ] CHANGELOG.md actualizado (opcional pero recomendado)
+- [ ] Versión en `pyproject.toml` es correcta
+- [ ] requirements.txt regenerado con pip-tools
+
+### Herramientas útiles
+
+**Instalar pip-tools** (para regenerar requirements.txt):
+```bash
+pip install pip-tools
+pip-compile pyproject.toml --output-file=requirements.txt
+```
+
+**Ver commits sin push:**
+```bash
+git log origin/main..HEAD
+```
+
+**Ver últimos tags:**
+```bash
+git tag -l --sort=-version:refname | head -5
+```
 - Asegurar que el CI pase (tests + lint + coverage ≥90%)
 - No incluir cambios de formato no relacionados
 

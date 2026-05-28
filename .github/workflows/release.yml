@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$GITHUB_REF#refs/tags/" >> $GITHUB_OUTPUT
+
+      - name: Validate version format
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo " Versión inválida: $VERSION (debe ser SemVer: X.Y.Z)"
+            exit 1
+          fi
+          echo " Versión válida: $VERSION"
+
+      - name: Verify version matches pyproject.toml
+        run: |
+          EXPECTED_VERSION=${{ steps.version.outputs.version }}
+          ACTUAL_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          if [[ "$EXPECTED_VERSION" != "$ACTUAL_VERSION" ]]; then
+            echo " Tag version ($EXPECTED_VERSION) no coincide con pyproject.toml ($ACTUAL_VERSION)"
+            exit 1
+          fi
+          echo " Tag y pyproject.toml sincronizados: $ACTUAL_VERSION"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [[ -z "$PREVIOUS_TAG" ]]; then
+            CHANGELOG=$(git log --pretty=format:"- %h: %s" --grep="^(feat|fix|perf|docs|style|refactor|test|chore)" -i)
+          else
+            CHANGELOG=$(git log "$PREVIOUS_TAG"..HEAD --pretty=format:"- %h: %s" --grep="^(feat|fix|perf|docs|style|refactor|test|chore)" -i)
+          fi
+          
+          # Escape para usar en output
+          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: "Release v${{ steps.version.outputs.version }}"
+          body: |
+            # Release v${{ steps.version.outputs.version }}
+            
+            ## Changes
+            ${{ steps.changelog.outputs.changelog || 'Sin cambios registrados' }}
+            
+            ---
+            **Version:** v${{ steps.version.outputs.version }}
+            **Released:** ${{ github.event.head_commit.timestamp }}
+            **Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          draft: false
+          prerelease: false
+
+      - name: Publish to PyPI (optional)
+        if: ${{ vars.PUBLISH_TO_PYPI == 'true' }}
+        run: |
+          echo "PyPI publishing is disabled by default"
+          echo "To enable, set PUBLISH_TO_PYPI=true in GitHub repository settings"
+
+      - name: Success notification
+        if: success()
+        run: |
+          echo " Release v${{ steps.version.outputs.version }} creado exitosamente"
+          echo ""
+          echo "  Información del release:"
+          echo "  - Versión: v${{ steps.version.outputs.version }}"
+          echo "  - Commit: ${{ github.sha }}"
+          echo "  - URL: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}"
