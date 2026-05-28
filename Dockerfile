@@ -1,5 +1,5 @@
 # ============================================================
-# ISLA LP Benchmark v1.8.0 — Docker Image
+# ISLA LP Benchmark v1.8.1 — Docker Image
 # Uses python:3.12-slim (lightweight, wide compatibility)
 # ============================================================
 
@@ -15,10 +15,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir poetry
 
-COPY pyproject.toml poetry.lock .
+COPY pyproject.toml .
 
 RUN poetry config virtualenvs.create false && \
-    poetry install --without dev --no-interaction --no-ansi
+    poetry lock --no-update && \
+    poetry install --no-interaction --no-ansi
 
 FROM python:3.12-slim
 
