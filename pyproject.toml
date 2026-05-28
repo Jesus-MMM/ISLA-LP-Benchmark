@@ -1,6 +1,6 @@
 [project]
 name = "isla-lp-benchmark"
-version = "1.8.0"
+version = "1.8.1"
 description = "LP Benchmarking Platform - Compare multiple Linear Programming solvers"
 authors = [
     {name = "Oyhs-co",email = "oyhsotelo@gmail.com"}
@@ -44,3 +44,15 @@ packages = [{include = "src"}]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:builtin type SwigPyPacked has no __module__:DeprecationWarning",
+    "ignore:builtin type SwigPyObject has no __module__:DeprecationWarning",
+    "ignore:.*ipywidgets.*:UserWarning:rich.live",
+]
+
+[dependency-groups]
+dev = [
+    "uvicorn (>=0.48.0,<0.49.0)",
+    "python-multipart (>=0.0.29,<0.0.30)"
+]

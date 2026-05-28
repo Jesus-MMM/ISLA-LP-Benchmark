@@ -22,8 +22,6 @@ data/
 !data/problem*.txt
 *.log
 .DS_Store
-poetry.lock
-requirements.txt
 .dockerignore
 .docker/
 *.swp

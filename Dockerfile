@@ -12,13 +12,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     libgomp1 \
     coinor-cbc \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir poetry
 
-COPY pyproject.toml .
-COPY requirements.txt .
+COPY pyproject.toml poetry.lock .
 
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir -e .
+RUN poetry config virtualenvs.create false && \
+    poetry install --without dev --no-interaction --no-ansi
 
 FROM python:3.12-slim
 

@@ -9,9 +9,9 @@ from typing import Optional
 from fastapi import FastAPI, UploadFile, Form
 from fastapi.responses import HTMLResponse
 
-from src.parser import LPParser, MPSParser
-from src.solver import SolverConfig, SolverRegistry
-from src.core import LinearProblem
+from ..parser import LPParser, MPSParser
+from ..solver import SolverConfig, SolverRegistry
+from ..core import LinearProblem
 
 
 _problems: dict[str, LinearProblem] = {}
@@ -102,7 +102,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 def create_app() -> FastAPI:
     """Crea y configura la aplicacion FastAPI."""
-    app = FastAPI(title="ISLA LP Solver Web", version="1.8.0")
+    app = FastAPI(title="ISLA LP Solver Web", version="1.8.1")
 
     @app.get("/", response_class=HTMLResponse)
     async def index():
