@@ -187,17 +187,20 @@ class TestParserHelp:
         parser = create_parser()
         help_text = parser.format_help()
         assert len(help_text) > 0
-        assert "lp-solver" in help_text
+        assert "isla" in help_text
 
     def test_help_contains_key_sections(self):
         """Test que el help contiene secciones importantes."""
+        import re
         parser = create_parser()
         help_text = parser.format_help()
-        assert "Informacion" in help_text
-        assert "Seleccion de solver" in help_text
-        assert "Opciones de resolucion" in help_text
-        assert "Opciones de benchmark" in help_text
-        assert "Opciones de salida" in help_text
+        # RichHelpFormatter anade codigos ANSI, los removemos para la verificacion
+        plain = re.sub(r'\x1b\[[0-9;]*m', '', help_text)
+        assert "Informacion" in plain
+        assert "Seleccion de solver" in plain
+        assert "Opciones de resolucion" in plain
+        assert "Opciones de benchmark" in plain
+        assert "Opciones de salida" in plain
 
     def test_usage_in_help(self):
         """Test que el help contiene usage."""

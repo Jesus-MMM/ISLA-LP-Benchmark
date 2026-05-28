@@ -250,29 +250,12 @@ class TestResultsExporter:
             ),
         ]
         
-        imports_ok = True
-        try:
-            import src.visualization.benchmark_plots as bp
-            imports_ok = True
-        except ImportError:
-            imports_ok = False
-        
-        if imports_ok:
-            import tempfile
-            from pathlib import Path
-            with tempfile.TemporaryDirectory() as tmpdir:
-                output_dir = Path(tmpdir)
-                paths = export_benchmark_results(runner, output_dir, formats=["json"], include_plots=False)
-                assert "json" in paths
-                assert os.path.exists(paths["json"])
-        else:
-            import tempfile
-            from pathlib import Path
-            with tempfile.TemporaryDirectory() as tmpdir:
-                output_dir = Path(tmpdir)
-                paths = export_benchmark_results(runner, output_dir, formats=["json"], include_plots=False)
-                assert "json" in paths
-                assert os.path.exists(paths["json"])
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir)
+            paths = export_benchmark_results(runner, output_dir, formats=["json"], include_plots=False)
+            assert "json" in paths
+            assert os.path.exists(paths["json"])
 
     def test_export_benchmark_results_md(self):
         from pathlib import Path

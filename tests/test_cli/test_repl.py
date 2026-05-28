@@ -36,14 +36,14 @@ class TestREPL:
 
     def test_cmd_solve_no_problem(self):
         """Test solve sin problema cargado."""
-        from src.cli.repl import _cmd_solve
+        from src.cli.repl import _cmd_solve_repl
         with patch("src.cli.repl._console") as mock_console:
-            _cmd_solve(None, "highs")
+            _cmd_solve_repl([], 0, "highs")
             mock_console.print.assert_called_once()
 
     def test_cmd_solve_with_problem(self):
         """Test solve con problema cargado."""
-        from src.cli.repl import _cmd_solve
+        from src.cli.repl import _cmd_solve_repl
         from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
@@ -55,14 +55,13 @@ class TestREPL:
         )
         with patch("src.cli.repl._console") as mock_console:
             with patch("src.cli.repl.SolverRegistry") as mock_reg:
-                # No solver available
                 mock_reg.get.return_value = None
-                _cmd_solve(problem, "nonexistent")
+                _cmd_solve_repl([problem], 0, "nonexistent")
                 mock_console.print.assert_called_once()
 
     def test_cmd_solve_optimal(self):
         """Test solve con solucion optima."""
-        from src.cli.repl import _cmd_solve
+        from src.cli.repl import _cmd_solve_repl
         from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
@@ -82,12 +81,12 @@ class TestREPL:
         with patch("src.cli.repl._console") as mock_console:
             with patch("src.cli.repl.SolverRegistry") as mock_reg:
                 mock_reg.get.return_value = lambda p, c: mock_solver
-                _cmd_solve(problem, "highs")
+                _cmd_solve_repl([problem], 0, "highs")
                 assert mock_console.print.call_count >= 2
 
     def test_cmd_solve_exception(self):
         """Test solve con excepcion del solver."""
-        from src.cli.repl import _cmd_solve
+        from src.cli.repl import _cmd_solve_repl
         from src.core import LinearProblem
 
         problem = LinearProblem(
@@ -104,11 +103,11 @@ class TestREPL:
         with patch("src.cli.repl._console"):
             with patch("src.cli.repl.SolverRegistry") as mock_reg:
                 mock_reg.get.return_value = failing_solver
-                _cmd_solve(problem, "highs")
+                _cmd_solve_repl([problem], 0, "highs")
 
     def test_cmd_solve_not_optimal(self):
         """Test solve con solucion no optima."""
-        from src.cli.repl import _cmd_solve
+        from src.cli.repl import _cmd_solve_repl
         from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
@@ -127,7 +126,7 @@ class TestREPL:
         with patch("src.cli.repl._console") as mock_console:
             with patch("src.cli.repl.SolverRegistry") as mock_reg:
                 mock_reg.get.return_value = lambda p, c: mock_solver
-                _cmd_solve(problem, "highs")
+                _cmd_solve_repl([problem], 0, "highs")
                 mock_console.print.assert_called()
 
     def test_cmd_vars_no_problem(self):
@@ -345,29 +344,42 @@ class TestREPL:
         """Test run_repl dispatches all commands correctly."""
         from src.cli.repl import run_repl
 
-        commands = ["", "help", "load", "load-mps", "info", "solve", "solvers", "vars", "export", "unknown_cmd", "quit"]
+        commands = ["", "help", "load", "load-mps", "load-multi", "problems", "select 1", "info", "solve", "benchmark", "solvers", "vars", "export", "unknown_cmd", "quit"]
 
         with patch("src.cli.repl.Prompt") as mock_prompt:
             mock_prompt.ask.side_effect = commands
             with patch("src.cli.repl._cmd_load") as mock_load:
                 with patch("src.cli.repl._cmd_load_mps") as mock_load_mps:
-                    with patch("src.cli.repl._cmd_info") as mock_info:
-                        with patch("src.cli.repl._cmd_solve") as mock_solve:
-                            with patch("src.cli.repl._cmd_solvers") as mock_solvers:
-                                with patch("src.cli.repl._cmd_vars") as mock_vars:
-                                    with patch("src.cli.repl._cmd_export") as mock_export:
-                                        with patch("src.cli.repl._console") as mock_console:
-                                            rc = run_repl()
-                                            assert rc == 0
-                                            mock_load.assert_called_once()
-                                            mock_load_mps.assert_called_once()
-                                            mock_info.assert_called_once()
-                                            mock_solve.assert_called_once()
-                                            mock_solvers.assert_called_once()
-                                            mock_vars.assert_called_once()
-                                            mock_export.assert_called_once()
-                                            unknown_calls = [
-                                                c for c in mock_console.print.call_args_list
-                                                if "unknown_cmd" in str(c) or "Comando desconocido" in str(c)
-                                            ]
-                                            assert len(unknown_calls) >= 1
+                    with patch("src.cli.repl._cmd_load_multi") as mock_load_multi:
+                        with patch("src.cli.repl._cmd_problems") as mock_problems:
+                            with patch("src.cli.repl._cmd_select") as mock_select:
+                                with patch("src.cli.repl._cmd_info") as mock_info:
+                                    with patch("src.cli.repl._cmd_solve_repl") as mock_solve:
+                                        with patch("src.cli.repl._cmd_benchmark") as mock_benchmark:
+                                            with patch("src.cli.repl._cmd_solvers") as mock_solvers:
+                                                with patch("src.cli.repl._cmd_vars") as mock_vars:
+                                                    with patch("src.cli.repl._cmd_export") as mock_export:
+                                                        with patch("src.cli.repl._console") as mock_console:
+                                                            # Make load/select return None/empty to keep state clean
+                                                            mock_load.return_value = None
+                                                            mock_load_mps.return_value = None
+                                                            mock_load_multi.return_value = []
+                                                            mock_select.return_value = None
+                                                            rc = run_repl()
+                                                            assert rc == 0
+                                                            mock_load.assert_called_once()
+                                                            mock_load_mps.assert_called_once()
+                                                            mock_load_multi.assert_called_once()
+                                                            mock_problems.assert_called_once()
+                                                            mock_select.assert_called_once()
+                                                            mock_info.assert_called_once()
+                                                            mock_solve.assert_called_once()
+                                                            mock_benchmark.assert_called_once()
+                                                            mock_solvers.assert_called_once()
+                                                            mock_vars.assert_called_once()
+                                                            mock_export.assert_called_once()
+                                                            unknown_calls = [
+                                                                c for c in mock_console.print.call_args_list
+                                                                if "unknown_cmd" in str(c) or "Comando desconocido" in str(c)
+                                                            ]
+                                                            assert len(unknown_calls) >= 1

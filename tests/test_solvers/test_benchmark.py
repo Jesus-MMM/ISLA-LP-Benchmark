@@ -83,7 +83,7 @@ class TestBenchmarkRunnerAdditional:
         summary = runner.get_summary()
         assert summary == {}
 
-    def test_print_summary_empty(self, capsys):
+    def test_print_summary_empty(self):
         from src.solver.benchmark import BenchmarkRunner, BenchmarkResult
         from src.core import Solution
         from src.solver.base import SolverStats
@@ -98,9 +98,8 @@ class TestBenchmarkRunnerAdditional:
                 stats=SolverStats(),
             )
         ]
-        runner.print_summary()
-        captured = capsys.readouterr()
-        assert "Total de pruebas" in captured.out
+        result = runner.print_summary()
+        assert "Total de pruebas" in result
 
     def test_run_with_empty_results(self):
         from src.solver.benchmark import BenchmarkRunner
