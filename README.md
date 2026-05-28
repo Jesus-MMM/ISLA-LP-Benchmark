@@ -1,4 +1,4 @@
-# ISLA LP Benchmark v1.8.0
+# ISLA LP Benchmark v1.8.1
 
 ## Resumen del Proyecto
 
@@ -50,8 +50,8 @@ Esta herramienta esta disenada para uso educativo, investigacion y evaluacion de
 | MatrixConverter | Conversion unificada de LinearProblem a formatos de solver |
 | Exportacion | CSV, JSON, Markdown, HTML |
 | CLI Modular | Flags configurables y autocomplete de shell |
-| CLI con Rich | Tablas, paneles, sintaxis resaltada y barras de progreso |
-| Modo REPL Interactivo | Exploracion dinamica de problemas y solvers |
+| CLI con Rich | Interfaz completamente colorida con tablas, paneles, sintaxis resaltada, barras de progreso, banner de bienvenida y ayuda con secciones en paneles |
+| Modo REPL Interactivo | Exploracion dinamica de problemas y solvers con soporte multiproblema (load-multi, problems, select, benchmark) |
 | Interfaz Web | FastAPI + HTMX para resolucion y benchmarking via navegador |
 | Registro de Solvers | Deteccion automatica de disponibilidad |
 | Docker | Imagen Python 3.12 Slim |
@@ -399,22 +399,25 @@ python -m src.cli --list-solvers
 python -m src.cli -l
 ```
 
-Salida (ejemplo en entorno con modulos instalados):
+Salida (ejemplo en terminal con Rich):
 ```
+┌────────────────────────────────────────────┐
+│            ISLA LP Benchmark               │
+│     v1.8.1 - Solucionador de PL            │
+│  Soporta LP/MILP con 10+ motores           │
+└────────────────────────────────────────────┘
 
-  Solvers registrados
-  --------------------------------------------------
-    gurobi                DISPONIBLE
-    highs                 NO DISPONIBLE  (highspy not available: ...)
-    glpk                  NO DISPONIBLE  (swiglpk not available: ...)
-    cbc                   DISPONIBLE
-    scip                  DISPONIBLE
-    ecos                  DISPONIBLE
-    osqp                  DISPONIBLE
-    cvxopt                DISPONIBLE
-    scs                   DISPONIBLE
-    ipopt                 DISPONIBLE
-  11/11 solvers disponibles: gurobi, highs, glpk, cbc, scip, ecos, osqp, cvxopt, scs, ipopt
+┌────────────────────────────────────────────┐
+│              Solvers Registrados           │
+├──────────┬──────────┬──────────────────────┤
+│ Solver   │ Estado   │ Detalle             │
+├──────────┼──────────┼──────────────────────┤
+│ gurobi   │ DISPONIBLE│                    │
+│ highs    │NO DISP.  │ highspy no disp.    │
+│ ...      │ ...      │ ...                 │
+└──────────┴──────────┴──────────────────────┘
+
+10/11 solvers disponibles: gurobi, cbc, scip, ...
 ```
 
 ---
@@ -559,7 +562,9 @@ flowchart TB
 | --output | -o | path | None | Ruta de salida (visualizacion/PDF/JSON) |
 | --output-dir | -O | path | None | Directorio de salida (benchmark) |
 | --output-csv | | path | None | Exportar resultados a CSV |
-| --log-level | | str | "INFO" | Nivel de log: DEBUG/INFO/WARNING/ERROR/CRITICAL |
+| --log-level | | str | "WARNING" | Nivel de log: DEBUG/INFO/WARNING/ERROR/CRITICAL |
+| --repl | | flag | False | Iniciar modo REPL interactivo |
+| --install-completion | | flag | False | Instalar autocompletado para bash/zsh |
 
 ### 6.4 Combinaciones de Comandos
 
@@ -1043,6 +1048,7 @@ isla-lp-benchmark/
 │   │   ├── __main__.py    # Punto de entrada
 │   │   ├── benchmark.py    # Handler benchmark
 │   │   ├── solve.py        # Handler resolucion
+│   │   ├── repl.py         # Modo REPL interactivo
 │   │   └── __init__.py    # Utilidades sistema
 │   ├── solver/
 │   │   ├── base.py        # BaseSolver, SolverRegistry
@@ -3003,15 +3009,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## 20. Version
 
-**Version actual: 1.8.0**
+**Version actual: 1.8.1**
 
-### Changelog v1.8.0
+### Changelog v1.8.1
 
-- Interfaz web FastAPI + HTMX para resolucion y benchmarking via navegador (`src/web/app.py`)
-- CLI mejorado con Rich: tablas, paneles, sintaxis resaltada y barras de progreso
-- Modo REPL interactivo para exploracion dinamica de problemas y solvers (`src/cli/repl.py`)
-- Autocompletado shell para Bash/Zsh con `isla --install-completion`
-- 277 tests pasando, ruff check limpio, coverage >=90%
+- CLI con Rich mejorado: ayuda con secciones en paneles (`_RichArgumentParser.print_help()`) y banner de bienvenida (`_print_banner()`)
+- `_suppress_stdout()` en benchmark: silencia salida C (fd 1/2) y Python (sys.stdout/stderr) para eliminar "Thread-1 exceptions"
+- Ipopt banner silenciado con `opts["ipopt.sb"] = "yes"` en `src/solver/ipopt_solver.py`
+- Import lazy de gurobipy para evitar `ModuleNotFoundError` prematuro
+- `np.errstate(all='ignore')` en `benchmark_report.py` para suprimir RuntimeWarning
+- `print_summary()` ahora retorna `str` en lugar de imprimir directamente
+- Soporte multiproblema en REPL: comandos `load-multi`, `problems`, `select`, `benchmark`
+- 675 tests pasando, 9 skipped, ruff check limpio
 
 ### Changelog v1.7.0
 
