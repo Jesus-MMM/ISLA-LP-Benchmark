@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir poetry
 
-COPY pyproject.toml .
+COPY pyproject.toml README.md ./
+COPY src/ ./src
 
 RUN poetry config virtualenvs.create false && \
     poetry install --with dev --no-interaction --no-ansi
