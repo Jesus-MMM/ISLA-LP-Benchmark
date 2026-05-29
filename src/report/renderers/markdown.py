@@ -72,7 +72,9 @@ class MarkdownRenderer(BaseRenderer):
         elif element.content_type == ContentType.NOTE:
             return f"*{text}*\n"
         elif element.content_type == ContentType.LIST:
-            items = element.metadata.get("items", [])
+            items = element.metadata.get("items") or [
+                line.strip() for line in element.content.split("\n") if line.strip()
+            ]
             return "\n".join(f"- {strip_tags(str(i))}" for i in items) + "\n"
         return ""
 

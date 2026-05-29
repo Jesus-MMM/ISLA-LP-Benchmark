@@ -135,7 +135,7 @@ class ReportPDF(FPDF):
             "left": Align.L,
             "center": Align.C,
             "right": Align.R,
-            "justify": Align.L,
+            "justify": Align.J,
         }
         return mapping.get(align, Align.L)
 
@@ -232,7 +232,7 @@ class PDFRenderer(BaseRenderer):
             pdf.ln(height)
 
         elif element.content_type == ContentType.PAGE_BREAK:
-            pdf.add_page()
+            pass
 
         elif element.content_type == ContentType.IMAGE:
             self._render_image(pdf, element, style, styles)
@@ -266,15 +266,28 @@ class PDFRenderer(BaseRenderer):
             self._render_code_block(pdf, element, style)
 
         elif element.content_type == ContentType.LIST:
+            list_items = element.metadata.get("items") or [
+                line.strip() for line in element.content.split("\n") if line.strip()
+            ]
+            if not list_items:
+                return
             pdf.ln(style.spacing_before)
-            list_items = element.metadata.get("items", [])
+            bullet = "-"
+            avail_w = pdf.w - pdf.l_margin - pdf.r_margin
             for item in list_items:
-                pdf.cell(5, style.font_size * style.line_height, "•")
-                pdf.multi_cell(
-                    w=0,
-                    h=style.font_size * style.line_height,
-                    text=str(item),
-                )
+                item_text = str(item)
+                lines = item_text.split("\n")
+                for li, line in enumerate(lines):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if li == 0:
+                        pdf.set_x(pdf.l_margin)
+                        pdf.cell(5, style.font_size * style.line_height, bullet)
+                        pdf.multi_cell(w=avail_w - 5, h=style.font_size * style.line_height, text=line)
+                    else:
+                        pdf.set_x(pdf.l_margin + 5)
+                        pdf.multi_cell(w=avail_w - 5, h=style.font_size * style.line_height, text=line)
             pdf.ln(style.spacing_after)
 
         elif element.content_type == ContentType.CUSTOM:
@@ -331,6 +344,28 @@ class PDFRenderer(BaseRenderer):
 
         pdf.ln(style.spacing_after)
 
+    def _measure_col_widths(
+        self,
+        pdf: ReportPDF,
+        headers: list[str],
+        rows: list[list[str]],
+        header_style: StyleDefinition,
+        body_style: StyleDefinition,
+        padding: float,
+    ) -> list[float]:
+        n = len(headers)
+        widths = [0.0] * n
+        pdf.set_font(header_style.font_family, pdf._get_font_style(header_style), header_style.font_size)
+        for i, h in enumerate(headers):
+            widths[i] = max(widths[i], pdf.get_string_width(str(h)))
+        pdf.set_font(body_style.font_family, "", body_style.font_size)
+        for row in rows:
+            for i, cell in enumerate(row):
+                if i < n:
+                    widths[i] = max(widths[i], pdf.get_string_width(str(cell)))
+        widths = [w + padding * 2 for w in widths]
+        return widths
+
     def _render_table(
         self,
         pdf: ReportPDF,
@@ -340,7 +375,6 @@ class PDFRenderer(BaseRenderer):
     ) -> None:
         headers = element.metadata.get("headers", [])
         rows = element.metadata.get("rows", [])
-        column_widths = element.metadata.get("column_widths", None)
         caption = element.metadata.get("caption", "")
 
         if not headers and not rows:
@@ -354,16 +388,20 @@ class PDFRenderer(BaseRenderer):
         header_style_name = element.metadata.get("header_style", "apa_table_header")
         header_style = get_style(header_style_name, styles)
 
-        # Calculate column widths
         page_w = pdf.page_config.width
         margin_l = pdf.page_config.margin_left
         margin_r = pdf.page_config.margin_right
         available_w = page_w - margin_l - margin_r
+        padding = style.padding or 4
 
-        if column_widths:
-            widths = [float(w) for w in column_widths.split(",")]
-        else:
-            widths = [available_w / len(headers)] * len(headers)
+        col_widths = self._measure_col_widths(pdf, headers, rows, header_style, style, padding)
+        total = sum(col_widths)
+        if total > available_w:
+            scale = available_w / total
+            col_widths = [w * scale for w in col_widths]
+        elif total < available_w:
+            extra = (available_w - total) / len(col_widths)
+            col_widths = [w + extra for w in col_widths]
 
         pdf.ln(style.spacing_before)
 
@@ -378,24 +416,30 @@ class PDFRenderer(BaseRenderer):
         header_color = pdf._parse_color(header_style.color)
         pdf.set_text_color(*header_color)
 
+        h_bg = pdf._parse_color(header_style.background_color) if header_style.background_color else None
+        if h_bg:
+            pdf.set_fill_color(*h_bg)
+
+        header_h = header_style.font_size * (header_style.line_height or 1.2) + padding
         for i, header in enumerate(headers):
-            w = widths[i] if i < len(widths) else available_w / len(headers)
-            pdf.cell(w, header_style.font_size * header_style.line_height + 4,
-                     str(header), border=1, align=Align.C)
+            pdf.cell(col_widths[i], header_h, str(header), border=1, align=Align.C, fill=h_bg is not None)
         pdf.ln()
 
-        # Draw rows
+        # Draw rows with zebra striping
         body_style = style
-        pdf.set_font(body_style.font_family, "", body_style.font_size)
-        body_color = pdf._parse_color(body_style.color)
-        pdf.set_text_color(*body_color)
+        row_h = body_style.font_size * (body_style.line_height or 1.2) + padding
+        row_bg_color = pdf._parse_color("fafafa")
 
-        for row in rows:
+        for r, row in enumerate(rows):
             pdf.set_x(margin_l)
-            max_h = body_style.font_size * body_style.line_height + 4
+            use_bg = r % 2 == 0
+            if use_bg:
+                pdf.set_fill_color(*row_bg_color)
+            pdf.set_font(body_style.font_family, "", body_style.font_size)
+            body_color = pdf._parse_color(body_style.color)
+            pdf.set_text_color(*body_color)
             for i, cell in enumerate(row):
-                w = widths[i] if i < len(widths) else available_w / len(headers)
-                pdf.cell(w, max_h, str(cell), border=1, align=Align.C)
+                pdf.cell(col_widths[i], row_h, str(cell), border=1, align=Align.C, fill=use_bg)
             pdf.ln()
 
         pdf.ln(style.spacing_after)
@@ -407,13 +451,16 @@ class PDFRenderer(BaseRenderer):
         style: StyleDefinition,
     ) -> None:
         pdf.ln(style.spacing_before)
-        if style.background_color:
-            bg = pdf._parse_color(style.background_color)
-            pdf.set_fill_color(*bg)
+        has_bg = bool(style.background_color)
+        if has_bg:
+            pdf.set_fill_color(*pdf._parse_color(style.background_color))
         pdf.set_font(style.font_family, "", style.font_size)
         pdf.set_text_color(*pdf._parse_color(style.color))
 
-        code_lines = element.content.split("\n")
-        for line in code_lines:
-            pdf.cell(0, style.font_size * 1.2, line, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        indent = pdf.l_margin + style.indent
+        block_w = pdf.w - pdf.r_margin - indent
+        line_h = style.font_size * 1.4
+        for line in element.content.split("\n"):
+            pdf.set_x(indent)
+            pdf.cell(block_w, line_h, line, fill=has_bg, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.ln(style.spacing_after)

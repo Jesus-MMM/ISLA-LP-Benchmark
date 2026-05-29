@@ -106,7 +106,13 @@ h3 { font-size: 12pt; font-weight: bold; }
         elif element.content_type == ContentType.NOTE:
             return f'<p style="font-size: 8pt; color: #555; font-style: italic;">{content}</p>'
         elif element.content_type == ContentType.CODE_BLOCK:
-            return f'<pre style="background: #f5f5f5; border: 1px solid #ccc; padding: 4px; font-size: 8pt;">{content}</pre>'
+            return f'<pre style="background: #f5f5f5; border: 1px solid #ccc; padding: 4px; font-size: 9pt;">{content}</pre>'
+        elif element.content_type == ContentType.LIST:
+            items = element.metadata.get("items") or [
+                line.strip() for line in element.content.split("\n") if line.strip()
+            ]
+            lis = "\n".join(f"<li>{escape(i)}</li>" for i in items)
+            return f"<ul>\n{lis}\n</ul>\n"
         elif element.content_type == ContentType.CITATION:
             return f'<span class="citation">[{content}]</span>'
         return ""
