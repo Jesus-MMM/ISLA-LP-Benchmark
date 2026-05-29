@@ -78,18 +78,15 @@ def test_engine_render_markdown(tmp_path):
 
 
 def test_engine_with_localization(tmp_path):
-    import json
     locale_dir = os.path.join(tmp_path, "locales")
     os.makedirs(locale_dir)
 
-    with open(os.path.join(locale_dir, "en.json"), "w", encoding="utf-8") as f:
-        json.dump({
-            "language": "en",
-            "translations": {
-                "report.title": "Localized Report",
-                "report.intro": "Introduction text",
-            },
-        }, f)
+    with open(os.path.join(locale_dir, "translations.csv"), "w", encoding="utf-8") as f:
+        f.write("""\
+key,en
+report.title,Localized Report
+report.intro,Introduction text
+""")
 
     csv = """type,id,content,style,language,visible,order
 title,main,report.title,title,en,true,1

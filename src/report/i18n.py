@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import csv
 import os
 from typing import Optional
 
@@ -12,24 +12,22 @@ _LOCALE_CACHE: dict[str, LocaleDict] = {}
 _FALLBACK_CHAIN: list[str] = []
 
 
-def load_locale(file_path: str, encoding: str = "utf-8") -> LocaleDict:
-    """Load a locale file (JSON format).
+def load_translations_csv(file_path: str, encoding: str = "utf-8-sig") -> LocaleDict:
+    """Load translations from a Godot-style CSV file.
 
-    Expected JSON structure:
-    {
-        "language": "en",
-        "translations": {
-            "report.title": "Network Performance Report",
-            "report.introduction": "..."
-        }
-    }
+    CSV format (Godot-style):
+        key,en,es,fr,...
+        report.title,Network Performance Report,Informe de Rendimiento de Red,...
+
+    The first column must be ``key``. Subsequent columns are language codes.
+    Each row maps a translation key to its localized strings.
 
     Args:
-        file_path: Path to the locale JSON file.
-        encoding: File encoding.
+        file_path: Path to the translations CSV file.
+        encoding: File encoding (default: utf-8-sig for BOM support).
 
     Returns:
-        LocaleDict with language code and translations.
+        LocaleDict mapping language codes to translation dictionaries.
 
     Raises:
         LocalizationError: If the file cannot be loaded.
@@ -40,41 +38,47 @@ def load_locale(file_path: str, encoding: str = "utf-8") -> LocaleDict:
 
     if not os.path.exists(file_path):
         raise LocalizationError("locale_file", file_path,
-                                 f"Locale file not found: {file_path}")
+                                 f"Translations CSV not found: {file_path}")
 
+    result: LocaleDict = {}
     try:
-        with open(file_path, encoding=encoding) as f:
-            data = json.load(f)
+        with open(file_path, encoding=encoding, newline="") as f:
+            reader = csv.DictReader(f)
+            if reader.fieldnames is None:
+                raise LocalizationError("locale_file", file_path,
+                                         "Empty translations CSV file")
 
-        if not isinstance(data, dict):
-            raise LocalizationError("locale_file", file_path,
-                                     "Locale file must contain a JSON object")
+            languages = [lang for lang in reader.fieldnames if lang != "key"]
+            for lang in languages:
+                result[lang] = {}
 
-        language = data.get("language", "en")
-        translations = data.get("translations", {})
+            for row in reader:
+                key = row.get("key", "").strip()
+                if not key or key.startswith(("#", ";")):
+                    continue
+                for lang in languages:
+                    value = row.get(lang, "").strip()
+                    if value:
+                        result[lang][key] = value
 
-        if not isinstance(translations, dict):
-            raise LocalizationError(language, file_path,
-                                     "'translations' must be a JSON object")
-
-        result = {language: translations}
-        _LOCALE_CACHE[cache_key] = result
-        return result
-    except json.JSONDecodeError as e:
+    except csv.Error as e:
         raise LocalizationError("locale_file", file_path,
-                                 f"Invalid JSON in locale file: {e}") from e
+                                 f"CSV parsing error: {e}") from e
     except OSError as e:
         raise LocalizationError("locale_file", file_path,
-                                 f"Error reading locale file: {e}") from e
+                                 f"Error reading translations CSV: {e}") from e
+
+    _LOCALE_CACHE[cache_key] = result
+    return result
 
 
-def load_locale_dir(directory: str, encoding: str = "utf-8") -> LocaleDict:
-    """Load all locale files from a directory.
+def load_locale_dir(directory: str, encoding: str = "utf-8-sig") -> LocaleDict:
+    """Load all translations from CSV files in a directory.
 
-    Expects files named like 'en.json', 'es.json', etc.
+    Looks for ``translations.csv`` files in the given directory.
 
     Args:
-        directory: Path to directory containing locale JSON files.
+        directory: Path to directory containing translation CSV files.
         encoding: File encoding.
 
     Returns:
@@ -85,10 +89,10 @@ def load_locale_dir(directory: str, encoding: str = "utf-8") -> LocaleDict:
         return merged
 
     for filename in sorted(os.listdir(directory)):
-        if filename.endswith(".json"):
+        if filename == "translations.csv":
             file_path = os.path.join(directory, filename)
             try:
-                locale = load_locale(file_path, encoding)
+                locale = load_translations_csv(file_path, encoding)
                 merged.update(locale)
             except LocalizationError:
                 continue
@@ -202,7 +206,7 @@ def create_default_localizer(
     """Create a Localizer from a locale directory.
 
     Args:
-        locale_dir: Directory containing locale JSON files.
+        locale_dir: Directory containing translation CSV files.
         language: Default language.
         fallback_language: Fallback language.
 

@@ -1,73 +1,88 @@
 from __future__ import annotations
 
-import json
+import csv
 import tempfile
 import os
 
 import pytest
 
 from src.report.i18n import (
-    load_locale, load_locale_dir, get_text, Localizer,
+    load_translations_csv, load_locale_dir, get_text, Localizer,
     set_fallback_chain,
 )
 from src.report.core.exceptions import LocalizationError
 
 
-EN_LOCALE = {
-    "language": "en",
-    "translations": {
-        "report.title": "Network Report",
-        "report.intro": "Introduction",
-    },
-}
+EN_ES_CSV = """\
+key,en,es
+report.title,Network Report,Informe de Red
+report.intro,Introduction,Introducción
+"""
 
-ES_LOCALE = {
-    "language": "es",
-    "translations": {
-        "report.title": "Informe de Red",
-        "report.intro": "Introducción",
-    },
-}
+EN_CSV = """\
+key,en
+report.title,Network Report
+report.intro,Introduction
+"""
+
+ES_CSV = """\
+key,es
+report.title,Informe de Red
+report.intro,Introducción
+"""
 
 
-def _write_locale(data, suffix=".json"):
+def _write_csv(content: str, suffix=".csv"):
     f = tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False, encoding="utf-8")
-    json.dump(data, f)
+    f.write(content)
     f.close()
     return f.name
 
 
-def test_load_locale():
-    path = _write_locale(EN_LOCALE)
+def test_load_translations_csv():
+    path = _write_csv(EN_ES_CSV)
     try:
-        locale = load_locale(path)
+        locale = load_translations_csv(path)
         assert "en" in locale
+        assert "es" in locale
         assert locale["en"]["report.title"] == "Network Report"
+        assert locale["es"]["report.title"] == "Informe de Red"
     finally:
         os.unlink(path)
 
 
 def test_load_locale_file_not_found():
     with pytest.raises(LocalizationError):
-        load_locale("nonexistent.json")
+        load_translations_csv("nonexistent.csv")
 
 
 def test_load_locale_dir():
     d = tempfile.mkdtemp()
     try:
-        en_path = os.path.join(d, "en.json")
+        en_path = os.path.join(d, "translations.csv")
         with open(en_path, "w", encoding="utf-8") as f:
-            json.dump(EN_LOCALE, f)
-        es_path = os.path.join(d, "es.json")
-        with open(es_path, "w", encoding="utf-8") as f:
-            json.dump(ES_LOCALE, f)
+            f.write(EN_ES_CSV)
 
         locale = load_locale_dir(d)
         assert "en" in locale
         assert "es" in locale
+        assert locale["en"]["report.title"] == "Network Report"
     finally:
         os.unlink(en_path)
-        os.unlink(es_path)
+        os.rmdir(d)
+
+
+def test_load_locale_dir_ignores_non_translation_csv():
+    d = tempfile.mkdtemp()
+    try:
+        not_translations = os.path.join(d, "theme.csv")
+        with open(not_translations, "w", encoding="utf-8") as f:
+            f.write("section,name,property,value\n")
+
+        locale = load_locale_dir(d)
+        assert locale == {}
+    finally:
+        os.unlink(not_translations)
         os.rmdir(d)
 
 
@@ -113,3 +128,33 @@ def test_fallback_chain():
     set_fallback_chain(["es", "fr"])
     locale = {"en": {"other": "English"}, "es": {"key": "Espanol"}}
     assert get_text("key", "en", locale) == "Espanol"
+
+
+def test_localizer_from_directory():
+    d = tempfile.mkdtemp()
+    try:
+        csv_path = os.path.join(d, "translations.csv")
+        with open(csv_path, "w", encoding="utf-8") as f:
+            f.write(EN_CSV)
+        localizer = Localizer({}, language="en", locale_dir=d)
+        assert localizer.locale_dict["en"]["report.title"] == "Network Report"
+    finally:
+        os.unlink(csv_path)
+        os.rmdir(d)
+
+
+def test_load_skips_comments():
+    csv_content = """\
+key,en,es
+# this is a comment
+report.title,Network Report,Informe de Red
+; also a comment
+report.intro,Introduction,Introducción
+"""
+    path = _write_csv(csv_content)
+    try:
+        locale = load_translations_csv(path)
+        assert locale["en"]["report.title"] == "Network Report"
+        assert locale["en"]["report.intro"] == "Introduction"
+    finally:
+        os.unlink(path)

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import json
+import csv
 import os
-from typing import Optional
+import typing
+from typing import Any, Optional
 
 from .core.types import StyleDefinition, PageConfig
 from .core.exceptions import StyleNotFoundError
@@ -10,34 +11,64 @@ from .core.exceptions import StyleNotFoundError
 
 _STYLE_CACHE: dict[str, dict[str, StyleDefinition]] = {}
 
+_BOOL_VALUES = {"true", "yes", "1", "t", "y"}
 
-def load_theme(file_path: str) -> dict[str, StyleDefinition]:
-    """Load a theme definition from a JSON file.
+_STYLE_FIELD_TYPES = typing.get_type_hints(StyleDefinition)
+_PAGE_FIELD_TYPES = typing.get_type_hints(PageConfig)
 
-    Expected JSON structure:
-    {
-        "name": "apa",
-        "page": {
-            "width": 215.9,
-            "height": 279.4,
-            "margin_top": 25.4,
-            ...
-        },
-        "styles": {
-            "title": {
-                "font_family": "Helvetica",
-                "font_size": 24,
-                "bold": true,
-                "alignment": "center",
-                ...
-            },
-            "heading": {...},
-            ...
-        }
-    }
+
+def _parse_field_value(value: str, field_type: type) -> Any:
+    """Convert a CSV string to the appropriate Python type.
 
     Args:
-        file_path: Path to the theme JSON file.
+        value: Raw string value from CSV.
+        field_type: Target Python type (from dataclass field annotation).
+
+    Returns:
+        Converted value or None for empty strings.
+    """
+    if value is None or value.strip() == "":
+        return None
+
+    origin = typing.get_origin(field_type)
+    if origin is typing.Union:
+        args = typing.get_args(field_type)
+        non_none = [a for a in args if a is not type(None)]
+        if non_none:
+            return _parse_field_value(value, non_none[0])
+        return None
+
+    if field_type is bool:
+        return value.strip().lower() in _BOOL_VALUES
+    if field_type is int:
+        try:
+            return int(value.strip())
+        except ValueError:
+            return 0
+    if field_type is float:
+        try:
+            return float(value.strip())
+        except ValueError:
+            return 0.0
+    return value.strip()
+
+
+def load_styles_csv(file_path: str) -> dict[str, StyleDefinition]:
+    """Load style definitions from a CSV file.
+
+    CSV format:
+        section,name,property,value
+        style,default,font_family,Helvetica
+        style,default,font_size,10
+        style,title,font_family,Helvetica
+        style,title,font_size,24
+        style,title,bold,true
+
+    The ``section`` column distinguishes style rows from other sections.
+    Each ``(name, property)`` pair defines one field of a StyleDefinition.
+
+    Args:
+        file_path: Path to the theme CSV file.
 
     Returns:
         Dictionary of style name to StyleDefinition.
@@ -52,28 +83,51 @@ def load_theme(file_path: str) -> dict[str, StyleDefinition]:
     if not os.path.exists(file_path):
         raise StyleNotFoundError(file_path)
 
+    styles: dict[str, dict[str, Any]] = {}
+    valid_fields = set(StyleDefinition.__dataclass_fields__.keys())
+
     try:
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, OSError) as e:
-        raise StyleNotFoundError(f"Cannot load theme: {e}") from e
+        with open(file_path, encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            if reader.fieldnames is None:
+                return {}
 
-    styles: dict[str, StyleDefinition] = {}
-    raw_styles = data.get("styles", {})
+            for row in reader:
+                section = row.get("section", "").strip()
+                if section != "style":
+                    continue
+                name = row.get("name", "").strip()
+                if not name:
+                    continue
+                prop = row.get("property", "").strip()
+                if prop not in valid_fields:
+                    continue
+                value = row.get("value", "").strip()
 
-    for name, style_data in raw_styles.items():
-        if isinstance(style_data, dict):
-            styles[name] = StyleDefinition.from_dict(style_data)
+                if name not in styles:
+                    styles[name] = {}
+                field_type = _STYLE_FIELD_TYPES.get(prop, str)
+                styles[name][prop] = _parse_field_value(value, field_type)
 
-    _STYLE_CACHE[cache_key] = styles
-    return styles
+    except (csv.Error, OSError) as e:
+        raise StyleNotFoundError(f"Cannot load theme CSV: {e}") from e
+
+    result: dict[str, StyleDefinition] = {
+        name: StyleDefinition.from_dict(props)
+        for name, props in styles.items()
+    }
+
+    _STYLE_CACHE[cache_key] = result
+    return result
 
 
 def load_theme_dir(directory: str) -> dict[str, StyleDefinition]:
-    """Load all theme files from a directory.
+    """Load all theme style definitions from a directory.
+
+    Looks for ``theme.csv`` files in the given directory.
 
     Args:
-        directory: Path to directory containing theme JSON files.
+        directory: Path to directory containing theme CSV files.
 
     Returns:
         Merged styles from all themes.
@@ -83,15 +137,59 @@ def load_theme_dir(directory: str) -> dict[str, StyleDefinition]:
         return merged
 
     for filename in sorted(os.listdir(directory)):
-        if filename.endswith(".json"):
+        if filename == "theme.csv":
             file_path = os.path.join(directory, filename)
             try:
-                styles = load_theme(file_path)
+                styles = load_styles_csv(file_path)
                 merged.update(styles)
             except StyleNotFoundError:
                 continue
 
     return merged
+
+
+def load_page_config_csv(file_path: str) -> Optional[PageConfig]:
+    """Load page configuration from a theme CSV file.
+
+    Extracts rows with ``section == page`` and maps them to a PageConfig.
+
+    Args:
+        file_path: Path to theme CSV file.
+
+    Returns:
+        PageConfig if page properties are found, None otherwise.
+    """
+    try:
+        with open(file_path, encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            if reader.fieldnames is None:
+                return None
+
+            page_data: dict[str, Any] = {}
+            valid_fields = set(PageConfig.__dataclass_fields__.keys())
+
+            for row in reader:
+                section = row.get("section", "").strip()
+                if section != "page":
+                    continue
+                prop = row.get("property", "").strip()
+                if prop not in valid_fields:
+                    continue
+                value = row.get("value", "").strip()
+
+                field_type = _PAGE_FIELD_TYPES.get(prop, str)
+                page_data[prop] = _parse_field_value(value, field_type)
+
+            if not page_data:
+                return None
+
+            return PageConfig(**{
+                k: v for k, v in page_data.items()
+                if k in PageConfig.__dataclass_fields__
+            })
+
+    except (csv.Error, OSError):
+        return None
 
 
 def get_style(name: str, styles: dict[str, StyleDefinition]) -> StyleDefinition:
@@ -143,29 +241,6 @@ def merge_styles(
             merged[name] = override_style
 
     return merged
-
-
-def load_page_config(file_path: str) -> Optional[PageConfig]:
-    """Load page configuration from a theme file.
-
-    Args:
-        file_path: Path to theme JSON file.
-
-    Returns:
-        PageConfig if available, None otherwise.
-    """
-    try:
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return None
-
-    page_data = data.get("page")
-    if not page_data:
-        return None
-
-    return PageConfig(**{k: v for k, v in page_data.items()
-                         if k in PageConfig.__dataclass_fields__})
 
 
 def create_default_styles() -> dict[str, StyleDefinition]:

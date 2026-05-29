@@ -1,0 +1,53 @@
+key,en,es
+ds.report.title,"Test Report: Data Structures","Informe de Prueba: Estructuras de Datos"
+ds.author_label,"Prepared by: {{author}}","Preparado por: {{author}}"
+ds.institution,"Algorithms and Data Structures Laboratory","Laboratorio de Algoritmos y Estructuras de Datos"
+ds.abstract,Abstract,Resumen
+ds.abstract_body,"This report presents a comparative analysis of the main data structures used in computer science. Performance metrics such as time complexity, memory usage, and typical use cases are evaluated for each structure.","Este informe presenta un análisis comparativo de las principales estructuras de datos utilizadas en ciencias de la computación. Se evalúan métricas de rendimiento como complejidad temporal, uso de memoria y casos de uso típicos para cada estructura."
+ds.intro,Introduction,Introducción
+ds.intro_body,"Data structures are fundamental to efficient algorithm design. This test report documents and compares the performance characteristics of the most common structures, including arrays, linked lists, stacks, queues, trees, graphs, and hash tables.","Las estructuras de datos son fundamentales para el diseño eficiente de algoritmos. Este reporte de prueba documenta y compara las características de rendimiento de las estructuras más comunes, incluyendo arreglos, listas enlazadas, pilas, colas, árboles, grafos y tablas hash."
+ds.objectives,Objectives,Objetivos
+ds.objectives_list,"Document the time complexity of fundamental operations for each data structure
+Compare performance between equivalent structures
+Provide Python implementation examples
+Establish usage recommendations based on context","Documentar la complejidad temporal de operaciones fundamentales en cada estructura de datos
+Comparar el rendimiento entre estructuras equivalentes
+Proporcionar ejemplos de implementación en Python
+Establecer recomendaciones de uso según el contexto"
+ds.methodology,Methodology,Metodología
+ds.methodology_body,"A theoretical analysis of algorithmic complexity was performed using standard Big-O notation. For each structure, access, search, insertion, and deletion operations were evaluated in average and worst cases. Results are presented in comparative tables with code examples.","Se realizó un análisis teórico de la complejidad algorítmica utilizando la notación Big-O estándar. Para cada estructura se evaluaron las operaciones de acceso, búsqueda, inserción y eliminación en los casos promedio y peor. Los resultados se presentan en tablas comparativas con ejemplos de código."
+ds.linear_structures,Linear Structures,Estructuras Lineales
+ds.caption.array,"Table 1: Array Complexity","Tabla 1: Complejidad de Arreglos (Arrays)"
+ds.array_notes,"Arrays offer O(1) access but costly insertion/deletion at positions other than the end.","Los arreglos ofrecen acceso O(1) pero inserción/eliminación costosas en posiciones que no sean al final."
+ds.caption.linkedlist,"Table 2: Linked List Complexity","Tabla 2: Complejidad de Listas Enlazadas"
+ds.linkedlist_notes,"Linked lists excel at O(1) insertion/deletion at ends, but access is sequential O(n). (*) With tail pointer.","Las listas enlazadas destacan por inserción/eliminación O(1) en extremos, pero el acceso es secuencial O(n). (*) Con puntero a cola."
+ds.caption.stack_queue,"Table 3: Stack and Queue Complexity","Tabla 3: Complejidad de Pilas y Colas"
+ds.stack_queue_notes,"Stacks (LIFO) and Queues (FIFO) offer O(1) operations at their ends. Deques combine both functionalities.","Pilas (LIFO) y Colas (FIFO) ofrecen operaciones O(1) en sus extremos. Los Deques combinan ambas funcionalidades."
+ds.trees,Trees,Árboles
+ds.caption.tree,"Table 4: Tree Complexity","Tabla 4: Complejidad de Árboles"
+ds.tree_notes,"BSTs can degenerate to O(n) without balancing. AVL guarantees O(log n) through rotations. Heaps optimize min/max access.","Los BST pueden degenerar a O(n) sin balanceo. AVL garantiza O(log n) mediante rotaciones. Los Heaps optimizan acceso a mínimo/máximo."
+ds.graphs,Graphs,Grafos
+ds.caption.graph,"Table 5: Graph Algorithm Complexity","Tabla 5: Complejidad de Algoritmos sobre Grafos"
+ds.graph_notes,"The choice between adjacency matrix and list depends on graph density. V = vertices, E = edges.","La elección entre matriz y lista de adyacencia depende de la densidad del grafo. V = vértices, E = aristas."
+ds.hash,Hash Tables,Tablas Hash
+ds.caption.hash,"Table 6: Hash Table Complexity","Tabla 6: Complejidad de Tablas Hash"
+ds.hash_notes,"Hash tables offer O(1) average but can degrade to O(n) with many collisions. Load factor and hash function are critical.","Las tablas hash ofrecen O(1) promedio pero pueden degradarse a O(n) con muchas colisiones. El factor de carga y la función hash son críticos."
+ds.comparison,General Comparison,Comparación General
+ds.comparison_body,"The following table compares all data structures covered in this report, showing their average time complexities and memory requirements.","La siguiente tabla compara todas las estructuras de datos cubiertas en este informe, mostrando sus complejidades temporales promedio y requerimientos de memoria."
+ds.caption.comparison,"Table 7: Global Data Structure Comparison","Tabla 7: Comparación Global de Estructuras de Datos"
+ds.code_examples,Code Examples,Ejemplos de Código
+ds.code_intro,"Reference Python implementations for the most representative structures are presented below.","A continuación se presentan implementaciones de referencia en Python para las estructuras más representativas."
+ds.conclusions,Conclusions,Conclusiones
+ds.conclusions_body,"There is no universally optimal data structure. Selection should be based on the access patterns and predominant operations of the specific problem. This report provides a quick reference guide for decision-making in algorithm design.","No existe una estructura de datos universalmente óptima. La selección debe basarse en los patrones de acceso y operaciones predominantes del problema específico. Este reporte proporciona una guía de referencia rápida para la toma de decisiones en el diseño de algoritmos."
+ds.recommendations,Recommendations,Recomendaciones
+ds.recommendations_list,"Use arrays for frequent indexed access with few insertions/deletions
+Use linked lists when frequent insertions/deletions at ends are needed
+Use stacks for LIFO processing (e.g., expression evaluation)
+Use queues for FIFO processing (e.g., task scheduling)
+Use AVL (not plain BST) when guaranteed binary search is required
+Use hash tables for dictionaries with O(1) average key lookup","Usar arreglos para acceso indexado frecuente con pocas inserciones/eliminaciones
+Usar listas enlazadas cuando se requieran inserciones/eliminaciones frecuentes en extremos
+Usar pilas para procesamiento LIFO (ej. evaluación de expresiones)
+Usar colas para procesamiento FIFO (ej. planificación de tareas)
+Usar AVL (no BST simple) cuando se requiera búsqueda binaria garantizada
+Usar tablas hash para diccionarios con O(1) promedio en búsquedas por clave"

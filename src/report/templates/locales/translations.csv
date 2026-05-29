@@ -1,0 +1,44 @@
+key,en,es
+report.title,Network Performance Report,Informe de Rendimiento de Red
+report.benchmark_title,Multi-Solver Benchmark Performance Report,"Informe Comparativo de Benchmark Multi-Solver"
+report.benchmark_subtitle,"Comparative Analysis of Linear Programming Solvers","Análisis Comparativo de Solvers de Programación Lineal"
+report.single_title,"Linear Programming Problem Analysis","Análisis de Problema de Programación Lineal"
+report.author_label,"Prepared by: {{author}}","Preparado por: {{author}}"
+report.institution,"Operations Research Laboratory","Laboratorio de Investigación de Operaciones"
+report.executive_summary,Executive Summary,Resumen Ejecutivo
+report.summary_intro,"This report presents a comprehensive benchmark analysis comparing multiple linear programming solvers across a standardized test set.","Este informe presenta un análisis comparativo exhaustivo de múltiples solvers de programación lineal en un conjunto estandarizado de problemas."
+report.statistical_summary,Statistical Summary,Resumen Estadístico
+report.solver_comparison,Solver Performance Comparison,"Comparación de Rendimiento de Solvers"
+report.performance_profiles,Performance Profiles,Perfiles de Rendimiento
+report.detailed_results,Detailed Results,Resultados Detallados
+report.scalability,Scalability Analysis,Análisis de Escalabilidad
+report.scalability_text,"The following analysis examines solver performance as problem size increases.","El siguiente análisis examina el rendimiento de los solvers a medida que aumenta el tamaño del problema."
+report.statistical_analysis,Statistical Analysis,Análisis Estadístico
+report.friedman_test,"Friedman test results indicate statistically significant differences between solver performances.","Los resultados de la prueba de Friedman indican diferencias estadísticamente significativas entre los rendimientos de los solvers."
+report.nemenyi_test,"Nemenyi post-hoc analysis identifies specific pairwise differences between solvers.","El análisis post-hoc de Nemenyi identifica diferencias pareadas específicas entre solvers."
+report.recommendations,Recommendations,Recomendaciones
+report.recommendations_text,"Based on the benchmark results, we recommend the following solver selection strategy.","Basándose en los resultados del benchmark, recomendamos la siguiente estrategia de selección de solvers."
+report.abstract,Abstract,Resumen
+report.abstract_body,"This report analyzes the solution of a linear programming problem using multiple optimization solvers. The analysis includes problem formulation, optimal solution, sensitivity analysis, and solver performance comparison.","Este informe analiza la solución de un problema de programación lineal utilizando múltiples solvers de optimización. El análisis incluye la formulación del problema, la solución óptima, el análisis de sensibilidad y la comparación de rendimiento de los solvers."
+report.technical_details,Technical Details,Detalles Técnicos
+report.problem_intro,"The problem was formulated as a linear programming model and solved using state-of-the-art optimization solvers.","El problema fue formulado como un modelo de programación lineal y resuelto utilizando solvers de optimización de última generación."
+report.problem_data,"Problem data and parameters are detailed below.","Los datos y parámetros del problema se detallan a continuación."
+report.objective_function,Objective Function,Función Objetivo
+report.constraints,Constraints,Restricciones
+report.optimal_solution,Optimal Solution,Solución Óptima
+report.sensitivity_analysis,Sensitivity Analysis,Análisis de Sensibilidad
+report.graphical_analysis,Graphical Analysis,Análisis Gráfico
+statistics_caption,"Table 1: Statistical Summary of Solver Performance","Tabla 1: Resumen Estadístico del Rendimiento de Solvers"
+solver_results_caption,"Table 2: Detailed Solver Comparison Results","Tabla 2: Resultados Detallados de Comparación de Solvers"
+time_chart_caption,"Figure 1: Average Solve Time by Solver","Figura 1: Tiempo Promedio de Solución por Solver"
+success_chart_caption,"Figure 2: Success Rate by Solver","Figura 2: Tasa de Éxito por Solver"
+profile_caption,"Figure 3: Performance Profile Curves","Figura 3: Curvas de Perfil de Rendimiento"
+detailed_caption,"Table 3: Detailed Benchmark Results","Tabla 3: Resultados Detallados del Benchmark"
+scalability_caption,"Figure 4: Scalability Analysis","Figura 4: Análisis de Escalabilidad"
+friedman_caption,"Table 4: Friedman Test Results","Tabla 4: Resultados de la Prueba de Friedman"
+nemenyi_caption,"Table 5: Nemenyi Post-Hoc Analysis","Tabla 5: Análisis Post-Hoc de Nemenyi"
+table_optimal_solution,"Table 1: Optimal Variable Values","Tabla 1: Valores Óptimos de las Variables"
+table_sensitivity,"Table 2: Sensitivity Analysis Results","Tabla 2: Resultados del Análisis de Sensibilidad"
+chart_feasible_region,"Figure 1: Feasible Region Visualization","Figura 1: Visualización de la Región Factible"
+chart_objective_progression,"Figure 2: Objective Function Progression","Figura 2: Progresión de la Función Objetivo"
+constraints_caption,"Table 3: Problem Constraints","Tabla 3: Restricciones del Problema"

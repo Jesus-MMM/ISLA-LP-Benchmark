@@ -14,7 +14,7 @@ from .i18n import (
 )
 from .data_binding import DataBinder, bind_data_to_model
 from .styles import (
-    load_theme_dir, load_page_config, create_default_styles,
+    load_theme_dir, load_page_config_csv, create_default_styles,
 )
 from .validation import ReportValidator
 from .renderers import PDFRenderer, HTMLRenderer, MarkdownRenderer
@@ -75,7 +75,7 @@ class ReportEngine:
         loaded_styles = load_theme_dir(directory)
         self._styles.update(loaded_styles)
 
-        page = load_page_config(os.path.join(directory, "theme.json"))
+        page = load_page_config_csv(os.path.join(directory, "theme.csv"))
         if page:
             self.page_config = page
 

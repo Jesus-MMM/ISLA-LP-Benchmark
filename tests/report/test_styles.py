@@ -1,14 +1,28 @@
 from __future__ import annotations
 
-import json
 import tempfile
 import os
 
 from src.report.styles import (
-    create_default_styles, get_style, merge_styles, load_theme,
+    create_default_styles, get_style, merge_styles, load_styles_csv,
 )
 from src.report.core.types import StyleDefinition
 from src.report.core.exceptions import StyleNotFoundError
+
+
+THEME_CSV = """\
+section,name,property,value
+style,custom_style,font_family,Courier
+style,custom_style,font_size,8
+style,custom_style,color,333333
+"""
+
+
+def _write_csv(content: str, suffix=".csv"):
+    f = tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False, encoding="utf-8")
+    f.write(content)
+    f.close()
+    return f.name
 
 
 def test_create_default_styles():
@@ -67,32 +81,45 @@ def test_style_from_dict():
     assert not hasattr(style, "nonexistent_field")
 
 
-def test_load_theme():
-    theme_data = {
-        "name": "test",
-        "styles": {
-            "custom_style": {
-                "font_family": "Courier",
-                "font_size": 8,
-                "color": "333333",
-            },
-        },
-    }
-    f = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8")
-    json.dump(theme_data, f)
-    f.close()
+def test_load_styles_csv():
+    path = _write_csv(THEME_CSV)
     try:
-        styles = load_theme(f.name)
+        styles = load_styles_csv(path)
         assert "custom_style" in styles
         assert styles["custom_style"].font_family == "Courier"
+        assert styles["custom_style"].font_size == 8
     finally:
-        os.unlink(f.name)
+        os.unlink(path)
 
 
-def test_load_theme_not_found():
+def test_load_styles_csv_not_found():
     import pytest
     with pytest.raises(StyleNotFoundError):
-        load_theme("nonexistent.json")
+        load_styles_csv("nonexistent.csv")
+
+
+def test_load_styles_csv_empty():
+    path = _write_csv("section,name,property,value\n")
+    try:
+        styles = load_styles_csv(path)
+        assert styles == {}
+    finally:
+        os.unlink(path)
+
+
+def test_load_styles_csv_skips_page_section():
+    path = _write_csv("""\
+section,name,property,value
+page,,width,215.9
+style,test_style,font_family,Times
+""")
+    try:
+        styles = load_styles_csv(path)
+        assert "test_style" in styles
+        assert styles["test_style"].font_family == "Times"
+        assert len(styles) == 1
+    finally:
+        os.unlink(path)
 
 
 def test_default_style_values():
@@ -102,3 +129,26 @@ def test_default_style_values():
     assert style.bold is False
     assert style.italic is False
     assert style.color == "000000"
+
+
+def test_load_styles_multiple_styles():
+    path = _write_csv("""\
+section,name,property,value
+style,alpha,font_family,Arial
+style,alpha,font_size,12
+style,alpha,bold,true
+style,beta,font_family,Courier
+style,beta,font_size,10
+style,beta,italic,true
+""")
+    try:
+        styles = load_styles_csv(path)
+        assert "alpha" in styles
+        assert "beta" in styles
+        assert styles["alpha"].font_family == "Arial"
+        assert styles["alpha"].font_size == 12
+        assert styles["alpha"].bold is True
+        assert styles["beta"].font_family == "Courier"
+        assert styles["beta"].italic is True
+    finally:
+        os.unlink(path)
