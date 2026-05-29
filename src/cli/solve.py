@@ -2,9 +2,10 @@
 Handler para resolver problemas individuales de programacion lineal.
 """
 
+import os
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from rich.console import Console
 from rich.table import Table
@@ -13,16 +14,64 @@ from rich.panel import Panel
 from src.parser import LPParser
 from src.solver import SolverConfig, SolverRegistry
 from src.visualization import LinearVisualization
+from src.report.core.types import ContentType, DocumentModel, ReportElement
+from src.report.adapters import ReportData
 
 
 _console = Console()
+
+
+def _resolve_template_path(relative: str) -> str:
+    """Resolve a template path relative to the report templates directory."""
+    base = os.path.join(os.path.dirname(__file__), "..", "report", "templates")
+    return os.path.normpath(os.path.join(base, relative))
+
+
+def _inject_table_data(model: DocumentModel, data: ReportData) -> None:
+    """Inject table data from ReportData into DocumentModel elements by element_id."""
+    for elem in model.elements:
+        if elem.content_type == ContentType.TABLE and elem.element_id in data.tables:
+            headers, rows = data.tables[elem.element_id]
+            elem.metadata["headers"] = headers
+            elem.metadata["rows"] = rows
+
+
+def _build_report_engine(language: str = "en") -> Any:
+    """Create a ReportEngine configured with APA locale and theme."""
+    from src.report.engine import ReportEngine
+    return ReportEngine(
+        language=language,
+        locale_dir=_resolve_template_path("locales"),
+        theme_dir=_resolve_template_path("apa"),
+    )
+
+
+def _render_report(engine, model, output_path: str, fmt: str, quiet: bool = False, console=None) -> None:
+    """Render a document model to the specified format."""
+    from src.report.renderers import PDFRenderer, HTMLRenderer, MarkdownRenderer
+    from src.report.core.types import RenderContext
+    context = RenderContext(
+        page_config=model.page_config,
+        data=engine._data_binder.data,
+        locale=engine._locale_dict,
+        current_language=engine.language,
+        styles=model.styles,
+    )
+    renderer_cls = {"pdf": PDFRenderer, "html": HTMLRenderer, "md": MarkdownRenderer}[fmt]
+    renderer = renderer_cls(context)
+    result = renderer.render(model, output_path)
+    if result.success:
+        if not quiet:
+            console.print(f"[green]{fmt.upper()} saved to:[/green] {output_path}")
+    else:
+        console.print(f"[red]{fmt.upper()} generation failed:[/red] {'; '.join(result.errors)}")
 
 
 def solve_single(
     input_path: Path,
     solver_name: str = "highs",
     visualize: bool = False,
-    pdf: bool = False,
+    report_format: Optional[str] = None,
     times: bool = False,
     verbose: bool = False,
     output: Optional[str] = None,
@@ -115,23 +164,46 @@ def solve_single(
             if not quiet:
                 _console.print(f"[green]Graph saved to:[/green] {output_path}")
 
-        if pdf:
-            from src.analysis import LPAnalysis, ExecutionTimes
+        if report_format:
+            from src.analysis.analysis import ExecutionTimes
+            from src.report.adapters import adapt_single_solution
             from src.cli import get_system_info
             if not quiet:
-                _console.print("[blue]Generating PDF report...[/blue]")
+                _console.print(f"[blue]Generating {report_format.upper()} report...[/blue]")
             exec_times = ExecutionTimes(
                 parse_time=parse_time,
                 build_time=build_time,
                 solve_time=solve_time,
                 total_time=total_time,
             )
-            pdf_path = output or str(input_path.with_suffix('.pdf'))
+            ext = f".{report_format}" if report_format != "md" else ".md"
+            fmt_path = output or str(Path(input_path).parent / f"report{ext}")
             system_info = get_system_info()
-            analysis = LPAnalysis(problem, solution, exec_times, system_info, solver_name)
-            analysis.generate_pdf(pdf_path)
-            if not quiet:
-                _console.print(f"[green]PDF saved to:[/green] {pdf_path}")
+
+            feasible_path = None
+            objective_path = None
+            if len(problem.variables) == 2 and solution.is_optimal():
+                chart_dir = Path(fmt_path).parent / ".charts"
+                chart_dir.mkdir(parents=True, exist_ok=True)
+                feasible_path = str(chart_dir / "feasible_region.png")
+                objective_path = str(chart_dir / "objective_progression.png")
+                try:
+                    viz = LinearVisualization(problem, solution)
+                    viz.plot(save_path=feasible_path, show=False)
+                except Exception:
+                    feasible_path = None
+
+            data = adapt_single_solution(
+                problem, solution, exec_times, system_info, solver_name,
+                feasible_region_path=feasible_path,
+                objective_progression_path=objective_path,
+            )
+            engine = _build_report_engine()
+            engine.load_csv(_resolve_template_path("apa/single_report.csv"))
+            engine.set_variables(data.variables)
+            model = engine.build_document_model()
+            _inject_table_data(model, data)
+            _render_report(engine, model, fmt_path, report_format, quiet, _console)
 
         if times and not quiet:
             time_table = Table(title="Tiempos de Ejecucion")
@@ -160,7 +232,7 @@ def solve_multi(
     input_path: Path,
     solver_name: str = "highs",
     visualize: bool = False,
-    pdf: bool = False,
+    report_format: Optional[str] = None,
     times: bool = False,
     verbose: bool = False,
     output: Optional[str] = None,
@@ -253,22 +325,31 @@ def solve_multi(
             out = {"solver": solver_name, "problems": json_results}
             _console.print(json.dumps(out, indent=2))
 
-        if pdf and results:
+        if report_format and results:
             if not quiet:
-                _console.print("[blue]Generando reporte PDF multi-problema...[/blue]")
+                _console.print(f"[blue]Generando reporte {report_format.upper()} multi-problema...[/blue]")
             try:
-                from src.analysis.multi_analysis import MultiLPAnalysis
-                from src.solver import MultiSolverResult
+                from src.report.adapters import adapt_multi_problem
+                from src.cli import get_system_info
 
-                pdf_path = Path(output or input_path.with_stem(input_path.stem + "_multi").with_suffix('.pdf'))
-                multi_result = MultiSolverResult(results=results, solver_name=solver_name)
-                analysis = MultiLPAnalysis(multi_result)
-                analysis.generate_pdf(str(pdf_path))
-                if not quiet:
-                    _console.print(f"[green]PDF guardado en:[/green] {pdf_path}")
+                ext = f".{report_format}" if report_format != "md" else ".md"
+                fmt_path = Path(output or Path(input_path).parent / f"report_multi{ext}")
+                system_info = get_system_info()
+                data = adapt_multi_problem(results, solver_name, system_info=system_info)
+
+                engine = _build_report_engine()
+                engine.load_csv(_resolve_template_path("apa/multi_report.csv"))
+                engine.set_variables(data.variables)
+                model = engine.build_document_model()
+                _inject_table_data(model, data)
+
+                # Add per-problem sections programmatically
+                _add_problem_sections(model, results)
+
+                _render_report(engine, model, str(fmt_path), report_format, quiet, _console)
             except Exception as e:
                 if not quiet:
-                    _console.print(f"[red]Error generando PDF multi:[/red] {e}")
+                    _console.print(f"[red]Error generando reporte {report_format.upper()} multi:[/red] {e}")
                 if verbose:
                     import traceback
                     traceback.print_exc()
@@ -281,3 +362,71 @@ def solve_multi(
             import traceback
             traceback.print_exc()
         return 1
+
+
+def _add_problem_sections(model: DocumentModel, results: list) -> None:
+    """Add per-problem sections to the document model for multi-problem reports."""
+    order = 1000
+    for i, r in enumerate(results, 1):
+        model.add_element(ReportElement(
+            element_id=f"problem_{i}_page_break",
+            content_type=ContentType.PAGE_BREAK,
+            content="",
+            style="default",
+            order=order,
+        ))
+        order += 1
+
+        obj_text = _format_objective_short(r.problem.objective)
+        title = f"{r.problem.sense.upper()} Z = {obj_text}"
+        model.add_element(ReportElement(
+            element_id=f"problem_{i}_title",
+            content_type=ContentType.HEADING,
+            content=f"Problema {i}: {title}",
+            style="apa_subheading",
+            order=order,
+        ))
+        order += 1
+
+        obj_val = r.solution.objective_value
+        obj_str = f"{obj_val:.4f}" if obj_val is not None else "N/A"
+        model.add_element(ReportElement(
+            element_id=f"problem_{i}_status",
+            content_type=ContentType.PARAGRAPH,
+            content=f"Estado: {r.solution.status} | "
+                    f"Valor optimo: {obj_str} | "
+                    f"Tiempo: {r.solve_time:.4f}s",
+            style="apa_body",
+            order=order,
+        ))
+        order += 1
+
+        var_str = ", ".join(f"{k}={v:.2f}" for k, v in r.solution.variables.items())
+        model.add_element(ReportElement(
+            element_id=f"problem_{i}_vars",
+            content_type=ContentType.PARAGRAPH,
+            content=f"Variables: {var_str}",
+            style="apa_body",
+            order=order,
+        ))
+        order += 1
+
+
+def _format_objective_short(objective: dict[str, float]) -> str:
+    """Format objective coefficients in short form for headings."""
+    terms = []
+    for var, coeff in objective.items():
+        if coeff == 1.0:
+            terms.append(var)
+        elif coeff == -1.0:
+            terms.append(f"-{var}")
+        else:
+            coeff_str = str(int(coeff)) if coeff == int(coeff) else str(coeff)
+            if coeff >= 0:
+                terms.append(f"{coeff_str}{var}")
+            else:
+                terms.append(f"{coeff_str}{var}")
+    expr = " ".join(terms)
+    if expr.startswith("+"):
+        expr = expr[1:]
+    return expr

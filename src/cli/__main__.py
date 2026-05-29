@@ -298,6 +298,14 @@ Para mas ayuda sobre un modo concreto, combine las opciones:
     # --- Salida ---
     output_group = parser.add_argument_group('Opciones de salida')
     output_group.add_argument(
+        '--format',
+        type=str,
+        choices=['pdf', 'html', 'md'],
+        default=None,
+        metavar='FORMATO',
+        help='Formato del reporte (pdf, html, md). Por defecto no se genera reporte, usar --pdf o --format'
+    )
+    output_group.add_argument(
         '--output', '-o',
         type=str,
         metavar='RUTA',
@@ -381,6 +389,11 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     solver_name = args.solver
 
+    # Compute effective format: --format overrides --pdf, --pdf sets pdf
+    report_format = args.format
+    if args.pdf and report_format is None:
+        report_format = "pdf"
+
     if args.benchmark:
         from src.solver import SolverRegistry
         solvers = args.solvers or ['gurobi']
@@ -396,7 +409,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             plot_comparison=args.plot_comparison,
             output_dir=args.output_dir if args.output_dir else None,
             verbose=args.verbose,
-            pdf=args.pdf,
+            report_format=report_format,
             quiet=args.quiet,
             time_limit=args.timeout,
         )
@@ -408,7 +421,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         kwargs = dict(
             solver_name=solver_name,
             visualize=args.visualize,
-            pdf=args.pdf,
+            report_format=report_format,
             times=args.times,
             verbose=args.verbose,
             output=args.output,

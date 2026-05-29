@@ -2,8 +2,9 @@
 Handler para el modo benchmark.
 """
 
+import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from rich.console import Console
 from rich.table import Table
@@ -17,8 +18,46 @@ from src.solver import (
 from src.analysis import export_benchmark_results
 from src.cli import get_system_info
 from src.visualization.benchmark_plots import BenchmarkPlotter as BenchmarkVisualizer
+from src.report.core.types import ContentType, DocumentModel, ReportElement
+from src.report.adapters import ReportData
 
 _console = Console()
+
+
+def _resolve_template_path(relative: str) -> str:
+    """Resolve a template path relative to the report templates directory."""
+    base = os.path.join(os.path.dirname(__file__), "..", "report", "templates")
+    return os.path.normpath(os.path.join(base, relative))
+
+
+def _inject_table_data(model: DocumentModel, data: ReportData) -> None:
+    """Inject table data from ReportData into DocumentModel elements by element_id."""
+    for elem in model.elements:
+        if elem.content_type == ContentType.TABLE and elem.element_id in data.tables:
+            headers, rows = data.tables[elem.element_id]
+            elem.metadata["headers"] = headers
+            elem.metadata["rows"] = rows
+
+
+def _render_report(engine, model, output_path: str, fmt: str, quiet: bool = False, console=None) -> None:
+    """Render a document model to the specified format."""
+    from src.report.renderers import PDFRenderer, HTMLRenderer, MarkdownRenderer
+    from src.report.core.types import RenderContext
+    context = RenderContext(
+        page_config=model.page_config,
+        data=engine._data_binder.data,
+        locale=engine._locale_dict,
+        current_language=engine.language,
+        styles=model.styles,
+    )
+    renderer_cls = {"pdf": PDFRenderer, "html": HTMLRenderer, "md": MarkdownRenderer}[fmt]
+    renderer = renderer_cls(context)
+    result = renderer.render(model, output_path)
+    if result.success:
+        if not quiet:
+            console.print(f"[green]{fmt.upper()} saved to:[/green] {output_path}")
+    else:
+        console.print(f"[red]{fmt.upper()} generation failed:[/red] {'; '.join(result.errors)}")
 
 
 def run_benchmark(
@@ -30,7 +69,7 @@ def run_benchmark(
     plot_comparison: bool = False,
     output_dir: Optional[str] = None,
     verbose: bool = False,
-    pdf: bool = False,
+    report_format: Optional[str] = None,
     quiet: bool = False,
     time_limit: Optional[float] = None,
 ) -> int:
@@ -108,17 +147,40 @@ def run_benchmark(
         viz.generate_all_plots(output_dir_val)
         _console.print(f"[green]Plots saved to:[/green] {output_dir_val}")
 
-    if pdf:
-        _console.print("\n[blue]Generating PDF report...[/blue]")
-        from src.analysis import BenchmarkReport
+    if report_format:
+        if not quiet:
+            _console.print(f"\n[blue]Generating {report_format.upper()} report...[/blue]")
+        from src.report.adapters import adapt_benchmark
+        from src.report.engine import ReportEngine
 
         output_dir_path = Path(output_dir) if output_dir else Path('data/benchmark_output')
         output_dir_path.mkdir(parents=True, exist_ok=True)
+        chart_dir = output_dir_path / ".charts"
+        chart_dir.mkdir(parents=True, exist_ok=True)
 
-        pdf_path = output_dir_path / "benchmark_report.pdf"
-        benchmark_report = BenchmarkReport(runner, system_info)
-        benchmark_report.generate(str(pdf_path))
-        _console.print(f"[green]PDF saved to:[/green] {pdf_path}")
+        # Pre-generate charts for the report
+        try:
+            viz = BenchmarkVisualizer(runner)
+            viz.generate_all_plots(chart_dir)
+        except Exception:
+            if not quiet:
+                _console.print("[yellow]Warning: chart generation failed, continuing without charts[/yellow]")
+
+        data = adapt_benchmark(runner, system_info, chart_dir)
+
+        engine = ReportEngine(
+            language="en",
+            locale_dir=_resolve_template_path("locales"),
+            theme_dir=_resolve_template_path("apa"),
+        )
+        engine.load_csv(_resolve_template_path("apa/benchmark_report.csv"))
+        engine.set_variables(data.variables)
+        model = engine.build_document_model()
+        _inject_table_data(model, data)
+
+        ext = f".{report_format}" if report_format != "md" else ".md"
+        fmt_path = output_dir_path / f"report{ext}"
+        _render_report(engine, model, str(fmt_path), report_format, quiet, _console)
 
     export_benchmark_results(runner, output_dir_val, formats=['json', 'csv', 'md'])
     _console.print(f"\n[green]Full results saved to:[/green] {output_dir}")
