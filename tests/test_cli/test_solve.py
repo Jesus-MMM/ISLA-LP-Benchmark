@@ -218,14 +218,13 @@ class TestSolveSingle:
 
             with patch("src.cli.solve.SolverRegistry") as mock_reg:
                 mock_reg.get.return_value = lambda p, c: mock_solver
-                with patch("src.analysis.LPAnalysis") as mock_analysis:
-                    with patch("src.analysis.ExecutionTimes"):
+                with patch("src.cli.solve._render_report") as mock_render:
+                    with patch("src.report.adapters.adapt_single_solution") as mock_adapt:
+                        mock_adapt.return_value = MagicMock(variables={}, tables={})
                         with patch("src.cli.get_system_info"):
-                            mock_analysis_instance = MagicMock()
-                            mock_analysis.return_value = mock_analysis_instance
-                            rc = solve_single(Path(tmp), pdf=True)
+                            rc = solve_single(Path(tmp), report_format="pdf")
                             assert rc == 0
-                            mock_analysis_instance.generate_pdf.assert_called_once()
+                            mock_render.assert_called_once()
         finally:
             os.unlink(tmp)
 
@@ -395,12 +394,11 @@ class TestSolveMulti:
                 mock_mp.return_value.parse_all.return_value = [mock_problem]
                 with patch("src.cli.solve.SolverRegistry") as mock_reg:
                     mock_reg.get.return_value = lambda p, c: mock_solver
-                    with patch("src.analysis.multi_analysis.MultiLPAnalysis") as mock_analysis:
-                        mock_analysis_instance = MagicMock()
-                        mock_analysis.return_value = mock_analysis_instance
-                        rc = solve_multi(Path(tmp), pdf=True)
-                        assert rc == 0
-                        mock_analysis_instance.generate_pdf.assert_called_once()
+                    with patch("src.cli.solve._render_report") as mock_render:
+                        with patch("src.cli.get_system_info"):
+                            rc = solve_multi(Path(tmp), report_format="pdf")
+                            assert rc == 0
+                            mock_render.assert_called_once()
         finally:
             os.unlink(tmp)
 
@@ -487,10 +485,10 @@ class TestSolveMulti:
                 mock_mp.return_value.parse_all.return_value = [mock_problem]
                 with patch("src.cli.solve.SolverRegistry") as mock_reg:
                     mock_reg.get.return_value = lambda p, c: mock_solver
-                    with patch("src.analysis.multi_analysis.MultiLPAnalysis") as mock_ma:
-                        mock_ma.side_effect = RuntimeError("PDF failed")
+                    with patch("src.cli.solve._render_report") as mock_render:
+                        mock_render.side_effect = RuntimeError("report failed")
                         with patch("src.cli.solve._console"):
-                            rc = solve_multi(Path(tmp), pdf=True, verbose=True)
+                            rc = solve_multi(Path(tmp), report_format="pdf", verbose=True)
                             assert rc == 0
         finally:
             os.unlink(tmp)
