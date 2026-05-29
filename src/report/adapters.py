@@ -146,8 +146,8 @@ def adapt_single_solution(
         "problem_data_text": _build_problem_data_text(problem),
         "objective_text": _format_objective(problem.objective, problem.sense),
         "has_feasible_region": has_charts,
-        "feasible_region_path": feasible_region_path or "",
-        "objective_progression_path": objective_progression_path or "",
+        "feasible_region_path": (feasible_region_path.replace("\\", "/") if feasible_region_path else ""),
+        "objective_progression_path": (objective_progression_path.replace("\\", "/") if objective_progression_path else ""),
     }
 
     # --- Tables: constraints ---
@@ -164,7 +164,7 @@ def adapt_single_solution(
             c.sense,
             slack_str,
         ])
-    data.tables["constraints"] = (constraint_headers, constraint_rows)
+    data.tables["constraints_table"] = (constraint_headers, constraint_rows)
 
     # --- Tables: optimal solution ---
     sol_headers = ["Variable", "Value", "Type", "Reduced Cost"]
@@ -174,7 +174,7 @@ def adapt_single_solution(
         vtype = problem.variable_types.get(var, "continuous")
         rc = solution.reduced_costs.get(var, 0.0) if solution.reduced_costs else 0.0
         sol_rows.append([var, f"{val:.4f}", vtype, f"{rc:.4f}"])
-    data.tables["solution"] = (sol_headers, sol_rows)
+    data.tables["solution_table"] = (sol_headers, sol_rows)
 
     # --- Tables: sensitivity ---
     sens = solution.sensitivity
@@ -194,7 +194,7 @@ def adapt_single_solution(
             ])
     if not sens_rows:
         sens_rows.append(["N/A", "N/A", "N/A", "N/A", "N/A"])
-    data.tables["sensitivity"] = (sens_headers, sens_rows)
+    data.tables["sensitivity_table"] = (sens_headers, sens_rows)
 
     # --- Images ---
     if has_charts:
@@ -232,9 +232,15 @@ def adapt_benchmark(
     # --- Chart paths ---
     chart_dir_val = Path(chart_dir) if chart_dir else Path(".")
     chart_paths = {}
-    for chart_name in ("time_chart", "success_chart", "profile_chart", "scalability_chart"):
-        p = chart_dir_val / f"{chart_name}.png"
-        chart_paths[chart_name] = str(p) if p.exists() else ""
+    chart_file_map = {
+        "time_chart": "benchmark_times.png",
+        "success_chart": "benchmark_success.png",
+        "profile_chart": "benchmark_profile.png",
+        "scalability_chart": "benchmark_dashboard.png",
+    }
+    for chart_name, filename in chart_file_map.items():
+        p = chart_dir_val / filename
+        chart_paths[chart_name] = str(p).replace("\\", "/") if p.exists() else ""
 
     data.variables = {
         "num_problems": num_problems,
@@ -261,7 +267,7 @@ def adapt_benchmark(
         ["Solvers", str(num_solvers)],
         ["Problems", str(num_problems)],
     ]
-    data.tables["statistics"] = (stat_headers, stat_rows)
+    data.tables["stats_table"] = (stat_headers, stat_rows)
 
     # --- Table: solver comparison ---
     comp_headers = ["Solver", "Runs", "Success", "Avg Time (s)", "Min Time (s)",
@@ -280,7 +286,7 @@ def adapt_benchmark(
             f"{info.get('avg_memory', 0):.2f}",
             f"{info.get('peak_memory', 0):.2f}",
         ])
-    data.tables["solver_results"] = (comp_headers, comp_rows)
+    data.tables["solver_table"] = (comp_headers, comp_rows)
 
     # --- Table: detailed results ---
     det_headers = ["Problem", "Solver", "Status", "Objective", "Time (s)",
@@ -297,7 +303,7 @@ def adapt_benchmark(
             f"{r.memory_used_mb:.2f}",
             str(r.solution.iterations),
         ])
-    data.tables["detailed"] = (det_headers, det_rows)
+    data.tables["detailed_table"] = (det_headers, det_rows)
 
     # --- Table: friedman (if available) ---
     friedman_headers = ["Statistic", "Value"]
@@ -319,7 +325,7 @@ def adapt_benchmark(
                     friedman_rows.append([f"Rank - {s_name}", f"{avg_ranks[i]:.4f}"])
     except Exception:
         friedman_rows = [["N/A", "Could not compute Friedman test"]]
-    data.tables["friedman"] = (friedman_headers, friedman_rows)
+    data.tables["friedman_table"] = (friedman_headers, friedman_rows)
 
     # --- Table: nemenyi (if available) ---
     nemenyi_headers = ["Solver Pair", "Rank Difference", "CD", "Significant"]
@@ -350,7 +356,7 @@ def adapt_benchmark(
                         ])
     except Exception:
         nemenyi_rows = [["N/A", "N/A", "N/A", "N/A"]]
-    data.tables["nemenyi"] = (nemenyi_headers, nemenyi_rows)
+    data.tables["nemenyi_table"] = (nemenyi_headers, nemenyi_rows)
 
     # --- Images ---
     for name, path in chart_paths.items():
@@ -405,7 +411,7 @@ def adapt_multi_problem(
             f"{r.solve_time:.4f}",
             str(len(r.problem.variables)),
         ])
-    data.tables["summary"] = (summary_headers, summary_rows)
+    data.tables["summary_table"] = (summary_headers, summary_rows)
 
     return data
 

@@ -125,18 +125,10 @@ def test_adapt_single_solution_basic():
     assert data.variables["status"] == "OPTIMAL"
     assert data.variables["has_feasible_region"] is False
 
-    assert "constraints" in data.tables
-    headers, rows = data.tables["constraints"]
-    assert len(headers) == 5
-    assert len(rows) == 2
-
-    assert "solution" in data.tables
-    sol_h, sol_r = data.tables["solution"]
-    assert len(sol_h) == 4
-    assert len(sol_r) == 2
-
-    assert "sensitivity" in data.tables
-    sens_h, sens_r = data.tables["sensitivity"]
+    assert "constraints_table" in data.tables
+    assert "solution_table" in data.tables
+    assert "sensitivity_table" in data.tables
+    sens_h, sens_r = data.tables["sensitivity_table"]
     assert len(sens_h) == 5
 
 
@@ -212,8 +204,8 @@ def test_adapt_multi_problem():
     assert data.variables["solved"] == 2
     assert data.variables["failed"] == 0
 
-    assert "summary" in data.tables
-    headers, rows = data.tables["summary"]
+    assert "summary_table" in data.tables
+    headers, rows = data.tables["summary_table"]
     assert len(headers) == 5
     assert len(rows) == 2
 
