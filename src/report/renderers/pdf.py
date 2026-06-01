@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 
 from fpdf import FPDF
@@ -404,10 +405,10 @@ class PDFRenderer(BaseRenderer):
             col_widths = [w + extra for w in col_widths]
 
         pdf.ln(style.spacing_before)
-
-        # Draw headers
         pdf.set_draw_color(*pdf._parse_color(style.border_color))
         pdf.set_line_width(style.border_width)
+
+        # -- draw headers (single line) --
         pdf.set_font(
             header_style.font_family,
             pdf._get_font_style(header_style),
@@ -415,32 +416,79 @@ class PDFRenderer(BaseRenderer):
         )
         header_color = pdf._parse_color(header_style.color)
         pdf.set_text_color(*header_color)
-
         h_bg = pdf._parse_color(header_style.background_color) if header_style.background_color else None
         if h_bg:
             pdf.set_fill_color(*h_bg)
-
         header_h = header_style.font_size * (header_style.line_height or 1.2) + padding
         for i, header in enumerate(headers):
             pdf.cell(col_widths[i], header_h, str(header), border=1, align=Align.C, fill=h_bg is not None)
         pdf.ln()
 
-        # Draw rows with zebra striping
+        # -- draw body rows with dynamic wrapping --
         body_style = style
-        row_h = body_style.font_size * (body_style.line_height or 1.2) + padding
-        row_bg_color = pdf._parse_color("fafafa")
+        body_font_size = body_style.font_size
+        line_h = body_font_size * (body_style.line_height or 1.2)
+        row_bg_color = (250, 250, 250)
 
         for r, row in enumerate(rows):
-            pdf.set_x(margin_l)
-            use_bg = r % 2 == 0
-            if use_bg:
-                pdf.set_fill_color(*row_bg_color)
-            pdf.set_font(body_style.font_family, "", body_style.font_size)
+            pdf.set_font(body_style.font_family, "", body_font_size)
             body_color = pdf._parse_color(body_style.color)
             pdf.set_text_color(*body_color)
+
+            # 1) calculate how many wrapped lines each cell needs
+            max_lines = 1
             for i, cell in enumerate(row):
-                pdf.cell(col_widths[i], row_h, str(cell), border=1, align=Align.C, fill=use_bg)
-            pdf.ln()
+                if i >= len(col_widths):
+                    break
+                cw = col_widths[i] - padding
+                if cw <= 1:
+                    cw = col_widths[i] * 0.8
+                str_w = pdf.get_string_width(str(cell))
+                if str_w > 1 and cw > 0:
+                    lines = max(1, math.ceil(str_w / cw))
+                    max_lines = max(max_lines, lines)
+
+            row_h = max_lines * line_h + padding
+            y_start = pdf.get_y()
+            x_start = margin_l
+
+            # 2) page break if this row does not fit
+            if y_start + row_h > pdf.h - pdf.b_margin:
+                pdf.add_page()
+                y_start = pdf.get_y()
+
+            use_bg = r % 2 == 0
+
+            # 3) draw each cell
+            for i, cell in enumerate(row):
+                if i >= len(col_widths):
+                    break
+                cw = col_widths[i]
+                cx = x_start + sum(col_widths[:i])
+
+                # background & border
+                rect_style = "DF" if use_bg else "D"
+                if use_bg:
+                    pdf.set_fill_color(*row_bg_color)
+                pdf.rect(cx, y_start, cw, row_h, style=rect_style)
+
+                # text with wrapping
+                text_w = cw - padding
+                if text_w < 4:
+                    text_w = cw * 0.85
+                pdf.set_xy(cx + padding / 2, y_start + padding / 2)
+                pdf.multi_cell(
+                    w=text_w,
+                    h=line_h,
+                    text=str(cell),
+                    border=0,
+                    align=Align.L,
+                    new_x=XPos.RIGHT,
+                    new_y=YPos.TOP,
+                )
+
+            # 4) advance to next row
+            pdf.set_xy(x_start, y_start + row_h)
 
         pdf.ln(style.spacing_after)
 
