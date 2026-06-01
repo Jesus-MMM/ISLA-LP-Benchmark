@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from html import escape
 
 from ..core.types import DocumentModel, ContentType, StyleDefinition
@@ -12,7 +13,7 @@ class HTMLRenderer(BaseRenderer):
 
     def render(self, model: DocumentModel, output_path: str) -> RenderResult:
         try:
-            html = self._build_html(model)
+            html = self._build_html(model, output_path)
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(html)
             return RenderResult(success=True, output_path=output_path, content=html)
@@ -20,9 +21,9 @@ class HTMLRenderer(BaseRenderer):
             return RenderResult(success=False, errors=[str(e)])
 
     def render_to_string(self, model: DocumentModel) -> str:
-        return self._build_html(model)
+        return self._build_html(model, "")
 
-    def _build_html(self, model: DocumentModel) -> str:
+    def _build_html(self, model: DocumentModel, output_path: str = "") -> str:
         parts: list[str] = []
         parts.append("<!DOCTYPE html>")
         parts.append('<html lang="{}">'.format(model.language))
@@ -37,7 +38,7 @@ class HTMLRenderer(BaseRenderer):
         for element in model.elements:
             if not element.visible:
                 continue
-            html = self._render_element_html(element, model.styles)
+            html = self._render_element_html(element, model.styles, output_path)
             if html:
                 parts.append(html)
 
@@ -69,6 +70,7 @@ h3 { font-size: 12pt; font-weight: bold; }
         self,
         element,
         styles: dict[str, StyleDefinition],
+        output_path: str = "",
     ) -> str:
         content = escape(element.content)
 
@@ -96,7 +98,16 @@ h3 { font-size: 12pt; font-weight: bold; }
             caption_html = ""
             if caption:
                 caption_html = f'<p class="caption">{escape(caption)}</p>'
-            return f'<div style="text-align: center;"><img src="{escape(element.content)}" alt="{escape(caption)}"/>{caption_html}</div>'
+            src = element.content
+            if output_path:
+                out_dir = os.path.dirname(os.path.abspath(output_path))
+                img_abs = os.path.abspath(src)
+                try:
+                    rel = os.path.relpath(img_abs, out_dir)
+                    src = rel.replace("\\", "/")
+                except (ValueError, OSError):
+                    pass
+            return f'<div style="text-align: center;"><img src="{escape(src)}" alt="{escape(caption)}"/>{caption_html}</div>'
         elif element.content_type == ContentType.TABLE:
             return self._render_table_html(element)
         elif element.content_type == ContentType.REFERENCE:

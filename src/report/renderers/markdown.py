@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from ..core.types import DocumentModel, ContentType
 from ..rich_text import strip_tags
 from .base import BaseRenderer, RenderResult
@@ -10,7 +12,7 @@ class MarkdownRenderer(BaseRenderer):
 
     def render(self, model: DocumentModel, output_path: str) -> RenderResult:
         try:
-            md = self._build_markdown(model)
+            md = self._build_markdown(model, output_path)
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(md)
             return RenderResult(success=True, output_path=output_path, content=md)
@@ -18,9 +20,9 @@ class MarkdownRenderer(BaseRenderer):
             return RenderResult(success=False, errors=[str(e)])
 
     def render_to_string(self, model: DocumentModel) -> str:
-        return self._build_markdown(model)
+        return self._build_markdown(model, "")
 
-    def _build_markdown(self, model: DocumentModel) -> str:
+    def _build_markdown(self, model: DocumentModel, output_path: str = "") -> str:
         parts: list[str] = []
 
         if model.title:
@@ -30,13 +32,13 @@ class MarkdownRenderer(BaseRenderer):
         for element in model.elements:
             if not element.visible:
                 continue
-            md = self._render_element_md(element)
+            md = self._render_element_md(element, output_path)
             if md:
                 parts.append(md)
 
         return "\n".join(parts)
 
-    def _render_element_md(self, element) -> str:
+    def _render_element_md(self, element, output_path: str = "") -> str:
         text = strip_tags(element.content)
 
         if element.content_type == ContentType.TITLE:
@@ -57,7 +59,16 @@ class MarkdownRenderer(BaseRenderer):
         elif element.content_type == ContentType.IMAGE:
             caption = element.metadata.get("caption", "")
             alt = caption or "image"
-            return f"![{alt}]({element.content})\n"
+            src = element.content
+            if output_path:
+                out_dir = os.path.dirname(os.path.abspath(output_path))
+                img_abs = os.path.abspath(src)
+                try:
+                    rel = os.path.relpath(img_abs, out_dir)
+                    src = rel.replace("\\", "/")
+                except (ValueError, OSError):
+                    pass
+            return f"![{alt}]({src})\n"
         elif element.content_type == ContentType.TABLE:
             return self._render_table_md(element)
         elif element.content_type == ContentType.REFERENCE:
