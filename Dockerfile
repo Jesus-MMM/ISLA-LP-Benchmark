@@ -1,5 +1,5 @@
 # ============================================================
-# ISLA LP Benchmark v1.8.2 — Docker Image
+# ISLA LP Benchmark — Docker Image
 # Uses python:3.12-slim (lightweight, wide compatibility)
 # ============================================================
 
@@ -19,7 +19,7 @@ COPY pyproject.toml README.md ./
 COPY src/ ./src
 
 RUN poetry config virtualenvs.create false && \
-    poetry install --with dev --no-interaction --no-ansi
+    poetry install --no-interaction --no-ansi
 
 FROM python:3.12-slim
 
@@ -34,7 +34,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --chown=appuser:appuser src/ ./src/
-COPY --chown=appuser:appuser data/ ./data/
 
 USER appuser
 ENV PYTHONPATH=/app

@@ -29,49 +29,44 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.version }}
           if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo " Versión inválida: $VERSION (debe ser SemVer: X.Y.Z)"
+            echo "Error: Version invalida: $VERSION (debe ser SemVer: X.Y.Z)"
             exit 1
           fi
-          echo " Versión válida: $VERSION"
+          echo "Version valida: $VERSION"
 
       - name: Verify version matches pyproject.toml
         run: |
           EXPECTED_VERSION=${{ steps.version.outputs.version }}
-          ACTUAL_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          ACTUAL_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           if [[ "$EXPECTED_VERSION" != "$ACTUAL_VERSION" ]]; then
-            echo " Tag version ($EXPECTED_VERSION) no coincide con pyproject.toml ($ACTUAL_VERSION)"
+            echo "Error: Tag version ($EXPECTED_VERSION) no coincide con pyproject.toml ($ACTUAL_VERSION)"
             exit 1
           fi
-          echo " Tag y pyproject.toml sincronizados: $ACTUAL_VERSION"
+          echo "Tag y pyproject.toml sincronizados: $ACTUAL_VERSION"
 
       - name: Generate changelog
         id: changelog
         run: |
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
           if [[ -z "$PREVIOUS_TAG" ]]; then
-            CHANGELOG=$(git log --pretty=format:"- %h: %s" --grep="^(feat|fix|perf|docs|style|refactor|test|chore)" -i)
+            RAW_LOG=$(git log --pretty=format:"- %h: %s" --grep="^[a-z]*(" -i -E)
           else
-            CHANGELOG=$(git log "$PREVIOUS_TAG"..HEAD --pretty=format:"- %h: %s" --grep="^(feat|fix|perf|docs|style|refactor|test|chore)" -i)
+            RAW_LOG=$(git log "$PREVIOUS_TAG"..HEAD --pretty=format:"- %h: %s" --grep="^[a-z]*(" -i -E)
           fi
-          
-          # Escape para usar en output
-          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          CHANGELOG="${RAW_LOG//$'\n'/'%0A'}"
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref }}
-          release_name: "Release v${{ steps.version.outputs.version }}"
+          name: "Release v${{ steps.version.outputs.version }}"
           body: |
             # Release v${{ steps.version.outputs.version }}
-            
+
             ## Changes
             ${{ steps.changelog.outputs.changelog || 'Sin cambios registrados' }}
-            
+
             ---
             **Version:** v${{ steps.version.outputs.version }}
             **Released:** ${{ github.event.head_commit.timestamp }}
@@ -82,15 +77,16 @@ jobs:
       - name: Publish to PyPI (optional)
         if: ${{ vars.PUBLISH_TO_PYPI == 'true' }}
         run: |
-          echo "PyPI publishing is disabled by default"
-          echo "To enable, set PUBLISH_TO_PYPI=true in GitHub repository settings"
+          pip install build twine
+          python -m build
+          twine upload dist/*
 
       - name: Success notification
         if: success()
         run: |
-          echo " Release v${{ steps.version.outputs.version }} creado exitosamente"
+          echo "Release v${{ steps.version.outputs.version }} creado exitosamente"
           echo ""
-          echo "  Información del release:"
-          echo "  - Versión: v${{ steps.version.outputs.version }}"
+          echo "  Informacion del release:"
+          echo "  - Version: v${{ steps.version.outputs.version }}"
           echo "  - Commit: ${{ github.sha }}"
           echo "  - URL: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}"

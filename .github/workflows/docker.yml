@@ -4,8 +4,10 @@ on:
   push:
     branches: [main, Debug]
     tags: ["v*"]
+    paths: ['Dockerfile', '.github/workflows/docker.yml', 'pyproject.toml', 'src/**']
   pull_request:
     branches: [main]
+    paths: ['Dockerfile', '.github/workflows/docker.yml', 'pyproject.toml', 'src/**']
 
 jobs:
   build:
@@ -23,7 +25,7 @@ jobs:
       - name: Extract version from pyproject.toml
         id: version
         run: |
-          VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "major_minor=$(echo $VERSION | cut -d. -f1-2)" >> $GITHUB_OUTPUT
           echo "major=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
@@ -49,15 +51,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up QEMU for multi-arch
+        uses: docker/setup-qemu-action@v3
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Docker Scout vulnerability scan
+        if: github.event_name != 'pull_request'
+        uses: docker/scout-action@v1
+        with:
+          command: quickview,cves
+          image: ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+          only-severities: critical,high
+          write-comment: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker build summary
         if: always()
