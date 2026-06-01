@@ -75,3 +75,14 @@ legacy/
 # Entornos virtuales de Windows
 venv/
 env/
+
+# data/ - generated artifacts (PDFs, PNGs, charts, benchmark output)
+/data/**/*.pdf
+/data/**/*.png
+/data/**/.charts/
+/data/**/.charts_multi/
+/data/benchmark_output/*.md
+/data/benchmark_output/*.csv
+/data/benchmark_output/*.json
+/data/report.md
+/data/report.pdf
