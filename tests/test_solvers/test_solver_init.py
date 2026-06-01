@@ -48,17 +48,6 @@ class TestSolverRegistryUnavailable:
 class TestSolverInitFile:
     """Tests for specific uncovered lines in solver/__init__.py."""
 
-    def test_import_error_fallback_for_highs(self):
-        
-        if "highspy" in sys.modules:
-            del sys.modules["highspy"]
-        
-        if hasattr(sys.modules.get('src.solver', None), '__dict__'):
-            pass
-
-    def test_import_error_fallback_for_glpk(self):
-        pass
-
     def test_solverlp_fallback_to_available(self):
         from src.solver.base import SolverRegistry
         available = SolverRegistry.list_solvers(available_only=True)

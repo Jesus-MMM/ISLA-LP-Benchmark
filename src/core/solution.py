@@ -1,15 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, Any
 
-# Import sensitivity analysis if available
-try:
-    from ..analysis.sensitivity import SensitivityAnalysis, SensitivityRange
-    SENSITIVITY_AVAILABLE = True
-except ImportError:
-    SENSITIVITY_AVAILABLE = False
-    SensitivityAnalysis = None
-    SensitivityRange = None
-
 
 @dataclass
 class ProgressPoint:

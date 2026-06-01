@@ -1,19 +1,30 @@
-gurobipy>=13.0.1,<14.0.0
+# Core dependencies (siempre necesarias)
 polars>=1.39.0,<2.0.0
-matplotlib>=3.9.0,<4.0.0
 numpy>=2.4.3,<3.0.0
-fpdf2>=2.7.0,<3.0.0
-psutil>=7.2.2,<8.0.0
+rich>=15.0.0,<16.0.0
 highspy>=1.14.0,<2.0.0
+
+# Solvers Open Source (opcionales, instalados aquí para CI completa)
 swiglpk>=5.0.13,<6.0.0
 pulp>=3.3.0,<4.0.0
+pyscipopt>=6.1.0,<7.0.0
 ecos>=2.0.14,<3.0.0
 osqp>=1.1.1,<2.0.0
 cvxopt>=1.3.3,<2.0.0
 scs>=3.2.11,<4.0.0
-casadi>=3.7.0,<4.0.0
-fastapi>=0.136.0,<1.0.0
-pydantic>=2.0.0,<3.0.0
-rich>=15.0.0,<16.0.0
-pyscipopt>=6.1.0,<7.0.0
 scipy>=1.17.0,<2.0.0
+
+# Solvers Comerciales (opcionales, licencia requerida)
+gurobipy>=13.0.1,<14.0.0
+
+# Reportes y Gráficos (opcionales)
+matplotlib>=3.9.0,<4.0.0
+fpdf2>=2.7.0,<3.0.0
+
+# Sistema
+psutil>=7.2.2,<8.0.0
+
+# Desarrollo
+pytest>=9.0.0,<10.0.0
+pytest-cov>=7.0.0,<8.0.0
+ruff>=0.8.0,<1.0.0

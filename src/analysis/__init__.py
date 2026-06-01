@@ -11,15 +11,9 @@ from .benchmark_results import (
 )
 from .benchmark_report import BenchmarkReport
 
-# Aliases para compatibilidad con el CLI
-SingleReport = LPAnalysis
-MultiProblemReport = MultiLPAnalysis
-
 __all__ = [
-    "LPAnalysis", 
-    "SingleReport",
+    "LPAnalysis",
     "MultiLPAnalysis",
-    "MultiProblemReport",
     "ExecutionTimes",
     "ResultsExporter",
     "export_benchmark_results",

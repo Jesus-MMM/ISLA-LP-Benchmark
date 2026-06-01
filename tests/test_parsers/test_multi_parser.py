@@ -1,9 +1,12 @@
 """
 Tests para MultiLPParser.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+import pytest
 
 from src.parser.multi_parser import MultiLPParser
 
@@ -142,11 +145,13 @@ p + q <= 1;
 
     def test_parse_all_returns_list(self):
         """Test parse_all retorna lista."""
-        result = MultiLPParser("max: x + y; x + y <= 10;").parse_all()
+        result = MultiLPParser("max: x + y\nx + y <= 10\n").parse_all()
         assert isinstance(result, list)
+        assert len(result) >= 1
 
-    def test_invalid_problem_skipped(self):
-        """Test que problemas invalidos se omiten sin error."""
+    def test_invalid_problem_raises(self):
+        """Test que problemas invalidos lanzan LPParseError."""
+        from src.core.exceptions import LPParseError
         txt = """
 max: x + y;
 x + y <= 10;
@@ -159,5 +164,5 @@ esto no es un problema valido
 max: a + b;
 a + b <= 5;
 """
-        problems = MultiLPParser(txt).parse_all()
-        assert len(problems) >= 2
+        with pytest.raises(LPParseError, match="problema 2"):
+            MultiLPParser(txt).parse_all()
