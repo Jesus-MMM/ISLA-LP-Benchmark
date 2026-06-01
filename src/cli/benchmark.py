@@ -169,7 +169,7 @@ def run_benchmark(
         data = adapt_benchmark(runner, system_info, chart_dir)
 
         engine = ReportEngine(
-            language="en",
+            language="es",
             locale_dir=_resolve_template_path("locales"),
             theme_dir=_resolve_template_path("apa"),
         )
@@ -183,7 +183,7 @@ def run_benchmark(
         _render_report(engine, model, str(fmt_path), report_format, quiet, _console)
 
     export_benchmark_results(runner, output_dir_val, formats=['json', 'csv', 'md'])
-    _console.print(f"\n[green]Full results saved to:[/green] {output_dir}")
+    _console.print(f"\n[green]Full results saved to:[/green] {output_dir_val}")
 
     return 0
 
