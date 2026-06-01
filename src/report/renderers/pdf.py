@@ -153,6 +153,19 @@ class ReportPDF(FPDF):
 class PDFRenderer(BaseRenderer):
     """Renders document models to PDF using fpdf2."""
 
+    # ------------------------------------------------------------------ #
+    #  Table-specific constants                                           #
+    # ------------------------------------------------------------------ #
+    _TABLE_MIN_FONT_SIZE = 5.0       # Minimum font size for table body (pt)
+    _TABLE_COMPACT_PADDING = 1.5     # Cell internal padding (mm)
+    _TABLE_LINE_HEIGHT_FACTOR = 1.1  # Line height multiplier for table rows
+    _TABLE_MAX_COL_PCT = 0.40       # Max fraction of page a single column may occupy
+    _TABLE_MIN_COL_MM = 8           # Absolute minimum column width (mm)
+
+    # ------------------------------------------------------------------ #
+    #  Main render pipeline                                               #
+    # ------------------------------------------------------------------ #
+
     def render(self, model: DocumentModel, output_path: str) -> RenderResult:
         result = RenderResult(success=False, output_path=output_path)
         try:
@@ -187,6 +200,10 @@ class PDFRenderer(BaseRenderer):
                 needs_page = True
 
         return pdf
+
+    # ------------------------------------------------------------------ #
+    #  Element dispatch                                                   #
+    # ------------------------------------------------------------------ #
 
     def _render_element(
         self,
@@ -299,6 +316,10 @@ class PDFRenderer(BaseRenderer):
             pdf.write_styled_text(element.content, style)
             pdf.ln(style.spacing_after)
 
+    # ------------------------------------------------------------------ #
+    #  Image rendering                                                    #
+    # ------------------------------------------------------------------ #
+
     def _render_image(
         self,
         pdf: ReportPDF,
@@ -345,27 +366,182 @@ class PDFRenderer(BaseRenderer):
 
         pdf.ln(style.spacing_after)
 
-    def _measure_col_widths(
+    # ------------------------------------------------------------------ #
+    #  Word-boundary text wrapping  (NEVER breaks words)                  #
+    # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _wrap_text_at_words(
+        pdf: ReportPDF,
+        text: str,
+        max_width: float,
+        font_family: str,
+        font_style: str,
+        font_size: float,
+    ) -> list[str]:
+        """Wrap *text* so that it fits within *max_width*, breaking ONLY at
+        word boundaries.  A word is never split across two lines.
+
+        Returns a list of lines.
+        """
+        pdf.set_font(font_family, font_style, font_size)
+
+        # Guard: if max_width is impossibly small, return the text as-is
+        # (the caller will handle overflow at a higher level).
+        if max_width <= 0:
+            return [str(text)]
+
+        paragraphs = str(text).split("\n")
+        all_lines: list[str] = []
+
+        for para in paragraphs:
+            para = para.strip()
+            if not para:
+                all_lines.append("")
+                continue
+
+            words = para.split()
+            if not words:
+                all_lines.append("")
+                continue
+
+            current_line = words[0]
+            for word in words[1:]:
+                candidate = f"{current_line} {word}"
+                if pdf.get_string_width(candidate) <= max_width:
+                    current_line = candidate
+                else:
+                    # Current line is full — flush it and start a new one.
+                    all_lines.append(current_line)
+                    current_line = word
+            all_lines.append(current_line)
+
+        return all_lines if all_lines else [""]
+
+    # ------------------------------------------------------------------ #
+    #  Auto-fit table font size                                           #
+    # ------------------------------------------------------------------ #
+
+    def _auto_fit_table(
         self,
         pdf: ReportPDF,
         headers: list[str],
         rows: list[list[str]],
-        header_style: StyleDefinition,
         body_style: StyleDefinition,
+        header_style: StyleDefinition,
+        available_w: float,
         padding: float,
-    ) -> list[float]:
+    ) -> tuple[float, float, list[float]]:
+        """Find the smallest font size that lets every column be at least as
+        wide as its longest word, and return the column widths.
+
+        Returns ``(body_font_size, header_font_size, col_widths)``.
+        """
         n = len(headers)
-        widths = [0.0] * n
-        pdf.set_font(header_style.font_family, pdf._get_font_style(header_style), header_style.font_size)
-        for i, h in enumerate(headers):
-            widths[i] = max(widths[i], pdf.get_string_width(str(h)))
-        pdf.set_font(body_style.font_family, "", body_style.font_size)
+        if n == 0:
+            return body_style.font_size, header_style.font_size, []
+
+        base_body = body_style.font_size
+        base_hdr = header_style.font_size
+        hdr_ratio = base_hdr / base_body if base_body > 0 else 1.0
+        min_fs = self._TABLE_MIN_FONT_SIZE
+
+        # --- Step 1: measure the longest word per column at base font size ---
+        body_word_w = [0.0] * n
+        pdf.set_font(body_style.font_family, "", base_body)
         for row in rows:
             for i, cell in enumerate(row):
                 if i < n:
-                    widths[i] = max(widths[i], pdf.get_string_width(str(cell)))
-        widths = [w + padding * 2 for w in widths]
-        return widths
+                    words = str(cell).split()
+                    if words:
+                        body_word_w[i] = max(
+                            body_word_w[i],
+                            max(pdf.get_string_width(w) for w in words),
+                        )
+
+        hdr_word_w = [0.0] * n
+        pdf.set_font(
+            header_style.font_family,
+            pdf._get_font_style(header_style),
+            base_hdr,
+        )
+        for i, h in enumerate(headers):
+            if i < n:
+                words = str(h).split()
+                if words:
+                    hdr_word_w[i] = max(
+                        hdr_word_w[i],
+                        max(pdf.get_string_width(w) for w in words),
+                    )
+
+        # Normalise header widths to body-font-size equivalent
+        if base_hdr > 0 and base_body > 0:
+            scale_hdr_to_body = base_body / base_hdr
+            hdr_word_w_body = [w * scale_hdr_to_body for w in hdr_word_w]
+        else:
+            hdr_word_w_body = hdr_word_w
+
+        # Per-column: longest word across header + body (in body-size units)
+        min_word_w = [max(bw, hw) for bw, hw in zip(body_word_w, hdr_word_w_body)]
+
+        # --- Step 2: compute the font size that makes the table fit ---
+        padding_total = n * 2 * padding
+        content_w_at_base = sum(min_word_w)
+
+        if content_w_at_base + padding_total <= available_w:
+            body_fs = base_body
+        else:
+            available_for_content = available_w - padding_total
+            if available_for_content <= 0 or content_w_at_base <= 0:
+                body_fs = min_fs
+            else:
+                body_fs = max(min_fs, base_body * (available_for_content / content_w_at_base))
+
+        hdr_fs = max(min_fs, body_fs * hdr_ratio)
+
+        # --- Step 3: build column widths at the determined font size ---
+        fs_ratio = body_fs / base_body if base_body > 0 else 1.0
+        col_widths = [w * fs_ratio + 2 * padding for w in min_word_w]
+
+        # Re-check header widths at actual header font size
+        pdf.set_font(
+            header_style.font_family,
+            pdf._get_font_style(header_style),
+            hdr_fs,
+        )
+        for i, h in enumerate(headers):
+            if i < n:
+                words = str(h).split()
+                if words:
+                    hw = max(pdf.get_string_width(w) for w in words) + 2 * padding
+                    col_widths[i] = max(col_widths[i], hw)
+
+        # Enforce absolute minimum column width
+        for i in range(n):
+            col_widths[i] = max(col_widths[i], self._TABLE_MIN_COL_MM)
+
+        # Cap individual columns
+        max_col = available_w * self._TABLE_MAX_COL_PCT
+        for i in range(n):
+            col_widths[i] = min(col_widths[i], max_col)
+
+        # Scale down if still too wide
+        total = sum(col_widths)
+        if total > available_w:
+            scale = available_w / total
+            col_widths = [w * scale for w in col_widths]
+
+        # Add a small breathing factor (up to 12 % extra) only if room exists
+        total = sum(col_widths)
+        if total < available_w and total > 0:
+            extra = min(available_w - total, total * 0.12)
+            col_widths = [w + extra * (w / total) for w in col_widths]
+
+        return body_fs, hdr_fs, col_widths
+
+    # ------------------------------------------------------------------ #
+    #  Table rendering (compact, word-safe)                               #
+    # ------------------------------------------------------------------ #
 
     def _render_table(
         self,
@@ -381,6 +557,7 @@ class PDFRenderer(BaseRenderer):
         if not headers and not rows:
             return
 
+        # ---- Caption ----
         if caption:
             caption_style = get_style("caption", styles)
             pdf.ln(caption_style.spacing_before)
@@ -393,104 +570,167 @@ class PDFRenderer(BaseRenderer):
         margin_l = pdf.page_config.margin_left
         margin_r = pdf.page_config.margin_right
         available_w = page_w - margin_l - margin_r
-        padding = style.padding or 4
+        padding = self._TABLE_COMPACT_PADDING
 
-        col_widths = self._measure_col_widths(pdf, headers, rows, header_style, style, padding)
-        total = sum(col_widths)
-        if total > available_w:
-            scale = available_w / total
-            col_widths = [w * scale for w in col_widths]
-        elif total < available_w:
-            extra = (available_w - total) / len(col_widths)
-            col_widths = [w + extra for w in col_widths]
+        n = len(headers)
+
+        # ---- Auto-fit font size & column widths ----
+        body_fs, hdr_fs, col_widths = self._auto_fit_table(
+            pdf, headers, rows, style, header_style, available_w, padding,
+        )
+
+        line_h_body = body_fs * self._TABLE_LINE_HEIGHT_FACTOR
+        line_h_hdr = hdr_fs * self._TABLE_LINE_HEIGHT_FACTOR
+        border_color = pdf._parse_color(style.border_color)
+        border_width = style.border_width
+        row_bg_color = pdf._parse_color("fafafa")
+        body_color = pdf._parse_color(style.color)
 
         pdf.ln(style.spacing_before)
-        pdf.set_draw_color(*pdf._parse_color(style.border_color))
-        pdf.set_line_width(style.border_width)
 
-        # -- draw headers (single line) --
+        # ---- Pre-calculate header line layout (word-safe) ----
+        header_lines_list: list[list[str]] = []
+        for i, h in enumerate(headers):
+            if i < n:
+                inner_w = max(1, col_widths[i] - 2 * padding)
+                lines = self._wrap_text_at_words(
+                    pdf, str(h), inner_w,
+                    header_style.font_family,
+                    pdf._get_font_style(header_style),
+                    hdr_fs,
+                )
+                header_lines_list.append(lines)
+            else:
+                header_lines_list.append([])
+
+        header_max_lines = max((len(l) for l in header_lines_list), default=1)
+        header_h = line_h_hdr * header_max_lines + padding * 2
+
+        # ---- Pre-calculate body row heights (word-safe) ----
+        body_lines_list: list[list[list[str]]] = []
+        row_heights: list[float] = []
+        for row in rows:
+            row_lines: list[list[str]] = []
+            max_lines = 1
+            for i, cell_text in enumerate(row):
+                if i < n:
+                    inner_w = max(1, col_widths[i] - 2 * padding)
+                    lines = self._wrap_text_at_words(
+                        pdf, str(cell_text), inner_w,
+                        style.font_family, "", body_fs,
+                    )
+                    row_lines.append(lines)
+                    max_lines = max(max_lines, len(lines))
+                else:
+                    row_lines.append([])
+            body_lines_list.append(row_lines)
+            row_heights.append(line_h_body * max_lines + padding * 2)
+
+        # ================================================================ #
+        #  RENDER HEADER                                                    #
+        # ================================================================ #
+        x0 = pdf.l_margin
+        y0 = pdf.get_y()
+        if y0 + header_h > pdf.h - pdf.b_margin:
+            pdf.add_page()
+            y0 = pdf.get_y()
+
+        # Header background fill
+        h_bg = (
+            pdf._parse_color(header_style.background_color)
+            if header_style.background_color
+            else None
+        )
+        if h_bg:
+            pdf.set_fill_color(*h_bg)
+            for i in range(n):
+                pdf.rect(
+                    x0 + sum(col_widths[:i]), y0,
+                    col_widths[i], header_h,
+                    style="F",
+                )
+
+        # Header text (line by line, word-safe)
         pdf.set_font(
             header_style.font_family,
             pdf._get_font_style(header_style),
-            header_style.font_size,
+            hdr_fs,
         )
         header_color = pdf._parse_color(header_style.color)
         pdf.set_text_color(*header_color)
-        h_bg = pdf._parse_color(header_style.background_color) if header_style.background_color else None
-        if h_bg:
-            pdf.set_fill_color(*h_bg)
-        header_h = header_style.font_size * (header_style.line_height or 1.2) + padding
-        for i, header in enumerate(headers):
-            pdf.cell(col_widths[i], header_h, str(header), border=1, align=Align.C, fill=h_bg is not None)
-        pdf.ln()
+        for i in range(n):
+            if i < len(headers):
+                lines = header_lines_list[i] if i < len(header_lines_list) else [str(headers[i])]
+                for j, line in enumerate(lines):
+                    pdf.set_xy(
+                        x0 + sum(col_widths[:i]),
+                        y0 + padding + j * line_h_hdr,
+                    )
+                    pdf.cell(col_widths[i], line_h_hdr, line, border=0, align=Align.C)
 
-        # -- draw body rows with dynamic wrapping --
-        body_style = style
-        body_font_size = body_style.font_size
-        line_h = body_font_size * (body_style.line_height or 1.2)
-        row_bg_color = (250, 250, 250)
+        # Header cell borders
+        pdf.set_draw_color(*border_color)
+        pdf.set_line_width(border_width)
+        for i in range(n):
+            pdf.rect(
+                x0 + sum(col_widths[:i]), y0,
+                col_widths[i], header_h,
+            )
 
+        pdf.set_xy(x0, y0 + header_h)
+
+        # ================================================================ #
+        #  RENDER BODY ROWS                                                 #
+        # ================================================================ #
         for r, row in enumerate(rows):
-            pdf.set_font(body_style.font_family, "", body_font_size)
-            body_color = pdf._parse_color(body_style.color)
-            pdf.set_text_color(*body_color)
+            y0 = pdf.get_y()
+            rh = row_heights[r]
 
-            # 1) calculate how many wrapped lines each cell needs
-            max_lines = 1
-            for i, cell in enumerate(row):
-                if i >= len(col_widths):
-                    break
-                cw = col_widths[i] - padding
-                if cw <= 1:
-                    cw = col_widths[i] * 0.8
-                str_w = pdf.get_string_width(str(cell))
-                if str_w > 1 and cw > 0:
-                    lines = max(1, math.ceil(str_w / cw))
-                    max_lines = max(max_lines, lines)
-
-            row_h = max_lines * line_h + padding
-            y_start = pdf.get_y()
-            x_start = margin_l
-
-            # 2) page break if this row does not fit
-            if y_start + row_h > pdf.h - pdf.b_margin:
+            if y0 + rh > pdf.h - pdf.b_margin:
                 pdf.add_page()
-                y_start = pdf.get_y()
+                y0 = pdf.get_y()
 
+            # Zebra stripe background
             use_bg = r % 2 == 0
+            if use_bg:
+                pdf.set_fill_color(*row_bg_color)
+                for i in range(n):
+                    pdf.rect(
+                        x0 + sum(col_widths[:i]), y0,
+                        col_widths[i], rh,
+                        style="F",
+                    )
 
-            # 3) draw each cell
-            for i, cell in enumerate(row):
-                if i >= len(col_widths):
-                    break
-                cw = col_widths[i]
-                cx = x_start + sum(col_widths[:i])
+            # Cell text (line by line, word-safe)
+            pdf.set_font(style.font_family, "", body_fs)
+            pdf.set_text_color(*body_color)
+            row_lines = body_lines_list[r] if r < len(body_lines_list) else []
+            for i in range(n):
+                if i < len(row_lines) and row_lines[i]:
+                    lines = row_lines[i]
+                    for j, line in enumerate(lines):
+                        pdf.set_xy(
+                            x0 + sum(col_widths[:i]),
+                            y0 + padding + j * line_h_body,
+                        )
+                        pdf.cell(col_widths[i], line_h_body, line, border=0, align=Align.C)
 
-                # background & border
-                rect_style = "DF" if use_bg else "D"
-                if use_bg:
-                    pdf.set_fill_color(*row_bg_color)
-                pdf.rect(cx, y_start, cw, row_h, style=rect_style)
-
-                # text with wrapping
-                text_w = cw - padding
-                if text_w < 4:
-                    text_w = cw * 0.85
-                pdf.set_xy(cx + padding / 2, y_start + padding / 2)
-                pdf.multi_cell(
-                    w=text_w,
-                    h=line_h,
-                    text=str(cell),
-                    border=0,
-                    align=Align.L,
-                    new_x=XPos.RIGHT,
-                    new_y=YPos.TOP,
+            # Cell borders
+            pdf.set_draw_color(*border_color)
+            pdf.set_line_width(border_width)
+            for i in range(n):
+                pdf.rect(
+                    x0 + sum(col_widths[:i]), y0,
+                    col_widths[i], rh,
                 )
 
-            # 4) advance to next row
-            pdf.set_xy(x_start, y_start + row_h)
+            pdf.set_xy(x0, y0 + rh)
 
         pdf.ln(style.spacing_after)
+
+    # ------------------------------------------------------------------ #
+    #  Code block rendering                                               #
+    # ------------------------------------------------------------------ #
 
     def _render_code_block(
         self,

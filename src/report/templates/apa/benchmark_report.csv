@@ -1,67 +1,83 @@
 type,id,content,style,language,visible,condition,metadata
-title,main_title,ISLA LP Benchmark - Reporte Comparativo,apa_title,en,true,,
-subtitle,sub_title,Benchmark Multi-Solver: {{num_solvers}} solvers en {{num_problems}} problemas,apa_subtitle,en,true,,
-paragraph,cover_date,Fecha: {{timestamp}},apa_body,en,true,,
-page_break,pb1,,default,en,true,,
-heading,statistical_summary,1. Portada y Resumen Estadistico,apa_heading,en,true,,
-paragraph,methodology_warning,{{methodology_warning}},apa_body,en,true,,
-table,stats_table,,apa_table,en,true,,caption=Tabla: Resumen global del benchmark
-paragraph,friedman_text,Test de Friedman: Q={{friedman_q}} p-valor={{friedman_p}},apa_body,en,true,,
-paragraph,anova_text,ANOVA: F={{anova_f}} p-valor={{anova_p}},apa_body,en,true,,
+title,main_title,ISLA LP Benchmark: Reporte Comparativo,apa_title,en,true,,
+subtitle,sub_title,Benchmark Multi-Solver: {{num_solvers}} Solvers en {{num_problems}} Problemas,apa_subtitle,en,true,,
+paragraph,cover_author,{{author_name}},apa_cover_author,en,true,,
+paragraph,cover_institution,{{institution_name}},apa_cover_institution,en,true,,
+paragraph,cover_date,Fecha: {{timestamp}},apa_cover_date,en,true,,
+page_break,pb_cover,,default,en,true,,
+heading,abstract_section,Resumen,apa_abstract_label,en,true,,
+paragraph,abstract_text,{{abstract_text}},apa_abstract,en,true,,
+paragraph,keywords_label,"Palabras clave:",apa_keywords_label,en,true,,
+paragraph,keywords_text,{{keywords_text}},apa_keywords,en,true,,
+page_break,pb_abstract,,default,en,true,,
+heading,toc_section,Tabla de Contenido,apa_toc_title,en,true,,
+toc,toc_main,,default,en,true,,
+page_break,pb_toc,,default,en,true,,
+heading,statistical_summary,1. Resumen Estadistico,apa_heading,en,true,,
+paragraph,methodology_warning,{{methodology_warning}},apa_body_first,en,true,,
+table,stats_table,,apa_table,en,true,,caption=Tabla 1: Resumen global del benchmark
+paragraph,friedman_text,Test de Friedman: Q = {{friedman_q}}, p = {{friedman_p}},apa_body,en,true,,
+paragraph,anova_text,ANOVA: F = {{anova_f}}, p = {{anova_p}},apa_body,en,true,,
 page_break,pb2,,default,en,true,,
 heading,solver_comparison,2. Comparacion por Solver,apa_heading,en,true,,
-paragraph,overhead_analysis,{{overhead_text}},apa_body,en,true,,
-table,overhead_table,,apa_table,en,true,,caption=Tabla: Desglose de overhead (total - solve_time) por solver
-table,solver_table,,apa_table,en,true,,caption=Tabla: Estadisticas comparativas por solver (solve_time vs total)
+paragraph,overhead_analysis,{{overhead_text}},apa_body_first,en,true,,
+table,overhead_table,,apa_table,en,true,,caption=Tabla 2: Desglose de overhead (total - solve_time) por solver
+table,solver_table,,apa_table,en,true,,caption=Tabla 3: Estadisticas comparativas por solver (solve_time vs total)
 page_break,pb3,,default,en,true,,
-heading,nemenyi_analysis,3. Matriz de Diferencias Criticas (Nemenyi),apa_subheading,en,true,,
-paragraph,nemenyi_explanation,{{nemenyi_text}},apa_body,en,true,,
-table,nemenyi_table,,apa_table,en,true,,caption=Tabla: Diferencias pareadas post-hoc Nemenyi
+heading,nemenyi_analysis,3. Matriz de Diferencias Criticas (Nemenyi),apa_heading,en,true,,
+paragraph,nemenyi_explanation,{{nemenyi_text}},apa_body_first,en,true,,
+table,nemenyi_table,,apa_table,en,true,,caption=Tabla 4: Diferencias pareadas post-hoc Nemenyi
 page_break,pb4,,default,en,true,,
 heading,detailed_results,4. Resultados Detallados,apa_heading,en,true,,
-paragraph,precision_analysis,{{precision_text}},apa_body,en,true,,
-table,detailed_table,,apa_table,en,true,,caption=Tabla: Resultados crudos del benchmark con notas algoritmicas/numericas
+paragraph,precision_analysis,{{precision_text}},apa_body_first,en,true,,
+table,detailed_table,,apa_table,en,true,,caption=Tabla 5: Resultados crudos del benchmark con notas algoritmicas/numericas
 page_break,pb5,,default,en,true,,
-heading,problem_definitions,5. Definiciones de Problemas,apa_subheading,en,true,,
-paragraph,prob_dim_warning,{{prob_dim_warning}},apa_body,en,true,,
-table,problem_def_table,,apa_table,en,true,,caption=Tabla: Dimensiones de los problemas evaluados
+heading,problem_definitions,5. Definiciones de Problemas,apa_heading,en,true,,
+paragraph,prob_dim_warning,{{prob_dim_warning}},apa_body_first,en,true,,
+table,problem_def_table,,apa_table,en,true,,caption=Tabla 6: Dimensiones de los problemas evaluados
 page_break,pb6,,default,en,true,,
-heading,time_chart_section,6. Grafico de Tiempo Promedio,apa_subheading,en,true,,
-paragraph,time_chart_explanation,{{time_chart_text}},apa_body,en,true,,
-image,time_chart,{{time_chart_path}},default,en,true,,caption=Figura: Tiempo promedio de resolucion y overhead por solver
+heading,time_chart_section,6. Grafico de Tiempo Promedio,apa_heading,en,true,,
+paragraph,time_chart_explanation,{{time_chart_text}},apa_body_first,en,true,,
+image,time_chart,{{time_chart_path}},default,en,true,,caption=Figura 1: Tiempo promedio de resolucion y overhead por solver
 page_break,pb7,,default,en,true,,
-heading,success_chart_section,7. Grafico de Tasa de Exito,apa_subheading,en,true,,
-paragraph,success_note,{{success_note}},apa_body,en,true,,
-image,success_chart,{{success_chart_path}},default,en,true,,caption=Figura: Tasa de exito por solver (homogenea)
+heading,success_chart_section,7. Grafico de Tasa de Exito,apa_heading,en,true,,
+paragraph,success_note,{{success_note}},apa_body_first,en,true,,
+image,success_chart,{{success_chart_path}},default,en,true,,caption=Figura 2: Tasa de exito por solver (homogenea)
 page_break,pb8,,default,en,true,,
-heading,memory_chart_section,8. Grafico de Memoria,apa_subheading,en,true,,
-paragraph,memory_analysis,{{memory_text}},apa_body,en,true,,
-table,memory_table,,apa_table,en,true,,caption=Tabla: Consumo de memoria por solver
-
+heading,memory_chart_section,8. Grafico de Memoria,apa_heading,en,true,,
+paragraph,memory_analysis,{{memory_text}},apa_body_first,en,true,,
+table,memory_table,,apa_table,en,true,,caption=Tabla 7: Consumo de memoria por solver
 page_break,pb9,,default,en,true,,
-heading,performance_profiles,9. Perfiles de Rendimiento (Dolan-More),apa_subheading,en,true,,
-paragraph,dolan_more_explanation,{{dolan_more_text}},apa_body,en,true,,
-image,profile_chart,{{profile_chart_path}},default,en,true,,caption=Figura: Curvas de perfil de rendimiento
+heading,performance_profiles,9. Perfiles de Rendimiento (Dolan-More),apa_heading,en,true,,
+paragraph,dolan_more_explanation,{{dolan_more_text}},apa_body_first,en,true,,
+image,profile_chart,{{profile_chart_path}},default,en,true,,caption=Figura 3: Curvas de perfil de rendimiento
 page_break,pb10,,default,en,true,,
-heading,scalability,10. Analisis de Escalabilidad,apa_subheading,en,true,,
-paragraph,scalability_explanation,{{scalability_text}},apa_body,en,true,,
-image,scalability_chart,{{scalability_chart_path}},default,en,true,,caption=Figura: Escalabilidad por solver (N/A con N=1)
+heading,scalability,10. Analisis de Escalabilidad,apa_heading,en,true,,
+paragraph,scalability_explanation,{{scalability_text}},apa_body_first,en,true,,
+image,scalability_chart,{{scalability_chart_path}},default,en,true,,caption=Figura 4: Escalabilidad por solver (N/A con N=1)
 page_break,pb11,,default,en,true,,
-heading,correlation_matrix,11. Matriz de Correlacion,apa_subheading,en,true,,
-paragraph,correlation_explanation,{{correlation_text}},apa_body,en,true,,
-table,correlation_table,,apa_table,en,true,,caption=Tabla: Correlacion de Pearson entre metricas
+heading,correlation_matrix,11. Matriz de Correlacion,apa_heading,en,true,,
+paragraph,correlation_explanation,{{correlation_text}},apa_body_first,en,true,,
+table,correlation_table,,apa_table,en,true,,caption=Tabla 8: Correlacion de Pearson entre metricas
 page_break,pb12,,default,en,true,,
-heading,outlier_detection,12. Deteccion de Outliers,apa_subheading,en,true,,
-paragraph,outlier_behavioral,{{outlier_behavioral}},apa_body,en,true,,
-table,outlier_table,,apa_table,en,true,,caption=Tabla: Valores atipicos detectados (estadisticos + conductuales)
+heading,outlier_detection,12. Deteccion de Outliers,apa_heading,en,true,,
+paragraph,outlier_behavioral,{{outlier_behavioral}},apa_body_first,en,true,,
+table,outlier_table,,apa_table,en,true,,caption=Tabla 9: Valores atipicos detectados (estadisticos + conductuales)
 page_break,pb13,,default,en,true,,
 heading,recommendations,13. Recomendaciones,apa_heading,en,true,,
-paragraph,recommendations_text,{{recommendations_text}},apa_body,en,true,,
+paragraph,recommendations_text,{{recommendations_text}},apa_body_first,en,true,,
 page_break,pb14,,default,en,true,,
-heading,software_versions,14. Versiones de Software,apa_subheading,en,true,,
-paragraph,version_note,{{version_note}},apa_body,en,true,,
-table,versions_table,,apa_table,en,true,,caption=Tabla: Versiones de solvers y dependencias
+heading,software_versions,14. Versiones de Software,apa_heading,en,true,,
+paragraph,version_note,{{version_note}},apa_body_first,en,true,,
+table,versions_table,,apa_table,en,true,,caption=Tabla 10: Versiones de solvers y dependencias
 page_break,pb15,,default,en,true,,
-heading,memory_advanced,15. Analisis de Memoria Avanzado,apa_subheading,en,true,,
-paragraph,memory_adv_explanation,{{memory_adv_text}},apa_body,en,true,,
-table,memory_advanced_table,,apa_table,en,true,,caption=Tabla: Desglose de memoria por fase del pipeline
+heading,memory_advanced,15. Analisis de Memoria Avanzado,apa_heading,en,true,,
+paragraph,memory_adv_explanation,{{memory_adv_text}},apa_body_first,en,true,,
+table,memory_advanced_table,,apa_table,en,true,,caption=Tabla 11: Desglose de memoria por fase del pipeline
+page_break,pb_refs,,default,en,true,,
+heading,references,Referencias,apa_heading,en,true,,
+paragraph,ref_benchmark_methodology,{{ref_benchmark_methodology}},apa_reference,en,true,,
+paragraph,ref_friedman,{{ref_friedman}},apa_reference,en,true,,
+paragraph,ref_nemenyi,{{ref_nemenyi}},apa_reference,en,true,,
+paragraph,ref_dolan_more,{{ref_dolan_more}},apa_reference,en,true,,
+paragraph,ref_solver_docs,{{ref_solver_docs}},apa_reference,en,true,,

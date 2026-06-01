@@ -1,31 +1,40 @@
 type,id,content,style,language,visible,condition,metadata
-spacer,cover_spacer,,default,en,true,,height=30
+spacer,cover_spacer,,default,en,true,,height=40
 title,cover_title,Informe de Evaluacion Multi-Problema,apa_title,en,true,,
 subtitle,cover_subtitle,Motor de Resolucion: {{solver_name}} ({{solver_version}}),apa_subtitle,en,true,,
-paragraph,cover_problems,Problemas evaluados: {{num_problems}} | Exitosos: {{solved}} | Fallidos: {{failed}},apa_body,en,true,,
-paragraph,cover_timestamp,Fecha: {{timestamp}},apa_body,en,true,,
-paragraph,cover_system,Sistema: {{system_os}} | Python {{system_python}} | Host: {{hostname}},apa_body,en,true,,
-paragraph,cover_platform,Plataforma: ISLA LP Benchmark v1.8.2,apa_body,en,true,,
+paragraph,cover_author,{{author_name}},apa_cover_author,en,true,,
+paragraph,cover_institution,{{institution_name}},apa_cover_institution,en,true,,
+paragraph,cover_problems,Problemas evaluados: {{num_problems}} | Exitosos: {{solved}} | Fallidos: {{failed}},apa_cover_date,en,true,,
+paragraph,cover_timestamp,Fecha: {{timestamp}},apa_cover_date,en,true,,
+paragraph,cover_system,Sistema: {{system_os}} | Python {{system_python}} | Host: {{hostname}},apa_cover_date,en,true,,
+paragraph,cover_platform,Plataforma: ISLA LP Benchmark v1.8.2,apa_cover_date,en,true,,
 page_break,pb_cover,,default,en,true,,
-heading,executive_summary,Resumen Ejecutivo,apa_heading,en,true,,
-paragraph,summary_text,{{summary_text}},apa_body,en,true,,
+heading,abstract_section,Resumen,apa_abstract_label,en,true,,
+paragraph,abstract_text,{{abstract_text}},apa_abstract,en,true,,
+paragraph,keywords_label,"Palabras clave:",apa_keywords_label,en,true,,
+paragraph,keywords_text,{{keywords_text}},apa_keywords,en,true,,
+page_break,pb_abstract,,default,en,true,,
+heading,toc_section,Tabla de Contenido,apa_toc_title,en,true,,
+toc,toc_main,,default,en,true,,
+page_break,pb_toc,,default,en,true,,
+heading,executive_summary,1. Resumen Ejecutivo,apa_heading,en,true,,
+paragraph,summary_text,{{summary_text}},apa_body_first,en,true,,
 table,summary_table,,apa_table,en,true,,caption=Tabla 1: Resultados detallados por problema
-paragraph,summary_note,"* Estado marcado con * indica presencia de variables con valores negativos (posibles variables libres en el modelo).",apa_body,en,true,has_anomalies
-page_break,pb_stats,,default,en,true,,
+paragraph,summary_note,"Nota: El estado marcado con asterisco (*) indica presencia de variables con valores negativos (posibles variables libres en el modelo).",apa_body,en,true,has_anomalies
 page_break,pb_chart,,default,en,true,,
-heading,time_chart,Grafico de Tiempos por Problema,apa_subheading,en,true,,
-paragraph,chart_desc,"El siguiente grafico de barras muestra los tiempos de resolucion por problema, destacando visualmente los valores atipicos:",apa_body,en,true,,
+heading,time_chart,2. Grafico de Tiempos por Problema,apa_heading,en,true,,
+paragraph,chart_desc,"El siguiente grafico de barras muestra los tiempos de resolucion por problema, destacando visualmente los valores atipicos:",apa_body_first,en,true,,
 image,time_chart,{{time_chart_path}},default,en,true,time_chart_path,caption=Figura 1: Tiempo de resolucion por problema (ms)
 page_break,pb_stats,,default,en,true,,
-heading,time_statistics,Estadistica Descriptiva de Tiempos,apa_subheading,en,true,,
-paragraph,stats_intro,"Los siguientes estadisticos resumen los tiempos de resolucion del conjunto de problemas:",apa_body,en,true,,
+heading,time_statistics,3. Estadistica Descriptiva de Tiempos,apa_heading,en,true,,
+paragraph,stats_intro,"Los siguientes estadisticos resumen los tiempos de resolucion del conjunto de problemas:",apa_body_first,en,true,,
 table,stats_table,,apa_table,en,true,,caption=Tabla 2: Estadisticos descriptivos de tiempos de resolucion
 paragraph,zero_time_note,{{zero_time_note}},apa_body,en,true,,
 page_break,pb_times,,default,en,true,,
-heading,time_summary,Resumen de Tiempos por Problema,apa_subheading,en,true,,
+heading,time_summary,4. Resumen de Tiempos por Problema,apa_heading,en,true,,
 table,time_summary_table,,apa_table,en,true,,caption=Tabla 3: Desglose de tiempos de ejecucion por problema
 page_break,pb_anomalies,,default,en,true,,
-heading,anomalies,Anomalias Detectadas,apa_heading,en,true,has_anomalies
+heading,anomalies,5. Anomalias Detectadas,apa_heading,en,true,has_anomalies
 table,anomaly_table,,apa_table,en,true,has_anomalies,caption=Tabla 4: Anomalias y observaciones por problema
 page_break,pb_detail_start,,default,en,true,,
-heading,problem_details,Detalle Individual por Problema,apa_heading,en,true,,
+heading,problem_details,6. Detalle Individual por Problema,apa_heading,en,true,,

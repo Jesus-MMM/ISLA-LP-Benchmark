@@ -160,6 +160,9 @@ def adapt_single_solution(
     objective_progression_path: Optional[str] = None,
     solver_log: Optional[str] = None,
     author: str = "",
+    institution_name: str = "",
+    abstract_text: str = "",
+    keywords_text: str = "",
     problem_file_hash: Optional[str] = None,
     executive_interpretation: Optional[str] = None,
     problem_description: str = "",
@@ -177,6 +180,9 @@ def adapt_single_solution(
         objective_progression_path: Path to objective progression chart PNG (optional).
         solver_log: Raw solver log output.
         author: Report author name.
+        institution_name: Institution or organization name.
+        abstract_text: Abstract/summary text for the report.
+        keywords_text: Comma-separated keywords.
         problem_file_hash: SHA256 hash of the problem file.
         executive_interpretation: Executive interpretation text.
         problem_description: Semantic description of the problem context.
@@ -326,7 +332,11 @@ def adapt_single_solution(
         "hostname": system_info.get("hostname", "?"),
         "timestamp": system_info.get("timestamp", datetime.now().isoformat()),
         "author": author or "Operations Research Laboratory",
+        "author_name": author or "Operations Research Laboratory",
         "author_label": f"Prepared by: {author}" if author else "Operations Research Laboratory",
+        "institution_name": institution_name or "Instituto de Investigacion Operativa",
+        "abstract_text": abstract_text or "Este informe presenta los resultados de la optimizacion de un problema de Programacion Lineal (LP).",
+        "keywords_text": keywords_text or "optimizacion, programacion lineal, investigacion operativa",
         "problem_data_text": _build_problem_data_text(problem),
         "objective_text": _format_objective(problem.objective, problem.sense),
         "objective_formatted": _build_objective_with_vars(problem),
@@ -616,6 +626,10 @@ def adapt_benchmark(
     runner: BenchmarkRunner,
     system_info: dict[str, Any],
     chart_dir: Optional[Path] = None,
+    author_name: str = "",
+    institution_name: str = "",
+    abstract_text: str = "",
+    keywords_text: str = "",
 ) -> ReportData:
     """Convert benchmark results into report data.
 
@@ -904,6 +918,29 @@ def adapt_benchmark(
         "el extractor de metricas del sistema para capturar este porcentaje."
     )
 
+    # ========== References ==========
+    ref_benchmark_methodology = (
+        "Dolan, E. D. & More, J. J. (2002). Benchmarking optimization software with performance profiles. "
+        "Mathematical Programming, 91(2), 201-213."
+    )
+    ref_friedman = (
+        "Friedman, M. (1937). The use of ranks to avoid the assumption of normality implicit in the analysis "
+        "of variance. Journal of the American Statistical Association, 32(200), 675-701."
+    )
+    ref_nemenyi = (
+        "Nemenyi, P. B. (1963). Distribution-free multiple comparisons [Doctoral dissertation]. "
+        "Princeton University."
+    )
+    ref_dolan_more = (
+        "Dolan, E. D. & More, J. J. (2002). Benchmarking optimization software with performance profiles. "
+        "Mathematical Programming, 91(2), 201-213."
+    )
+    ref_solver_docs = (
+        "Documentacion oficial de los solvers utilizados. "
+        "Consulte https://www.gurobi.com/documentation/, https://highs.dev/, "
+        "https://www.coin-or.org/Cbc/, y https://www.cvxpy.org/ para referencias especificas."
+    )
+
     # ========== VARIABLES ==========
     data.variables = {
         "num_problems": num_problems,
@@ -911,6 +948,10 @@ def adapt_benchmark(
         "total_benchmarks": summary.get("total_benchmarks", 0),
         "successful": summary.get("successful", 0),
         "failed": summary.get("failed", 0),
+        "author_name": author_name or "Investigador",
+        "institution_name": institution_name or "Instituto de Investigacion Operativa",
+        "abstract_text": abstract_text or "Este informe presenta los resultados de una evaluacion comparativa (benchmark) de solvers de Programacion Lineal.",
+        "keywords_text": keywords_text or "benchmark, programacion lineal, optimizacion, solvers",
         "system_os": f"{plat.get('system', '?')} {plat.get('release', '?')}",
         "system_python": plat.get("python_version", "?"),
         "hostname": system_info.get("hostname", "?"),
@@ -939,6 +980,11 @@ def adapt_benchmark(
         "precision_text": precision_text,
         "version_note": version_note,
         "memory_adv_text": memory_adv_text,
+        "ref_benchmark_methodology": ref_benchmark_methodology,
+        "ref_friedman": ref_friedman,
+        "ref_nemenyi": ref_nemenyi,
+        "ref_dolan_more": ref_dolan_more,
+        "ref_solver_docs": ref_solver_docs,
     }
 
     # ========== TABLE 1: Statistics summary ==========
@@ -1195,6 +1241,9 @@ def adapt_multi_problem(
     solver_name: str,
     system_info: Optional[dict[str, Any]] = None,
     author: str = "",
+    institution_name: str = "",
+    abstract_text: str = "",
+    keywords_text: str = "",
     chart_path: Optional[str] = None,
 ) -> ReportData:
     """Convert multi-problem results into report data.
@@ -1285,7 +1334,11 @@ def adapt_multi_problem(
         "solved": solved,
         "failed": failed,
         "author": author or "Operations Research Laboratory",
+        "author_name": author or "Operations Research Laboratory",
         "author_label": f"Preparado por: {author}" if author else "Operations Research Laboratory",
+        "institution_name": institution_name or "Instituto de Investigacion Operativa",
+        "abstract_text": abstract_text or "Este informe presenta los resultados del analisis multi-problema de un solver de Programacion Lineal.",
+        "keywords_text": keywords_text or "optimizacion, multi-problema, programacion lineal",
         "summary_text": summary_text,
         "timestamp": system_info.get("timestamp", datetime.now().isoformat()) if system_info else "",
         "total_time": f"{total_time:.4f}",
