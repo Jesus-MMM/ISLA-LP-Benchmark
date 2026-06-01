@@ -24,11 +24,3 @@ def pytest_configure(config):
             del sys.modules[mod]
 
 
-def pytest_collection_modifyitems(items):
-    """Clean up modules after test_cli/test_benchmark.py tests are collected."""
-    # Find test items from test_cli/test_benchmark.py
-    [item for item in items if 'test_cli/test_benchmark.py' in item.nodeid]
-    # We'll clean up after them in the test file itself, but also ensure cleanup here
-    for mod in modules_to_clean:
-        if mod in sys.modules:
-            del sys.modules[mod]

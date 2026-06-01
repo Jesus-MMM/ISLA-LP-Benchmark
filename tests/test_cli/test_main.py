@@ -5,28 +5,6 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-# Pre-patch visualization modules BEFORE any src imports
-# to avoid circular import between visualization -> analysis -> visualization
-import types
-_vis_mod = types.ModuleType('src.visualization')
-_vis_mod.LinearVisualization = type('MockLinearVis', (), {})
-sys.modules['src.visualization'] = _vis_mod
-
-_vis_bm_mod = types.ModuleType('src.visualization.benchmark_plots')
-_vis_bm_mod.BenchmarkPlotter = type('MockBenchmarkPlotter', (), {'__init__': lambda self, *a, **kw: None})
-_vis_bm_mod.PlotStyle = type('MockPlotStyle', (), {})
-sys.modules['src.visualization.benchmark_plots'] = _vis_bm_mod
-
-_analysis_mod = types.ModuleType('src.analysis.benchmark_results')
-_analysis_mod.performance_profile = lambda *a, **kw: None
-_analysis_mod.ResultsExporter = type('MockResultsExporter', (), {})
-_analysis_mod.export_benchmark_results = lambda *a, **kw: None
-sys.modules['src.analysis.benchmark_results'] = _analysis_mod
-
-_analysis_report_mod = types.ModuleType('src.analysis.benchmark_report')
-_analysis_report_mod.BenchmarkReport = type('MockBenchmarkReport', (), {})
-sys.modules['src.analysis.benchmark_report'] = _analysis_report_mod
-
 from unittest.mock import patch  # noqa: E402
 from pathlib import Path  # noqa: E402
 import pytest  # noqa: E402
@@ -281,7 +259,7 @@ class TestParseOnly:
     def test_parse_only_multi(self):
         from src.cli.__main__ import _parse_only
         import tempfile
-        content = "max: x;\nx >= 0;\n---\nmax: y;\ny >= 0;"
+        content = "max: x\nx + y <= 10\nx >= 0\ny >= 0\n---\nmax: y\nx + y <= 10\nx >= 0\ny >= 0"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".lp", delete=False, encoding="utf-8") as f:
             f.write(content)
             tmp = f.name
