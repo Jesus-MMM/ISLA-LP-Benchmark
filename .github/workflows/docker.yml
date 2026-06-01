@@ -65,16 +65,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Docker Scout vulnerability scan
-        if: github.event_name != 'pull_request'
-        uses: docker/scout-action@v1
-        with:
-          command: quickview,cves
-          image: ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
-          only-severities: critical,high
-          write-comment: false
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Docker build summary
         if: always()
         run: |
