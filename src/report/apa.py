@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from .core.types import (
-    DocumentModel, PageConfig, StyleDefinition, ReportElement,
-    ContentType, ReferenceDefinition,
+    ContentType,
+    DocumentModel,
+    PageConfig,
+    ReferenceDefinition,
+    ReportElement,
+    StyleDefinition,
 )
 
 
@@ -136,8 +139,8 @@ def create_apa_document(
     author: str = "",
     institution: str = "",
     running_header: str = "",
-    abstract: Optional[str] = None,
-    references: Optional[list[ReferenceDefinition]] = None,
+    abstract: str | None = None,
+    references: list[ReferenceDefinition] | None = None,
 ) -> DocumentModel:
     """Create a DocumentModel pre-configured for APA format.
 

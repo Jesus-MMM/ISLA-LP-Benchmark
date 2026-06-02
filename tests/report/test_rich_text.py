@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from src.report.rich_text import (
-    parse_rich_text, strip_tags, has_tags,
+    has_tags,
+    parse_rich_text,
+    strip_tags,
 )
 
 

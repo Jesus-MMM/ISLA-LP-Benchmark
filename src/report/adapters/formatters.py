@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from src.core.problem import LinearProblem
 from src.core.solution import Solution
@@ -64,7 +64,7 @@ def _format_bound(var: str, bound: Any) -> str:
     return var
 
 
-def _compute_slack(constraint: Any, solution: Solution) -> Optional[float]:
+def _compute_slack(constraint: Any, solution: Solution) -> float | None:
     lhs = 0.0
     for var, coeff in constraint.coefficients.items():
         val = solution.variables.get(var, 0.0)
@@ -186,7 +186,7 @@ def _build_performance_matrix(runner: BenchmarkRunner, solvers: list[str]) -> An
 
 _problem_cache = {}
 
-def _get_problem_from_result(result: Any) -> Optional[LinearProblem]:
+def _get_problem_from_result(result: Any) -> LinearProblem | None:
     if hasattr(result, 'problem'):
         p = result.problem
         if p is not None:

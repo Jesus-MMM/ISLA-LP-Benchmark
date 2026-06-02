@@ -1,11 +1,12 @@
 """
 Tests para el modulo REPL.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 
 class TestREPL:
@@ -21,7 +22,7 @@ class TestREPL:
     def test_cmd_info_with_problem(self):
         """Test info con problema cargado."""
         from src.cli.repl import _cmd_info
-        from src.core import LinearProblem, LinearConstraint
+        from src.core import LinearConstraint, LinearProblem
 
         problem = LinearProblem(
             objective={"x": 1, "y": 2},
@@ -44,7 +45,7 @@ class TestREPL:
     def test_cmd_solve_with_problem(self):
         """Test solve con problema cargado."""
         from src.cli.repl import _cmd_solve_repl
-        from src.core import LinearProblem, LinearConstraint
+        from src.core import LinearConstraint, LinearProblem
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -62,7 +63,7 @@ class TestREPL:
     def test_cmd_solve_optimal(self):
         """Test solve con solucion optima."""
         from src.cli.repl import _cmd_solve_repl
-        from src.core import LinearProblem, LinearConstraint
+        from src.core import LinearConstraint, LinearProblem
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -108,7 +109,7 @@ class TestREPL:
     def test_cmd_solve_not_optimal(self):
         """Test solve con solucion no optima."""
         from src.cli.repl import _cmd_solve_repl
-        from src.core import LinearProblem, LinearConstraint
+        from src.core import LinearConstraint, LinearProblem
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -177,9 +178,10 @@ class TestREPL:
 
     def test_cmd_export_success(self):
         """Test export exitoso."""
+        import tempfile
+
         from src.cli.repl import _cmd_export
         from src.core import LinearProblem
-        import tempfile
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -230,8 +232,9 @@ class TestREPL:
 
     def test_cmd_load_success(self):
         """Test load exitoso."""
-        from src.cli.repl import _cmd_load
         import tempfile
+
+        from src.cli.repl import _cmd_load
         content = "max: x + y;\n x + y <= 10;\n x >= 0;\n y >= 0;"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".lp", delete=False, encoding="utf-8") as f:
             f.write(content)
@@ -244,8 +247,9 @@ class TestREPL:
 
     def test_cmd_load_parse_error(self):
         """Test load con error de parseo."""
-        from src.cli.repl import _cmd_load
         import tempfile
+
+        from src.cli.repl import _cmd_load
         content = "max: x;\nx >= 0;"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".lp", delete=False, encoding="utf-8") as f:
             f.write(content)
@@ -275,8 +279,9 @@ class TestREPL:
 
     def test_cmd_load_mps_parse_error(self):
         """Test load-mps con error de parseo."""
-        from src.cli.repl import _cmd_load_mps
         import tempfile
+
+        from src.cli.repl import _cmd_load_mps
         with tempfile.NamedTemporaryFile(mode="w", suffix=".mps", delete=False, encoding="utf-8") as f:
             f.write("some content")
             tmp = f.name
@@ -291,8 +296,9 @@ class TestREPL:
 
     def test_cmd_load_mps_success(self):
         """Test load-mps exitoso."""
-        from src.cli.repl import _cmd_load_mps
         import tempfile
+
+        from src.cli.repl import _cmd_load_mps
         with tempfile.NamedTemporaryFile(mode="w", suffix=".mps", delete=False, encoding="utf-8") as f:
             f.write("dummy")
             tmp = f.name

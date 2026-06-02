@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import os
 
+from src.report.core.types import ContentType, PageConfig
 from src.report.engine import ReportEngine
-from src.report.core.types import PageConfig, ContentType
-
 
 SAMPLE_CSV = """type,id,content,style,language,visible,order
 title,main_title,Test Report,title,en,true,1

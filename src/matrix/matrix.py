@@ -3,6 +3,7 @@ Definición de tipos para matrices Polars.
 """
 
 from dataclasses import dataclass
+
 import polars as pl
 
 

@@ -2,8 +2,9 @@
 Tests para LPAnalysis y ReporteAcademico.
 Usando el patrón existente del proyecto.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import tempfile
@@ -55,7 +56,7 @@ class TestLPAnalysisInit:
         assert analysis.solution.status == "OPTIMAL"
 
     def test_init_with_times(self):
-        from src.analysis.analysis import LPAnalysis, ExecutionTimes
+        from src.analysis.analysis import ExecutionTimes, LPAnalysis
         from src.core import LinearProblem, Solution
 
         problem = LinearProblem(
@@ -127,7 +128,7 @@ class TestLPAnalysisPDFGeneration:
 
     def test_generate_pdf_with_constraints(self):
         from src.analysis.analysis import LPAnalysis
-        from src.core import LinearProblem, LinearConstraint, Solution
+        from src.core import LinearConstraint, LinearProblem, Solution
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -234,7 +235,7 @@ class TestLPAnalysisPDFGeneration:
 
     def test_generate_pdf_with_dual_values(self):
         from src.analysis.analysis import LPAnalysis
-        from src.core import LinearProblem, LinearConstraint, Solution
+        from src.core import LinearConstraint, LinearProblem, Solution
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -336,7 +337,7 @@ class TestLPAnalysisPDFGeneration:
             os.unlink(tmp_path)
 
     def test_generate_pdf_with_times_all_positive(self):
-        from src.analysis.analysis import LPAnalysis, ExecutionTimes
+        from src.analysis.analysis import ExecutionTimes, LPAnalysis
         from src.core import LinearProblem, Solution
 
         problem = LinearProblem(
@@ -386,7 +387,7 @@ class TestLPAnalysisPDFGeneration:
 
     def test_generate_pdf_with_numerical_quality(self):
         from src.analysis.analysis import LPAnalysis
-        from src.core import LinearProblem, Solution, NumericalQuality
+        from src.core import LinearProblem, NumericalQuality, Solution
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -419,7 +420,7 @@ class TestLPAnalysisPDFGeneration:
 
     def test_generate_pdf_with_progress_log(self):
         from src.analysis.analysis import LPAnalysis
-        from src.core import LinearProblem, Solution, ProgressPoint
+        from src.core import LinearProblem, ProgressPoint, Solution
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -475,7 +476,7 @@ class TestLPAnalysisPDFGeneration:
 
     def test_generate_pdf_graphic_with_feasible_region(self):
         from src.analysis.analysis import LPAnalysis
-        from src.core import LinearProblem, LinearConstraint, Solution, VariableBound
+        from src.core import LinearConstraint, LinearProblem, Solution, VariableBound
 
         problem = LinearProblem(
             objective={"x": 2, "y": 1},
@@ -539,7 +540,7 @@ class TestLPAnalysisPDFGeneration:
 
     def test_generate_pdf_with_long_constraint(self):
         from src.analysis.analysis import LPAnalysis
-        from src.core import LinearProblem, LinearConstraint, Solution
+        from src.core import LinearConstraint, LinearProblem, Solution
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -569,7 +570,7 @@ class TestLPAnalysisPDFGeneration:
 
     def test_generate_pdf_with_equality_constraint(self):
         from src.analysis.analysis import LPAnalysis
-        from src.core import LinearProblem, LinearConstraint, Solution
+        from src.core import LinearConstraint, LinearProblem, Solution
 
         problem = LinearProblem(
             objective={"x": 1, "y": 1},
@@ -595,7 +596,7 @@ class TestLPAnalysisPDFGeneration:
 
     def test_generate_pdf_with_geq_constraint(self):
         from src.analysis.analysis import LPAnalysis
-        from src.core import LinearProblem, LinearConstraint, Solution
+        from src.core import LinearConstraint, LinearProblem, Solution
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -693,7 +694,7 @@ class TestLPAnalysisPDFGeneration:
 
     def test_generate_pdf_with_slack_table_empty_variables(self):
         from src.analysis.analysis import LPAnalysis
-        from src.core import LinearProblem, LinearConstraint, Solution
+        from src.core import LinearConstraint, LinearProblem, Solution
 
         problem = LinearProblem(
             objective={"x": 1},

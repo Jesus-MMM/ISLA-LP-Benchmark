@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import tempfile
 import os
+import tempfile
 
-
+from src.report.core.types import ContentType, DocumentModel, ReportElement
 from src.report.validation import ReportValidator, validate_report
-from src.report.core.types import DocumentModel, ReportElement, ContentType
-
 
 SAMPLE_CSV = """type,id,content,style,language,visible,order
 title,main,Test,title,en,true,1

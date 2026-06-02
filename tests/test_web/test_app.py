@@ -1,8 +1,9 @@
 """
 Tests para la aplicacion web FastAPI.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import pytest
@@ -30,6 +31,7 @@ class TestWebApp:
         """Test GET /."""
         pytest.importorskip("fastapi")
         from fastapi.testclient import TestClient
+
         from src.web import create_app
 
         app = create_app()
@@ -42,6 +44,7 @@ class TestWebApp:
         """Test POST /upload sin archivo ni texto."""
         pytest.importorskip("fastapi")
         from fastapi.testclient import TestClient
+
         from src.web import create_app
 
         app = create_app()
@@ -54,6 +57,7 @@ class TestWebApp:
         """Test POST /upload con texto."""
         pytest.importorskip("fastapi")
         from fastapi.testclient import TestClient
+
         from src.web import create_app
 
         app = create_app()
@@ -66,6 +70,7 @@ class TestWebApp:
         """Test POST /upload con texto invalido."""
         pytest.importorskip("fastapi")
         from fastapi.testclient import TestClient
+
         from src.web import create_app
 
         app = create_app()
@@ -78,6 +83,7 @@ class TestWebApp:
         """Test POST /load-example simple."""
         pytest.importorskip("fastapi")
         from fastapi.testclient import TestClient
+
         from src.web import create_app
 
         app = create_app()
@@ -89,6 +95,7 @@ class TestWebApp:
         """Test POST /load-example mip."""
         pytest.importorskip("fastapi")
         from fastapi.testclient import TestClient
+
         from src.web import create_app
 
         app = create_app()
@@ -100,6 +107,7 @@ class TestWebApp:
         """Test POST /load-example netlib."""
         pytest.importorskip("fastapi")
         from fastapi.testclient import TestClient
+
         from src.web import create_app
 
         app = create_app()
@@ -111,6 +119,7 @@ class TestWebApp:
         """Test POST /solve/<pid> con PID inexistente."""
         pytest.importorskip("fastapi")
         from fastapi.testclient import TestClient
+
         from src.web import create_app
 
         app = create_app()

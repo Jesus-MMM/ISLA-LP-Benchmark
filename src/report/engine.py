@@ -1,24 +1,31 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Optional
+from typing import Any
 
-from .core.types import (
-    DocumentModel, PageConfig, RenderContext, LocaleDict,
-    StyleDefinition, ReferenceDefinition,
-)
 from .core.exceptions import ValidationError
-from .csv_loader import load_csv, rows_to_elements
-from .i18n import (
-    load_locale_dir, get_text,
+from .core.types import (
+    DocumentModel,
+    LocaleDict,
+    PageConfig,
+    ReferenceDefinition,
+    RenderContext,
+    StyleDefinition,
 )
+from .csv_loader import load_csv, rows_to_elements
 from .data_binding import DataBinder, bind_data_to_model
+from .i18n import (
+    get_text,
+    load_locale_dir,
+)
+from .renderers import HTMLRenderer, MarkdownRenderer, PDFRenderer
+from .renderers.base import RenderResult
 from .styles import (
-    load_theme_dir, load_page_config_csv, create_default_styles,
+    create_default_styles,
+    load_page_config_csv,
+    load_theme_dir,
 )
 from .validation import ReportValidator
-from .renderers import PDFRenderer, HTMLRenderer, MarkdownRenderer
-from .renderers.base import RenderResult
 
 
 class ReportEngine:
@@ -43,9 +50,9 @@ class ReportEngine:
         self,
         language: str = "en",
         fallback_language: str = "en",
-        locale_dir: Optional[str] = None,
-        theme_dir: Optional[str] = None,
-        page_config: Optional[PageConfig] = None,
+        locale_dir: str | None = None,
+        theme_dir: str | None = None,
+        page_config: PageConfig | None = None,
     ) -> None:
         """
         Inicializa el motor de reportes.

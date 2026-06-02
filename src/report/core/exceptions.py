@@ -1,10 +1,9 @@
-from typing import Optional
 
 
 class ReportError(Exception):
     """Base exception for all report engine errors."""
 
-    def __init__(self, message: str, details: Optional[dict] = None) -> None:
+    def __init__(self, message: str, details: dict | None = None) -> None:
         """Excepción base para todos los errores del motor de informes.
 
         Args:
@@ -19,7 +18,7 @@ class ReportError(Exception):
 class CSVParseError(ReportError):
     """Error parsing CSV report definition."""
 
-    def __init__(self, message: str, row: Optional[int] = None, file_path: Optional[str] = None) -> None:
+    def __init__(self, message: str, row: int | None = None, file_path: str | None = None) -> None:
         """Error al analizar un archivo CSV de definición de informes.
 
         Args:
@@ -38,7 +37,7 @@ class CSVParseError(ReportError):
 class LocalizationError(ReportError):
     """Error resolving localization key."""
 
-    def __init__(self, key: str, language: str, message: Optional[str] = None) -> None:
+    def __init__(self, key: str, language: str, message: str | None = None) -> None:
         """Error al resolver una clave de localización.
 
         Args:
@@ -54,7 +53,7 @@ class LocalizationError(ReportError):
 class TagParseError(ReportError):
     """Error parsing rich text tags."""
 
-    def __init__(self, message: str, position: Optional[int] = None, tag: Optional[str] = None) -> None:
+    def __init__(self, message: str, position: int | None = None, tag: str | None = None) -> None:
         """Error al analizar etiquetas de texto enriquecido.
 
         Args:
@@ -73,7 +72,7 @@ class TagParseError(ReportError):
 class DataBindingError(ReportError):
     """Error resolving data binding."""
 
-    def __init__(self, key: str, message: Optional[str] = None) -> None:
+    def __init__(self, key: str, message: str | None = None) -> None:
         """Error al resolver un enlace de datos.
 
         Args:
@@ -100,7 +99,7 @@ class StyleNotFoundError(ReportError):
 class RenderError(ReportError):
     """Error during rendering."""
 
-    def __init__(self, message: str, element_id: Optional[str] = None) -> None:
+    def __init__(self, message: str, element_id: str | None = None) -> None:
         """Error durante el renderizado de un elemento.
 
         Args:
@@ -116,7 +115,7 @@ class RenderError(ReportError):
 class ValidationError(ReportError):
     """Report validation error."""
 
-    def __init__(self, message: str, issues: Optional[list[str]] = None) -> None:
+    def __init__(self, message: str, issues: list[str] | None = None) -> None:
         """Error de validación de un informe.
 
         Args:

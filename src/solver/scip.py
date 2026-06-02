@@ -3,22 +3,22 @@ SCIP Solver for linear and mixed-integer programming.
 Implements using PySCIPOpt (interface to SCIP).
 """
 
-from typing import Optional
 
 import pyscipopt as scip
 
 from ..core import LinearProblem, Solution
-from .base import BaseSolver, SolverStats, SolverCapabilities
+from .base import BaseSolver, SolverCapabilities, SolverStats
+
 
 class SCIPSolver(BaseSolver):
     """SCIP Solver for linear and mixed-integer programming."""
-    
-    def __init__(self, problem: LinearProblem, config: Optional[BaseSolver.Config] = None):
+
+    def __init__(self, problem: LinearProblem, config: BaseSolver.Config | None = None):
         super().__init__(problem, config)
-        self._solution: Optional[Solution] = None
+        self._solution: Solution | None = None
         self._iterations = 0
         self._nodes = 0
-        
+
         self.capabilities = SolverCapabilities(
             lp=True,
             milp=True,
@@ -27,48 +27,48 @@ class SCIPSolver(BaseSolver):
             warm_start=True,
             sensitivity=False
         )
-    
+
     @property
     def solver_name(self) -> str:
         return "scip"
-    
+
     @property
     def solver_version(self) -> str:
         try:
             return scip.__version__
         except Exception:
             return "SCIP"
-    
+
     @property
     def is_available(self) -> bool:
         return True
-    
+
     def solve(self) -> Solution:
         """Solves the problem."""
         problem = self.problem
-        
+
         if problem is None:
             return Solution(
                 status="ERROR: No problem set",
                 objective_value=None,
                 variables={},
             )
-        
+
         try:
             model = scip.Model("LP")
-            
+
             if not self.config.verbose:
                 model.hideOutput()
-            
+
             # F4-2: MILP support - variable types
             variables = {}
             var_types = problem.variable_types if problem.variable_types else {}
-            
+
             for var in problem.variables:
                 bound = problem.bounds.get(var)
                 lb = 0.0 if not bound or bound.lower is None else bound.lower
                 ub = None if not bound or bound.upper is None else bound.upper
-                
+
                 vtype = var_types.get(var, "continuous")
                 if vtype == "integer":
                     scip_var = model.addVar(var, lb=lb, ub=ub, vtype="INTEGER")
@@ -76,9 +76,9 @@ class SCIPSolver(BaseSolver):
                     scip_var = model.addVar(var, lb=0.0, ub=1.0, vtype="BINARY")
                 else:
                     scip_var = model.addVar(var, lb=lb, ub=ub, vtype="CONTINUOUS")
-                
+
                 variables[var] = scip_var
-            
+
             # Set objective
             obj_expr = sum(
                 coeff * variables[var]
@@ -86,27 +86,27 @@ class SCIPSolver(BaseSolver):
                 if coeff != 0
             )
             model.setObjective(obj_expr)
-            
+
             # Set sense
             if problem.sense.lower() == "max":
                 model.setMaximize()
             else:
                 model.setMinimize()
-            
+
             # Add constraints
             for i, constraint in enumerate(problem.constraints):
                 expr = sum(
                     coeff * variables[var]
                     for var, coeff in constraint.coefficients.items()
                 )
-                
+
                 if constraint.sense == "<=":
                     model.addCons(expr <= constraint.rhs, name=constraint.name or f"R{i}")
                 elif constraint.sense == ">=":
                     model.addCons(expr >= constraint.rhs, name=constraint.name or f"R{i}")
                 else:
                     model.addCons(expr == constraint.rhs, name=constraint.name or f"R{i}")
-            
+
             # F4-2: Configure solver
             if self.config.time_limit is not None:
                 model.setRealParam("limits/time", self.config.time_limit)
@@ -114,9 +114,9 @@ class SCIPSolver(BaseSolver):
                 model.setRealParam("limits/gap", self.config.mip_gap)
             if self.config.threads is not None:
                 model.setIntParam("parallel/maxnthreads", self.config.threads)
-            
+
             model.optimize()
-            
+
             status_map = {
                 "optimal": "OPTIMAL",
                 "infeasible": "INFEASIBLE",
@@ -127,23 +127,23 @@ class SCIPSolver(BaseSolver):
                 "sollimit": "SOL_LIMIT",
                 "unknown": "UNKNOWN",
             }
-            
+
             scip_status = model.getStatus().lower()
             status = status_map.get(scip_status, scip_status.upper())
-            
+
             sol_vars = {}
             obj_value = None
-            
+
             if status == "OPTIMAL":
                 for var_name, var_obj in variables.items():
                     sol_vars[var_name] = model.getVal(var_obj)
-                
+
                 obj_value = model.getObjVal()
-                
+
                 # F4-2: Get dual values and reduced costs
                 dual_values = {}
                 reduced_costs = {}
-                
+
                 try:
                     # Get SCIP constraints
                     scip_cons = model.getConss()
@@ -151,7 +151,7 @@ class SCIPSolver(BaseSolver):
                         dual = model.getDualsolLinear(cons)
                         if abs(dual) > 1e-10:
                             dual_values[problem.constraints[i].name or f"R{i}"] = dual
-                    
+
                     for var_name, var_obj in variables.items():
                         rc = model.getRedcostVar(var_obj)
                         if abs(rc) > 1e-10:
@@ -159,7 +159,7 @@ class SCIPSolver(BaseSolver):
                 except Exception as e:
                     logger = __import__('logging').getLogger(__name__)
                     logger.debug(f"No se pudieron extraer duales/reduced costs de SCIP: {e}")
-                
+
                 self._solution = Solution(
                     status=status,
                     objective_value=obj_value,
@@ -176,16 +176,16 @@ class SCIPSolver(BaseSolver):
                     objective_value=None,
                     variables={},
                 )
-            
+
             return self._solution
-            
+
         except Exception as e:
             return Solution(
                 status=f"ERROR: {str(e)}",
                 objective_value=None,
                 variables={},
             )
-    
+
     def _build_numerical_quality(self, model):
         """Construye NumericalQuality con metricas MILP de SCIP."""
         try:
@@ -201,7 +201,7 @@ class SCIPSolver(BaseSolver):
             )
         except Exception:
             return None
-    
+
     def get_stats(self) -> SolverStats:
         """Gets solution statistics."""
         return SolverStats(

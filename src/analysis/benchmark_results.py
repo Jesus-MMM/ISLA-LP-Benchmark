@@ -3,24 +3,24 @@ Exportacion de resultados de benchmarking.
 Genera reportes y tablas (la visualizacion esta en src.visualization).
 """
 
-from typing import Optional, List, Dict
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 
 from src.solver.benchmark import BenchmarkRunner
+
 # Import BenchmarkPlotter in function to avoid circular import
 # from src.visualization import BenchmarkPlotter
 
 
 def performance_profile(
-    results: List,
+    results: list,
     time_col: str = "total_time",
     solver_col: str = "solver_name",
     tau_max: float = 10.0,
     num_points: int = 100,
-) -> Dict[str, tuple]:
+) -> dict[str, tuple]:
     """Calcula perfiles de Dolan-More a partir de resultados de benchmark.
 
     Para cada problema, calcula la razon del tiempo de cada solver contra
@@ -75,12 +75,12 @@ def performance_profile(
 
 class ResultsExporter:
     """Exportador de resultados de benchmarking a multiple formatos."""
-    
+
     def __init__(self, runner: BenchmarkRunner):
         self.runner = runner
         self.results = runner.results
         self.summary = runner.get_summary()
-    
+
     def to_markdown(self, path: Path) -> None:
         """Exporta resultados a formato Markdown."""
         lines = [
@@ -92,29 +92,29 @@ class ResultsExporter:
             f"- Fallidas: {self.summary['failed']}",
             "\n## Por Solver",
         ]
-        
+
         lines.append("\n| Solver | Pruebas | Exitosas | Tiempo Promedio |")
         lines.append("|--------|---------|----------|-----------------|")
-        
+
         for solver, data in self.summary["by_solver"].items():
             avg_time = data["avg_time"] * 1000
             lines.append(f"| {solver} | {data['runs']} | {data['successful']} | {avg_time:.2f}ms |")
-        
+
         lines.append("\n## Detalle de Resultados")
-        
+
         lines.append("\n| Problema | Solver | Estado | Valor Obj. | Tiempo |")
         lines.append("|----------|--------|--------|------------|--------|")
-        
+
         for r in self.results:
             status_icon = "OK" if r.solution.is_optimal() else "X"
             obj_val = f"{r.solution.objective_value:.2f}" if r.solution.objective_value else "-"
             lines.append(f"| {r.problem_name} | {r.solver_name} | {status_icon} | {obj_val} | {r.total_time*1000:.2f}ms |")
-        
+
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, 'w') as f:
             f.write("\n".join(lines))
-    
-    def to_html(self, path: Path, include_plots: bool = True, plots_dir: Optional[Path] = None) -> None:
+
+    def to_html(self, path: Path, include_plots: bool = True, plots_dir: Path | None = None) -> None:
         """Exporta resultados a formato HTML."""
         plots_html = ""
         if include_plots and plots_dir:
@@ -132,11 +132,11 @@ class ResultsExporter:
             plotter.plot_success_rate(paths['success'])
             plotter.plot_performance_profile(paths['profile'])
             plotter.plot_summary_dashboard(paths['dashboard'])
-            
+
             plots_html = "\n## Graficos\n"
             for name, plot_path in paths.items():
                 plots_html += f'\n![{name}]({plot_path.name})\n'
-        
+
         html = f"""
 <!DOCTYPE html>
 <html>
@@ -197,15 +197,15 @@ class ResultsExporter:
 </body>
 </html>
 """
-        
+
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, 'w') as f:
             f.write(html)
-    
+
     def to_polars_dataframe(self):
         """Convierte resultados a un Polars DataFrame."""
         import polars as pl
-        
+
         data = []
         for r in self.results:
             data.append({
@@ -221,16 +221,16 @@ class ResultsExporter:
                 "nodes": r.stats.nodes,
                 "error": r.error
             })
-        
+
         return pl.DataFrame(data)
 
 
 def export_benchmark_results(
     runner: BenchmarkRunner,
     output_dir: Path,
-    formats: List[str] = ["json", "csv", "md", "html"],
+    formats: list[str] = ["json", "csv", "md", "html"],
     include_plots: bool = True
-) -> Dict[str, Path]:
+) -> dict[str, Path]:
     """
     Exporta todos los resultados de benchmarking.
     
@@ -245,24 +245,24 @@ def export_benchmark_results(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     paths = {}
-    
+
     exporter = ResultsExporter(runner)
-    
+
     if "json" in formats:
         paths["json"] = output_dir / "benchmark_results.json"
         runner.export_json(paths["json"])
-    
+
     if "csv" in formats:
         paths["csv"] = output_dir / "benchmark_results.csv"
         runner.export_csv(paths["csv"])
-    
+
     if "md" in formats:
         paths["md"] = output_dir / "benchmark_report.md"
         exporter.to_markdown(paths["md"])
-    
+
     if "html" in formats:
         plots_dir = output_dir / "plots" if include_plots else None
         paths["html"] = output_dir / "benchmark_report.html"
         exporter.to_html(paths["html"], include_plots=include_plots, plots_dir=plots_dir)
-    
+
     return paths

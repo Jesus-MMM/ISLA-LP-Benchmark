@@ -5,10 +5,10 @@ Utilidades para obtener informacion del sistema y entorno.
 import platform
 import sys
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
 
 
-def get_system_info() -> Dict[str, Any]:
+def get_system_info() -> dict[str, Any]:
     """
     Obtiene informacion completa del sistema.
     
@@ -30,7 +30,7 @@ def get_system_info() -> Dict[str, Any]:
     }
 
 
-def format_system_report(info: Dict[str, Any]) -> str:
+def format_system_report(info: dict[str, Any]) -> str:
     """
     Formatea la informacion del sistema como reporte legible.
     
@@ -44,7 +44,7 @@ def format_system_report(info: Dict[str, Any]) -> str:
     lines.append("=" * 50)
     lines.append("INFORMACION DEL SISTEMA")
     lines.append("=" * 50)
-    
+
     p = info.get("platform", {})
     lines.append(f"Sistema: {p.get('system', 'N/A')}")
     lines.append(f"Version: {p.get('release', 'N/A')}")
@@ -53,7 +53,7 @@ def format_system_report(info: Dict[str, Any]) -> str:
     lines.append(f"Python: {p.get('python_version', 'N/A')}")
     lines.append(f"Hostname: {info.get('hostname', 'N/A')}")
     lines.append(f"Fecha: {info.get('timestamp', 'N/A')}")
-    
+
     lines.append("=" * 50)
-    
+
     return "\n".join(lines)

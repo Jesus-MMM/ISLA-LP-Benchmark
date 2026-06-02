@@ -1,11 +1,12 @@
 """
 Tests para cli/__init__.py - get_system_info y format_system_report.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.cli import get_system_info, format_system_report
+from src.cli import format_system_report, get_system_info
 
 
 class TestGetSystemInfo:

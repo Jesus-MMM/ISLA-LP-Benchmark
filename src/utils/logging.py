@@ -7,7 +7,6 @@ This module provides a centralized logging system with configurable levels.
 import logging
 import sys
 from enum import Enum
-from typing import Optional
 
 
 class LogLevel(Enum):
@@ -22,7 +21,7 @@ class LogLevel(Enum):
 _default_level = LogLevel.WARNING
 
 
-def get_logger(name: str, level: Optional[LogLevel] = None) -> logging.Logger:
+def get_logger(name: str, level: LogLevel | None = None) -> logging.Logger:
     """
     Get a configured logger instance.
 

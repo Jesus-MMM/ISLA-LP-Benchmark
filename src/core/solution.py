@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Any
 
 
 @dataclass
@@ -17,7 +17,7 @@ class NumericalQuality:
     """Métricas de calidad numérica y MILP."""
     max_bound_viol: float = 0.0
     max_constraint_viol: float = 0.0
-    condition_number: Optional[float] = None
+    condition_number: float | None = None
     mip_gap: float = 0.0
     first_feasible_time: float = 0.0
     nodes_per_second: float = 0.0
@@ -45,18 +45,18 @@ class Solution:
     - numerical_quality: Optional[NumericalQuality] - Calidad numérica.
     """
     status: str
-    objective_value: Optional[float]
+    objective_value: float | None
     variables: dict[str, float]
-    dual_values: Optional[dict[str, float]] = None
-    reduced_costs: Optional[dict[str, float]] = None
+    dual_values: dict[str, float] | None = None
+    reduced_costs: dict[str, float] | None = None
     iterations: int = 0
     nodes: int = 0
     # NUEVOS CAMPOS PARA MILP Y SENSIBILIDAD
-    sensitivity: Optional[Any] = None
-    iis: Optional[list[str]] = None
-    basis: Optional[dict[str, str]] = None
-    progress_log: Optional[list[ProgressPoint]] = None
-    numerical_quality: Optional[NumericalQuality] = None
+    sensitivity: Any | None = None
+    iis: list[str] | None = None
+    basis: dict[str, str] | None = None
+    progress_log: list[ProgressPoint] | None = None
+    numerical_quality: NumericalQuality | None = None
 
     def is_optimal(self) -> bool:
         """Verifica si la solucion es optima usando tolerancia."""
@@ -131,18 +131,19 @@ class SolutionTable:
     constraints: Any = None  # pl.DataFrame: name, lhs, rhs, sense, slack, dual_value
     objective_terms: Any = None  # pl.DataFrame: term, coefficient, variable_value, contribution
     sensitivity: Any = None  # pl.DataFrame: variable/constraint, current, min, max
-    iis: Optional[list[str]] = None
+    iis: list[str] | None = None
     basis: Any = None  # pl.DataFrame: variable, status
 
 
 def to_solution_table(solution: Solution, problem: Any) -> SolutionTable:
     """Convierte una Solution en SolutionTable (tabular)."""
     import polars as pl
+
     from .problem import LinearProblem as LP
-    
+
     if not isinstance(problem, LP):
         return SolutionTable()
-    
+
     # Variables table
     var_data = []
     for var, value in solution.variables.items():
@@ -160,7 +161,7 @@ def to_solution_table(solution: Solution, problem: Any) -> SolutionTable:
             "reduced_cost": rc
         })
     variables_df = pl.DataFrame(var_data) if var_data else pl.DataFrame()
-    
+
     # Constraints table
     constr_data = []
     for i, constr in enumerate(problem.constraints):
@@ -181,7 +182,7 @@ def to_solution_table(solution: Solution, problem: Any) -> SolutionTable:
             "dual_value": dual
         })
     constraints_df = pl.DataFrame(constr_data) if constr_data else pl.DataFrame()
-    
+
     # Objective terms
     obj_data = []
     for var, coeff in problem.objective.items():
@@ -193,7 +194,7 @@ def to_solution_table(solution: Solution, problem: Any) -> SolutionTable:
             "contribution": coeff * value
         })
     objective_terms_df = pl.DataFrame(obj_data) if obj_data else pl.DataFrame()
-    
+
     return SolutionTable(
         variables=variables_df,
         constraints=constraints_df,

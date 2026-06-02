@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from src.report.apa import (
-    create_apa_document, format_apa_reference, format_apa_citation,
-    build_apa_table_caption, build_apa_figure_caption, APA_STYLES,
     APA_PAGE_CONFIG,
+    APA_STYLES,
+    build_apa_figure_caption,
+    build_apa_table_caption,
+    create_apa_document,
+    format_apa_citation,
+    format_apa_reference,
 )
-from src.report.core.types import ReferenceDefinition, ContentType
+from src.report.core.types import ContentType, ReferenceDefinition
 
 
 def test_create_apa_document():

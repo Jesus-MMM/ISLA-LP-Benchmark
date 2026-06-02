@@ -1,13 +1,14 @@
 """
 Tests para el modulo de cache.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
-import tempfile
 
 
 class TestProblemCache:
@@ -30,9 +31,10 @@ class TestProblemCache:
                     assert result == {"key": "value"}
 
     def test_get_parsed_expired(self):
-        from src.utils.cache import ProblemCache
-        from pathlib import Path
         import time
+        from pathlib import Path
+
+        from src.utils.cache import ProblemCache
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("src.utils.cache.PARSED_DIR", Path(tmpdir) / "parsed"):
                 with patch("src.utils.cache.RESULTS_DIR", Path(tmpdir) / "results"):
@@ -48,8 +50,9 @@ class TestProblemCache:
         assert result is None
 
     def test_set_and_get_result(self):
-        from src.utils.cache import ProblemCache
         from pathlib import Path
+
+        from src.utils.cache import ProblemCache
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("src.utils.cache.PARSED_DIR", Path(tmpdir) / "parsed"):
                 with patch("src.utils.cache.RESULTS_DIR", Path(tmpdir) / "results"):
@@ -59,9 +62,10 @@ class TestProblemCache:
                     assert result["status"] == "optimal"
 
     def test_get_result_expired(self):
-        from src.utils.cache import ProblemCache
-        from pathlib import Path
         import time
+        from pathlib import Path
+
+        from src.utils.cache import ProblemCache
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("src.utils.cache.PARSED_DIR", Path(tmpdir) / "parsed"):
                 with patch("src.utils.cache.RESULTS_DIR", Path(tmpdir) / "results"):
@@ -77,8 +81,9 @@ class TestProblemCache:
         assert result is None
 
     def test_invalidate_all(self):
-        from src.utils.cache import ProblemCache
         from pathlib import Path
+
+        from src.utils.cache import ProblemCache
         with tempfile.TemporaryDirectory() as tmpdir:
             parsed_dir = Path(tmpdir) / "parsed"
             results_dir = Path(tmpdir) / "results"
@@ -94,8 +99,9 @@ class TestProblemCache:
                     assert not list(results_dir.iterdir())
 
     def test_invalidate_parsed(self):
-        from src.utils.cache import ProblemCache
         from pathlib import Path
+
+        from src.utils.cache import ProblemCache
         with tempfile.TemporaryDirectory() as tmpdir:
             parsed_dir = Path(tmpdir) / "parsed"
             with patch("src.utils.cache.PARSED_DIR", parsed_dir):
@@ -107,8 +113,9 @@ class TestProblemCache:
                     assert result is None
 
     def test_get_stats(self):
-        from src.utils.cache import ProblemCache
         from pathlib import Path
+
+        from src.utils.cache import ProblemCache
         with tempfile.TemporaryDirectory() as tmpdir:
             parsed_dir = Path(tmpdir) / "parsed"
             results_dir = Path(tmpdir) / "results"

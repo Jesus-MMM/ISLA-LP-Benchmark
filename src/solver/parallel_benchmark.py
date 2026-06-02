@@ -6,19 +6,18 @@ para proteger contra segfaults, fugas de memoria y garantizar aislamiento.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, asdict
-from typing import Optional, List
-import time
-import os
-from pathlib import Path
-from concurrent.futures import ProcessPoolExecutor, as_completed
-import multiprocessing
 
-from ..parser import get_parser_class
+import multiprocessing
+import os
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
 from ..core import Solution
 from ..core.solution import to_solution_table
+from ..parser import get_parser_class
 from .base import SolverRegistry, SolverStats
-
 from .benchmark import BenchmarkResult
 
 
@@ -29,8 +28,8 @@ class ParallelBenchmarkConfig:
     runs_per_problem: int = 1
     verbose: bool = False
     collect_memory: bool = True
-    output_dir: Optional[Path] = None
-    time_limit: Optional[float] = None
+    output_dir: Path | None = None
+    time_limit: float | None = None
     collect_solution_table: bool = True
 
 
@@ -204,19 +203,19 @@ class ParallelBenchmarkRunner:
         )
     """
 
-    def __init__(self, config: Optional[ParallelBenchmarkConfig] = None, parser_name: str = "auto"):
+    def __init__(self, config: ParallelBenchmarkConfig | None = None, parser_name: str = "auto"):
         """Inicializa el runner con configuracion opcional."""
         self.config = config or ParallelBenchmarkConfig()
-        self.results: List[BenchmarkResult] = []
+        self.results: list[BenchmarkResult] = []
         self.parser_name = parser_name
 
     def run(
         self,
-        problems: List[tuple[str, str]],
-        solvers: Optional[List[str]] = None,
+        problems: list[tuple[str, str]],
+        solvers: list[str] | None = None,
         timeout: int = 300,
-        max_workers: Optional[int] = None,
-    ) -> List[BenchmarkResult]:
+        max_workers: int | None = None,
+    ) -> list[BenchmarkResult]:
         """Ejecuta el benchmark en paralelo.
 
         Args:

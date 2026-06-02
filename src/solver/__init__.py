@@ -3,9 +3,9 @@ Modulo de solvers para programacion lineal.
 Proporciona interfaz abstracta y implementaciones concretas.
 """
 
-from .base import BaseSolver, SolverStats, SolverRegistry, register_solver
+from .base import BaseSolver, SolverRegistry, SolverStats, register_solver
+from .benchmark import BenchmarkConfig, BenchmarkResult, BenchmarkRunner, run_quick_benchmark
 from .multi_solver import MultiSolver, MultiSolverResult, ProblemResult
-from .benchmark import BenchmarkRunner, BenchmarkResult, BenchmarkConfig, run_quick_benchmark
 from .parallel_benchmark import ParallelBenchmarkConfig, ParallelBenchmarkRunner
 
 SolverLP = None
@@ -72,8 +72,9 @@ except ImportError as e:
     SolverRegistry.set_unavailable("glpk", f"swiglpk not available: {e}")
 
 try:
-    from .cbc import CBCSolver
     import pulp
+
+    from .cbc import CBCSolver
     if "PULP_CBC_CMD" in pulp.listSolvers():
         SolverRegistry.register("cbc", CBCSolver, available=True)
     else:
@@ -101,7 +102,8 @@ except ImportError as e:
 
 # F7-1: Register ECOS solver
 try:
-    from .ecos import ECOSSolver, _is_solver_available as _ecos_avail
+    from .ecos import ECOSSolver
+    from .ecos import _is_solver_available as _ecos_avail
     SolverRegistry.register("ecos", ECOSSolver, available=_ecos_avail)
     if not _ecos_avail:
         SolverRegistry.set_unavailable("ecos", "ecos package not installed")
@@ -115,7 +117,8 @@ except ImportError as e:
 
 # F7-2: Register OSQP solver
 try:
-    from .osqp_solver import OSQPSolver, _is_solver_available as _osqp_avail
+    from .osqp_solver import OSQPSolver
+    from .osqp_solver import _is_solver_available as _osqp_avail
     SolverRegistry.register("osqp", OSQPSolver, available=_osqp_avail)
     if not _osqp_avail:
         SolverRegistry.set_unavailable("osqp", "osqp package not installed")
@@ -129,7 +132,8 @@ except ImportError as e:
 
 # F7-3: Register CVXOPT solver
 try:
-    from .cvxopt_solver import CVXOPTSolver, _is_solver_available as _cvxopt_avail
+    from .cvxopt_solver import CVXOPTSolver
+    from .cvxopt_solver import _is_solver_available as _cvxopt_avail
     SolverRegistry.register("cvxopt", CVXOPTSolver, available=_cvxopt_avail)
     if not _cvxopt_avail:
         SolverRegistry.set_unavailable("cvxopt", "cvxopt package not installed")
@@ -143,7 +147,8 @@ except ImportError as e:
 
 # F7-4: Register SCS solver
 try:
-    from .scs_solver import SCSSolver, _is_solver_available as _scs_avail
+    from .scs_solver import SCSSolver
+    from .scs_solver import _is_solver_available as _scs_avail
     SolverRegistry.register("scs", SCSSolver, available=_scs_avail)
     if not _scs_avail:
         SolverRegistry.set_unavailable("scs", "scs package not installed")
@@ -157,7 +162,8 @@ except ImportError as e:
 
 # F7-5: Register Ipopt solver (via CasADi)
 try:
-    from .ipopt_solver import IpoptSolver, _is_solver_available as _ipopt_avail
+    from .ipopt_solver import IpoptSolver
+    from .ipopt_solver import _is_solver_available as _ipopt_avail
     SolverRegistry.register("ipopt", IpoptSolver, available=_ipopt_avail)
     if not _ipopt_avail:
         SolverRegistry.set_unavailable("ipopt", "casadi package not installed")

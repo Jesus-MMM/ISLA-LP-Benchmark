@@ -5,15 +5,16 @@ Handler para resolver problemas individuales de programacion lineal.
 import os
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 
 from src.parser import get_parser_class
+from src.report.adapters import ReportData
+from src.report.core.types import ContentType, DocumentModel, ReportElement
 from src.solver import SolverConfig, SolverRegistry
-
 
 _console = Console()
 
@@ -45,8 +46,8 @@ def _build_report_engine(language: str = "es") -> Any:
 
 def _render_report(engine, model, output_path: str, fmt: str, quiet: bool = False, console=None) -> None:
     """Render a document model to the specified format."""
-    from src.report.renderers import PDFRenderer, HTMLRenderer, MarkdownRenderer
     from src.report.core.types import RenderContext
+    from src.report.renderers import HTMLRenderer, MarkdownRenderer, PDFRenderer
     context = RenderContext(
         page_config=model.page_config,
         data=engine._data_binder.data,
@@ -100,13 +101,13 @@ def solve_single(
     input_path: Path,
     solver_name: str = "highs",
     visualize: bool = False,
-    report_format: Optional[str] = None,
+    report_format: str | None = None,
     times: bool = False,
     verbose: bool = False,
-    output: Optional[str] = None,
+    output: str | None = None,
     quiet: bool = False,
     json_output: bool = False,
-    time_limit: Optional[float] = None,
+    time_limit: float | None = None,
     parser_name: str = "auto",
 ) -> int:
     """Resuelve un problema individual."""
@@ -122,7 +123,7 @@ def solve_single(
             _console.print(f"[red]Error:[/red] Solver '{solver_name}' no encontrado")
             return 1
 
-        with open(input_path, 'r') as f:
+        with open(input_path) as f:
             problem_text = f.read()
 
         problem_hash = _compute_file_hash(input_path)
@@ -200,8 +201,8 @@ def solve_single(
 
         if report_format:
             from src.analysis.analysis import ExecutionTimes
-            from src.report.adapters import adapt_single_solution
             from src.cli import get_system_info
+            from src.report.adapters import adapt_single_solution
             if not quiet:
                 _console.print(f"[blue]Generating {report_format.upper()} report...[/blue]")
             exec_times = ExecutionTimes(
@@ -300,13 +301,13 @@ def solve_multi(
     input_path: Path,
     solver_name: str = "highs",
     visualize: bool = False,
-    report_format: Optional[str] = None,
+    report_format: str | None = None,
     times: bool = False,
     verbose: bool = False,
-    output: Optional[str] = None,
+    output: str | None = None,
     quiet: bool = False,
     json_output: bool = False,
-    time_limit: Optional[float] = None,
+    time_limit: float | None = None,
     parser_name: str = "auto",
 ) -> int:
     """Resuelve multiples problemas."""
@@ -320,7 +321,7 @@ def solve_multi(
             _console.print(f"[red]Error:[/red] Solver '{solver_name}' no encontrado")
             return 1
 
-        with open(input_path, 'r') as f:
+        with open(input_path) as f:
             content = f.read()
 
         import re
@@ -400,8 +401,8 @@ def solve_multi(
             if not quiet:
                 _console.print(f"[blue]Generando reporte {report_format.upper()} multi-problema...[/blue]")
             try:
-                from src.report.adapters import adapt_multi_problem
                 from src.cli import get_system_info
+                from src.report.adapters import adapt_multi_problem
 
                 ext = f".{report_format}" if report_format != "md" else ".md"
                 fmt_path = Path(output or Path(input_path).parent / f"report_multi{ext}")

@@ -2,25 +2,25 @@
 Core classes for the linear programming solver.
 """
 
-from .problem import LinearProblem
-from .solution import (
-    Solution,
-    ProgressPoint,
-    NumericalQuality,
-    SolutionTable,
-    to_solution_table,
-)
-from .constraint import LinearConstraint
 from .bound import VariableBound
 from .constants import (
     FEASIBILITY_TOLERANCE,
     OPTIMALITY_TOLERANCE,
 )
-from .verification import verify_solution, compare_solutions
+from .constraint import LinearConstraint
 from .exceptions import (
     LPError,
     LPParseError,
 )
+from .problem import LinearProblem
+from .solution import (
+    NumericalQuality,
+    ProgressPoint,
+    Solution,
+    SolutionTable,
+    to_solution_table,
+)
+from .verification import compare_solutions, verify_solution
 
 __all__ = [
     "LinearProblem",

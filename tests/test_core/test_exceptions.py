@@ -1,18 +1,19 @@
 """
 Tests para excepciones personalizadas del modulo LP.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.core.exceptions import (
+    LPConfigurationError,
     LPError,
-    LPParseError,
     LPInfeasibleError,
+    LPParseError,
     LPUnboundedError,
     LPUnsolvedError,
     LPVisualizationError,
-    LPConfigurationError,
 )
 
 

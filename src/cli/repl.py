@@ -5,17 +5,16 @@ Soporta multiproblemas y benchmark.
 
 import time
 from pathlib import Path
-from typing import Optional
 
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from rich.syntax import Syntax
 from rich.prompt import Prompt
+from rich.syntax import Syntax
+from rich.table import Table
 
+from src.core import LinearProblem
 from src.parser import LPParser, MPSParser, MultiLPParser
 from src.solver import SolverConfig, SolverRegistry
-from src.core import LinearProblem
 
 _console = Console()
 
@@ -59,7 +58,7 @@ def run_repl() -> int:
     problems: list[LinearProblem] = []
     current_index: int = -1
 
-    def current_problem() -> Optional[LinearProblem]:
+    def current_problem() -> LinearProblem | None:
         return problems[current_index] if 0 <= current_index < len(problems) else None
 
     while True:
@@ -119,7 +118,7 @@ def run_repl() -> int:
     return 0
 
 
-def _cmd_load(arg: str) -> Optional[LinearProblem]:
+def _cmd_load(arg: str) -> LinearProblem | None:
     """Carga un problema LP."""
     if not arg:
         _console.print("[red]Uso:[/red] load <archivo>")
@@ -144,7 +143,7 @@ def _cmd_load(arg: str) -> Optional[LinearProblem]:
         return None
 
 
-def _cmd_load_mps(arg: str) -> Optional[LinearProblem]:
+def _cmd_load_mps(arg: str) -> LinearProblem | None:
     """Carga un problema MPS."""
     if not arg:
         _console.print("[red]Uso:[/red] load-mps <archivo>")
@@ -216,7 +215,7 @@ def _cmd_problems(problems: list[LinearProblem], current_index: int) -> None:
     _console.print(table)
 
 
-def _cmd_select(arg: str, n_problems: int) -> Optional[int]:
+def _cmd_select(arg: str, n_problems: int) -> int | None:
     """Selecciona un problema por indice."""
     if not arg or not arg.isdigit():
         _console.print("[red]Uso:[/red] select <indice>")
@@ -234,8 +233,9 @@ def _cmd_benchmark(problems: list[LinearProblem]) -> None:
     if not problems:
         _console.print("[yellow]No hay problemas cargados.[/yellow]")
         return
-    from src.solver import BenchmarkRunner, BenchmarkConfig
-    from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
+    from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
+
+    from src.solver import BenchmarkConfig, BenchmarkRunner
 
     problem_tuples = []
     for i, p in enumerate(problems):
@@ -297,7 +297,7 @@ def _problem_to_repl_text(problem: LinearProblem) -> str:
     return "\n".join(lines)
 
 
-def _cmd_info(problem: Optional[LinearProblem]) -> None:
+def _cmd_info(problem: LinearProblem | None) -> None:
     """Muestra informacion del problema."""
     if problem is None:
         _console.print("[yellow]No hay problema cargado. Usa [cyan]load[/cyan] primero.[/yellow]")
@@ -410,7 +410,7 @@ def _cmd_solvers() -> None:
     _console.print(table)
 
 
-def _cmd_vars(problem: Optional[LinearProblem]) -> None:
+def _cmd_vars(problem: LinearProblem | None) -> None:
     """Muestra las variables."""
     if problem is None:
         _console.print("[yellow]No hay problema cargado.[/yellow]")
@@ -429,7 +429,7 @@ def _cmd_vars(problem: Optional[LinearProblem]) -> None:
     _console.print(table)
 
 
-def _cmd_export(problem: Optional[LinearProblem], arg: str) -> None:
+def _cmd_export(problem: LinearProblem | None, arg: str) -> None:
     """Exporta a formato LP."""
     if problem is None:
         _console.print("[yellow]No hay problema cargado.[/yellow]")

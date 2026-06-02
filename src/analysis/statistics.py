@@ -3,11 +3,9 @@ Pruebas estadisticas para comparacion de solvers.
 Implementa Friedman, Nemenyi post-hoc y ANOVA de una via.
 """
 
-from typing import Dict, List
 
 import numpy as np
 from scipy.stats import chi2, f_oneway
-
 
 _Q_ALPHA_005 = {
     2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728,
@@ -16,7 +14,7 @@ _Q_ALPHA_005 = {
 }
 
 
-def friedman_test(results: np.ndarray) -> Dict[str, float]:
+def friedman_test(results: np.ndarray) -> dict[str, float]:
     """Test de Friedman para comparar k solvers en n problemas.
 
     Args:
@@ -77,7 +75,7 @@ def nemenyi_posthoc(
     }
 
 
-def anova_one_way(groups: List[np.ndarray]) -> Dict[str, float]:
+def anova_one_way(groups: list[np.ndarray]) -> dict[str, float]:
     """ANOVA de una via para comparar k grupos.
 
     Args:

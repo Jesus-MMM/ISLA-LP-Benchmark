@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
-from .core.types import DataContext, ReportElement, DocumentModel
-
+from .core.types import DataContext, DocumentModel, ReportElement
 
 VARIABLE_PATTERN = re.compile(r'\{\{(\w+(?:\.\w+)*)\}\}')
 CONDITION_PATTERN = re.compile(
@@ -37,7 +37,7 @@ def resolve_variables(text: str, data: DataContext) -> str:
     return VARIABLE_PATTERN.sub(_resolve, text)
 
 
-def _resolve_key(key: str, variables: dict[str, Any]) -> Optional[Any]:
+def _resolve_key(key: str, variables: dict[str, Any]) -> Any | None:
     """Resolve a dotted key against a nested dictionary."""
     parts = key.split(".")
     current: Any = variables
@@ -174,7 +174,7 @@ def bind_data_to_model(
 class DataBinder:
     """High-level data binding pipeline."""
 
-    def __init__(self, data: Optional[DataContext] = None) -> None:
+    def __init__(self, data: DataContext | None = None) -> None:
         """Inicializa el binder con un contexto de datos opcional."""
         self.data = data or DataContext()
 
@@ -193,7 +193,7 @@ class DataBinder:
     def bind(
         self,
         model: DocumentModel,
-        localization_fn: Optional[Callable[[str], str]] = None,
+        localization_fn: Callable[[str], str] | None = None,
     ) -> DocumentModel:
         """Ejecuta el enlace de datos completo sobre un modelo de documento."""
         return bind_data_to_model(model, self.data, localization_fn)

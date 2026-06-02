@@ -1,15 +1,17 @@
 """
 Tests para el exportador de problemas LP.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import tempfile
-from src.core.problem import LinearProblem
-from src.core.constraint import LinearConstraint
+
 from src.core.bound import VariableBound
-from src.utils.exporter import export_to_lp_format, export_to_lp_file
+from src.core.constraint import LinearConstraint
+from src.core.problem import LinearProblem
+from src.utils.exporter import export_to_lp_file, export_to_lp_format
 
 
 class TestExportToLPFormat:
@@ -173,7 +175,7 @@ class TestExportToLPFile:
             tmp_path = f.name
         try:
             export_to_lp_file(problem, tmp_path, "test_file")
-            with open(tmp_path, "r", encoding="utf-8") as f:
+            with open(tmp_path, encoding="utf-8") as f:
                 content = f.read()
             assert "Maximize" in content
             assert "End" in content
@@ -193,7 +195,7 @@ class TestExportToLPFile:
             tmp_path = f.name
         try:
             export_to_lp_file(problem, tmp_path)
-            with open(tmp_path, "r", encoding="utf-8") as f:
+            with open(tmp_path, encoding="utf-8") as f:
                 content = f.read()
             assert "Minimize" in content
         finally:

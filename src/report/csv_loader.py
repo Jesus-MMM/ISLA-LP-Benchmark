@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import csv
 import os
-from typing import Any, Optional
+from typing import Any
 
-from .core.types import ReportElement, ContentType, DocumentModel, PageConfig
 from .core.exceptions import CSVParseError
-
+from .core.types import ContentType, DocumentModel, PageConfig, ReportElement
 
 CSV_FIELD_NAMES = [
     "type", "id", "content", "style", "language",
@@ -152,8 +151,8 @@ def rows_to_elements(rows: list[dict[str, Any]]) -> list[ReportElement]:
 
 def load_report_definition(
     csv_path: str,
-    page_config: Optional[PageConfig] = None,
-    metadata: Optional[dict[str, Any]] = None,
+    page_config: PageConfig | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> DocumentModel:
     """Load a complete report definition from a CSV file.
 

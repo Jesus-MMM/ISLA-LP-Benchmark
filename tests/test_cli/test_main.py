@@ -1,12 +1,14 @@
 """
 Tests para el modulo CLI principal (__main__).
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from unittest.mock import patch  # noqa: E402
 from pathlib import Path  # noqa: E402
+from unittest.mock import patch  # noqa: E402
+
 import pytest  # noqa: E402
 
 
@@ -244,8 +246,9 @@ class TestParseOnly:
         assert rc == 1
 
     def test_parse_only_success(self):
-        from src.cli.__main__ import _parse_only
         import tempfile
+
+        from src.cli.__main__ import _parse_only
         lp_text = "max: x + y;\nx + y <= 10;\nx >= 0;\ny >= 0;"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".lp", delete=False, encoding="utf-8") as f:
             f.write(lp_text)
@@ -257,8 +260,9 @@ class TestParseOnly:
             os.unlink(tmp_path)
 
     def test_parse_only_multi(self):
-        from src.cli.__main__ import _parse_only
         import tempfile
+
+        from src.cli.__main__ import _parse_only
         content = "max: x\nx + y <= 10\nx >= 0\ny >= 0\n---\nmax: y\nx + y <= 10\nx >= 0\ny >= 0"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".lp", delete=False, encoding="utf-8") as f:
             f.write(content)
@@ -270,8 +274,9 @@ class TestParseOnly:
             os.unlink(tmp)
 
     def test_parse_only_error_verbose(self):
-        from src.cli.__main__ import _parse_only
         import tempfile
+
+        from src.cli.__main__ import _parse_only
         content = "max: x;\nx >= 0;"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".lp", delete=False, encoding="utf-8") as f:
             f.write(content)

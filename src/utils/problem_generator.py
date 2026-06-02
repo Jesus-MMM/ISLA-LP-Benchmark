@@ -3,9 +3,8 @@ Generador de problemas de programación lineal sintéticos.
 """
 
 import random
-from typing import Optional
 
-from ..core import LinearProblem, LinearConstraint, VariableBound
+from ..core import LinearConstraint, LinearProblem, VariableBound
 
 
 class ProblemGenerator:
@@ -16,7 +15,7 @@ class ProblemGenerator:
         random_state: int | None - Semilla para reproducibilidad.
     """
 
-    def __init__(self, random_state: Optional[int] = None) -> None:
+    def __init__(self, random_state: int | None = None) -> None:
         self._rng = random.Random(random_state)
 
     def generate_lp(

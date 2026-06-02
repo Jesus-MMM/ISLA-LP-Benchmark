@@ -4,7 +4,8 @@ import os
 from html import escape
 
 from src.utils.logging import get_logger
-from ..core.types import DocumentModel, ContentType, StyleDefinition
+
+from ..core.types import ContentType, DocumentModel, StyleDefinition
 from ..rich_text import parse_rich_text
 from .base import BaseRenderer, RenderResult
 
@@ -46,7 +47,7 @@ class HTMLRenderer(BaseRenderer):
     def _build_html(self, model: DocumentModel, output_path: str = "") -> str:
         parts: list[str] = []
         parts.append("<!DOCTYPE html>")
-        parts.append('<html lang="{}">'.format(model.language))
+        parts.append(f'<html lang="{model.language}">')
         parts.append("<head>")
         parts.append('<meta charset="UTF-8">')
         title = escape(model.title or "Report")

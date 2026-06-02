@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any
 
 from src.report.core.exceptions import ReportError
 
@@ -42,7 +42,7 @@ class StyleDefinition:
     italic: bool = False
     underline: bool = False
     color: str = "000000"
-    background_color: Optional[str] = None
+    background_color: str | None = None
     alignment: str = "left"
     margin_top: float = 0.0
     margin_bottom: float = 0.0
@@ -52,8 +52,8 @@ class StyleDefinition:
     border: bool = False
     border_color: str = "000000"
     border_width: float = 0.2
-    width: Optional[float] = None
-    height: Optional[float] = None
+    width: float | None = None
+    height: float | None = None
     indent: float = 0.0
     line_height: float = 1.5
     spacing_before: float = 0.0
@@ -80,16 +80,16 @@ class StyleDefinition:
 @dataclass
 class TableColumn:
     header: str
-    width: Optional[float] = None
+    width: float | None = None
     alignment: str = "left"
-    style: Optional[str] = None
+    style: str | None = None
 
 
 @dataclass
 class TableDefinition:
     headers: list[TableColumn] = field(default_factory=list)
     rows: list[list[str]] = field(default_factory=list)
-    caption: Optional[str] = None
+    caption: str | None = None
     style: str = "apa_table"
     header_style: str = "apa_table_header"
 
@@ -97,32 +97,32 @@ class TableDefinition:
 @dataclass
 class ImageDefinition:
     path: str
-    width: Optional[float] = None
-    height: Optional[float] = None
-    caption: Optional[str] = None
+    width: float | None = None
+    height: float | None = None
+    caption: str | None = None
     alignment: str = "center"
-    alt_text: Optional[str] = None
+    alt_text: str | None = None
 
 
 @dataclass
 class ChartDefinition:
     chart_type: str
     data_key: str
-    width: Optional[float] = None
-    height: Optional[float] = None
-    caption: Optional[str] = None
+    width: float | None = None
+    height: float | None = None
+    caption: str | None = None
     options: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class CitationDefinition:
     key: str
-    text: Optional[str] = None
+    text: str | None = None
     authors: str = ""
     year: str = ""
     title: str = ""
     source: str = ""
-    doi: Optional[str] = None
+    doi: str | None = None
 
 
 @dataclass
@@ -131,14 +131,14 @@ class ReferenceDefinition:
     authors: str = ""
     year: str = ""
     title: str = ""
-    journal: Optional[str] = None
-    volume: Optional[str] = None
-    issue: Optional[str] = None
-    pages: Optional[str] = None
-    publisher: Optional[str] = None
-    doi: Optional[str] = None
-    url: Optional[str] = None
-    accessed_date: Optional[str] = None
+    journal: str | None = None
+    volume: str | None = None
+    issue: str | None = None
+    pages: str | None = None
+    publisher: str | None = None
+    doi: str | None = None
+    url: str | None = None
+    accessed_date: str | None = None
 
 
 @dataclass
@@ -167,13 +167,13 @@ class ReportElement:
     visible: bool = True
     metadata: dict[str, Any] = field(default_factory=dict)
     children: list[ReportElement] = field(default_factory=list)
-    condition: Optional[str] = None
+    condition: str | None = None
     order: int = 0
 
     def resolve_content(
         self,
-        localization_fn: Optional[Callable[[str], str]] = None,
-        data_context: Optional[DataContext] = None,
+        localization_fn: Callable[[str], str] | None = None,
+        data_context: DataContext | None = None,
     ) -> str:
         """Resuelve el contenido del elemento aplicando localización y contexto de datos.
 
@@ -288,9 +288,9 @@ class DocumentModel:
     styles: dict[str, StyleDefinition] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
     language: str = "en"
-    title: Optional[str] = None
-    author: Optional[str] = None
-    date: Optional[str] = None
+    title: str | None = None
+    author: str | None = None
+    date: str | None = None
     references: list[ReferenceDefinition] = field(default_factory=list)
     citations: list[CitationDefinition] = field(default_factory=list)
 
@@ -313,7 +313,7 @@ class DocumentModel:
         """
         return [e for e in self.elements if e.content_type == content_type]
 
-    def get_element_by_id(self, element_id: str) -> Optional[ReportElement]:
+    def get_element_by_id(self, element_id: str) -> ReportElement | None:
         """Busca un elemento por su identificador único.
 
         Args:

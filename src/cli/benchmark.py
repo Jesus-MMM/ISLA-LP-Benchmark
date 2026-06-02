@@ -4,17 +4,15 @@ Handler para el modo benchmark.
 
 import os
 from pathlib import Path
-from typing import Optional
 
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
+from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
+from rich.table import Table
 
-from src.solver import (
-    BenchmarkRunner, BenchmarkConfig
-)
-
+from src.report.adapters import ReportData
+from src.report.core.types import ContentType, DocumentModel
+from src.solver import BenchmarkConfig, BenchmarkRunner
 
 _console = Console()
 
@@ -36,8 +34,8 @@ def _inject_table_data(model: DocumentModel, data: ReportData) -> None:
 
 def _render_report(engine, model, output_path: str, fmt: str, quiet: bool = False, console=None) -> None:
     """Render a document model to the specified format."""
-    from src.report.renderers import PDFRenderer, HTMLRenderer, MarkdownRenderer
     from src.report.core.types import RenderContext
+    from src.report.renderers import HTMLRenderer, MarkdownRenderer, PDFRenderer
     context = RenderContext(
         page_config=model.page_config,
         data=engine._data_binder.data,
@@ -56,17 +54,17 @@ def _render_report(engine, model, output_path: str, fmt: str, quiet: bool = Fals
 
 
 def run_benchmark(
-    input_path: Optional[Path] = None,
-    solvers: Optional[list[str]] = None,
+    input_path: Path | None = None,
+    solvers: list[str] | None = None,
     repetitions: int = 1,
     visualize: bool = False,
-    output_csv: Optional[str] = None,
+    output_csv: str | None = None,
     plot_comparison: bool = False,
-    output_dir: Optional[str] = None,
+    output_dir: str | None = None,
     verbose: bool = False,
-    report_format: Optional[str] = None,
+    report_format: str | None = None,
     quiet: bool = False,
-    time_limit: Optional[float] = None,
+    time_limit: float | None = None,
     parser_name: str = "auto",
     parallel: bool = False,
 ) -> int:
@@ -80,11 +78,12 @@ def run_benchmark(
     system_info = get_system_info()
 
     if input_path and input_path.exists():
-        with open(input_path, 'r') as f:
+        with open(input_path) as f:
             content = f.read()
 
         if '---' in content:
             import re
+
             from src.parser import get_parser_class
             parser_cls = get_parser_class(parser_name, content, input_path.suffix)
             sections = re.split(r'(?:---+|===+|___+)\s*\n', content)
@@ -120,7 +119,7 @@ def run_benchmark(
     )
 
     if parallel:
-        from src.solver import ParallelBenchmarkRunner, ParallelBenchmarkConfig
+        from src.solver import ParallelBenchmarkConfig, ParallelBenchmarkRunner
         pconfig = ParallelBenchmarkConfig(
             warmup_runs=0,
             runs_per_problem=repetitions,
@@ -223,7 +222,7 @@ def _problem_to_text(problem) -> str:
     if obj.startswith("+"):
         obj = obj[1:]
     lines = [f"{sense} Z = {obj}"]
-    
+
     for c in problem.constraints:
         c_terms = []
         for var, coeff in c.coefficients.items():
@@ -235,7 +234,7 @@ def _problem_to_text(problem) -> str:
         if c_str.startswith("+"):
             c_str = c_str[1:]
         lines.append(f"{c_str} {c.sense} {c.rhs}")
-    
+
     for var, bound in problem.bounds.items():
         if bound.lower is not None and bound.upper is not None:
             lines.append(f"{bound.lower} <= {var} <= {bound.upper}")
@@ -243,5 +242,5 @@ def _problem_to_text(problem) -> str:
             lines.append(f"{var} >= {bound.lower}")
         elif bound.upper is not None:
             lines.append(f"{var} <= {bound.upper}")
-    
+
     return "\n".join(lines)

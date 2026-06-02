@@ -1,19 +1,19 @@
 from __future__ import annotations
 
+from src.analysis.analysis import ExecutionTimes
+from src.core.bound import VariableBound
+from src.core.constraint import LinearConstraint
 from src.core.problem import LinearProblem
 from src.core.solution import Solution
-from src.core.constraint import LinearConstraint
-from src.core.bound import VariableBound
-from src.analysis.analysis import ExecutionTimes
 from src.report.adapters import (
-    adapt_single_solution,
-    adapt_multi_problem,
     ReportData,
+    _compute_slack,
+    _format_bound,
     _format_coefficient,
     _format_expression,
     _format_objective,
-    _format_bound,
-    _compute_slack,
+    adapt_multi_problem,
+    adapt_single_solution,
 )
 
 

@@ -8,17 +8,17 @@ precios sombra y graficos de region factible para problemas de 2 variables.
 """
 
 from __future__ import annotations
-from datetime import datetime
+
+import os
 import platform
 import sys
 import tempfile
-import os
+from datetime import datetime
 
 from fpdf import FPDF
 from fpdf.enums import Align, YPos
 
 from ..solver import MultiSolverResult, ProblemResult
-
 
 # ============================================================
 # CONSTANTES DE ESTILO
@@ -59,18 +59,18 @@ class ReporteAcademicoMulti(FPDF):
         self.set_draw_color(*COLOR_PRIMARY)
         self.set_line_width(0.3)
         self.line(MARGIN, self.get_y(), PAGE_WIDTH - MARGIN, self.get_y())
-        
+
         self.ln(3)
-        
+
         # Texto del pie
         self.set_font('Helvetica', 'I', 8)
         self.set_text_color(128, 128, 128)
-        
+
         # Nombre del reporte - use solver name from MultiLPAnalysis
         solver_name = getattr(self, '_solver_name', 'Multi-Solver')
         self.cell(0, 5, f"Solucion de Programas Lineales - {solver_name}",
                   align=Align.C, new_y=YPos.NEXT)
-        
+
         # Numero de pagina
         self.cell(0, 5, f"Pagina {self.page_no()}", align=Align.C)
 
@@ -96,10 +96,10 @@ class MultiLPAnalysis:
         pdf = ReporteAcademicoMulti()
         pdf.set_margins(MARGIN, MARGIN, MARGIN)
         pdf.set_auto_page_break(auto=True, margin=15)
-        
+
         # Store solver_name in PDF object for footer/header
         pdf._solver_name = getattr(self.results, 'solver_name', 'Multi-Solver')
-        
+
         # Portada
         pdf.add_page()
         self.page_count += 1
@@ -121,7 +121,7 @@ class MultiLPAnalysis:
 
         pdf.output(output_path)
 
-    def _build_portada(self, pdf: 'ReporteAcademicoMulti') -> None:
+    def _build_portada(self, pdf: ReporteAcademicoMulti) -> None:
         """Construye la portada del reporte."""
         # Titulo principal
         pdf.set_font('Helvetica', 'B', 28)
@@ -162,7 +162,7 @@ class MultiLPAnalysis:
         # Informacion de version
         pdf.set_font('Helvetica', '', 10)
         pdf.set_text_color(100, 100, 100)
-        
+
         # Get solver name from results
         solver_name = "Multi-Solver"
         if self.results.results:
@@ -172,7 +172,7 @@ class MultiLPAnalysis:
                 solver_name = first_result.solver_name
             elif hasattr(first_result.problem, 'solver_name'):
                 solver_name = first_result.problem.solver_name
-        
+
         pdf.cell(0, 7, f"Optimizador: {solver_name}", align=Align.C,
                  new_y=YPos.NEXT)
         pdf.ln(4)
@@ -207,7 +207,7 @@ class MultiLPAnalysis:
 
         pdf.set_text_color(0, 0, 0)
 
-    def _build_resumen(self, pdf: 'ReporteAcademicoMulti') -> None:
+    def _build_resumen(self, pdf: ReporteAcademicoMulti) -> None:
         """Construye el resumen ejecutivo completo."""
         # Titulo
         pdf.set_font('Helvetica', 'B', 18)
@@ -235,7 +235,7 @@ class MultiLPAnalysis:
         # Interpretacion
         self._build_interpretacion(pdf)
 
-    def _build_estadisticas_resumen(self, pdf: 'ReporteAcademicoMulti') -> None:
+    def _build_estadisticas_resumen(self, pdf: ReporteAcademicoMulti) -> None:
         """Construye las estadisticas del resumen."""
         total = len(self.results.results)
         exitosos = len(self.results.get_successful_results())
@@ -285,7 +285,7 @@ class MultiLPAnalysis:
 
         pdf.ln(5)
 
-    def _build_tabla_resultados(self, pdf: 'ReporteAcademicoMulti') -> None:
+    def _build_tabla_resultados(self, pdf: ReporteAcademicoMulti) -> None:
         """Construye la tabla de resultados."""
         pdf.set_font('Helvetica', 'B', 12)
         pdf.set_text_color(*COLOR_PRIMARY)
@@ -350,7 +350,7 @@ class MultiLPAnalysis:
 
             pdf.set_text_color(0, 0, 0)
 
-    def _build_interpretacion(self, pdf: 'ReporteAcademicoMulti') -> None:
+    def _build_interpretacion(self, pdf: ReporteAcademicoMulti) -> None:
         """Construye la interpretacion de resultados."""
         total = len(self.results.results)
         exitosos = len(self.results.get_successful_results())
@@ -370,7 +370,7 @@ class MultiLPAnalysis:
         pdf.set_text_color(0, 0, 0)
 
     def _build_problema_individual(
-        self, pdf: 'ReporteAcademicoMulti',
+        self, pdf: ReporteAcademicoMulti,
         result: ProblemResult, num: int
     ) -> None:
         """Construye una pagina para un problema individual."""
@@ -428,7 +428,7 @@ class MultiLPAnalysis:
         self._build_tiempos_problema(pdf, result)
 
     def _build_error_problema(
-        self, pdf: 'ReporteAcademicoMulti',
+        self, pdf: ReporteAcademicoMulti,
         result: ProblemResult
     ) -> None:
         """Construye la seccion de error."""
@@ -443,7 +443,7 @@ class MultiLPAnalysis:
         pdf.multi_cell(175.9, 6, f"Mensaje de error: {result.error}")
 
     def _build_funcion_objetivo(
-        self, pdf: 'ReporteAcademicoMulti',
+        self, pdf: ReporteAcademicoMulti,
         result: ProblemResult
     ) -> None:
         """Construye la seccion de funcion objetivo."""
@@ -467,7 +467,7 @@ class MultiLPAnalysis:
         pdf.set_text_color(0, 0, 0)
 
     def _build_restricciones(
-        self, pdf: 'ReporteAcademicoMulti',
+        self, pdf: ReporteAcademicoMulti,
         result: ProblemResult
     ) -> None:
         """Construye la tabla de restricciones."""
@@ -516,7 +516,7 @@ class MultiLPAnalysis:
             pdf.set_text_color(0, 0, 0)
 
     def _build_solucion(
-        self, pdf: 'ReporteAcademicoMulti',
+        self, pdf: ReporteAcademicoMulti,
         result: ProblemResult
     ) -> None:
         """Construye la seccion de solucion."""
@@ -579,7 +579,7 @@ class MultiLPAnalysis:
             pdf.ln(6)
 
     def _build_sensibilidad(
-        self, pdf: 'ReporteAcademicoMulti',
+        self, pdf: ReporteAcademicoMulti,
         result: ProblemResult
     ) -> None:
         """Construye la seccion de analisis de sensibilidad."""
@@ -659,7 +659,7 @@ class MultiLPAnalysis:
                 pdf.ln(5)
 
     def _build_grafico(
-        self, pdf: 'ReporteAcademicoMulti',
+        self, pdf: ReporteAcademicoMulti,
         result: ProblemResult
     ) -> None:
         """Construye el grafico de region factible usando LinearVisualization."""
@@ -702,7 +702,7 @@ class MultiLPAnalysis:
             pdf.set_text_color(0, 0, 0)
 
     def _build_holguras(
-        self, pdf: 'ReporteAcademicoMulti',
+        self, pdf: ReporteAcademicoMulti,
         result: ProblemResult
     ) -> None:
         """Construye la tabla de analisis de holguras."""
@@ -773,7 +773,7 @@ class MultiLPAnalysis:
         return holguras
 
     def _build_tiempos_problema(
-        self, pdf: 'ReporteAcademicoMulti',
+        self, pdf: ReporteAcademicoMulti,
         result: ProblemResult
     ) -> None:
         """Construye la seccion de tiempos de un problema."""
@@ -815,7 +815,7 @@ class MultiLPAnalysis:
         else:
             return f"{seconds:.3f} s"
 
-    def _build_tiempos_resumen(self, pdf: 'ReporteAcademicoMulti') -> None:
+    def _build_tiempos_resumen(self, pdf: ReporteAcademicoMulti) -> None:
         """Construye el resumen de tiempos."""
         pdf.set_font('Helvetica', 'B', 18)
         pdf.set_text_color(*COLOR_PRIMARY)

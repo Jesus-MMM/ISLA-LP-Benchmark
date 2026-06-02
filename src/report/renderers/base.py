@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 from ..core.types import DocumentModel, RenderContext
 
@@ -11,8 +11,8 @@ from ..core.types import DocumentModel, RenderContext
 class RenderResult:
     """Result from a rendering operation."""
     success: bool
-    output_path: Optional[str] = None
-    content: Optional[str] = None
+    output_path: str | None = None
+    content: str | None = None
     pages: int = 0
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
@@ -22,7 +22,7 @@ class RenderResult:
 class BaseRenderer(ABC):
     """Abstract base class for all report renderers."""
 
-    def __init__(self, context: Optional[RenderContext] = None) -> None:
+    def __init__(self, context: RenderContext | None = None) -> None:
         """Inicializa el renderizador base con un contexto opcional.
 
         Args:

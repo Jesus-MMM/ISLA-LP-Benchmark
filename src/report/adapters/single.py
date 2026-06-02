@@ -1,22 +1,22 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
-from src.utils.logging import get_logger
+from src.analysis.analysis import ExecutionTimes
 from src.core.problem import LinearProblem
 from src.core.solution import Solution
-from src.analysis.analysis import ExecutionTimes
-from src.report.adapters.types import ReportData
 from src.report.adapters.formatters import (
+    _build_objective_with_vars,
+    _build_problem_data_text,
+    _build_solver_log_table,
     _format_expression,
     _format_objective,
     _get_constraint_name,
     _get_constraint_name_from_sensitivity,
-    _build_solver_log_table,
-    _build_objective_with_vars,
-    _build_problem_data_text,
 )
+from src.report.adapters.types import ReportData
+from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -27,16 +27,16 @@ def adapt_single_solution(
     times: ExecutionTimes,
     system_info: dict[str, Any],
     solver_name: str,
-    solver_config: Optional[dict[str, Any]] = None,
-    feasible_region_path: Optional[str] = None,
-    objective_progression_path: Optional[str] = None,
-    solver_log: Optional[str] = None,
+    solver_config: dict[str, Any] | None = None,
+    feasible_region_path: str | None = None,
+    objective_progression_path: str | None = None,
+    solver_log: str | None = None,
     author: str = "",
     institution_name: str = "",
     abstract_text: str = "",
     keywords_text: str = "",
-    problem_file_hash: Optional[str] = None,
-    executive_interpretation: Optional[str] = None,
+    problem_file_hash: str | None = None,
+    executive_interpretation: str | None = None,
     problem_description: str = "",
 ) -> ReportData:
     """Convertir una solucion LP individual en datos para el reporte.

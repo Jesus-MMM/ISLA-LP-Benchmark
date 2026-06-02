@@ -3,8 +3,9 @@ Parser para problemas de programación lineal en formato texto.
 Soporta expresiones multi-línea, comentarios inline y nombres con caracteres especiales.
 """
 
-from ..core import LinearProblem, LinearConstraint, VariableBound
 import re
+
+from ..core import LinearConstraint, LinearProblem, VariableBound
 
 TERM_PATTERN = re.compile(
     r"([+-]?)((?:\d+\.?\d*|\d*\.?\d+)(?:[eE][+-]?\d+)?|)([a-zA-Z][a-zA-Z0-9_]*)"

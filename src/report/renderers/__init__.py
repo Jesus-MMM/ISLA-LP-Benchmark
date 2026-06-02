@@ -1,7 +1,7 @@
 from .base import BaseRenderer, RenderResult
-from .pdf import PDFRenderer
 from .html import HTMLRenderer
 from .markdown import MarkdownRenderer
+from .pdf import PDFRenderer
 
 __all__ = [
     "BaseRenderer",

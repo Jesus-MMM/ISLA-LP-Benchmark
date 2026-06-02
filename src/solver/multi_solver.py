@@ -2,9 +2,8 @@
 Multiple linear programming problem solver.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional
 import time
+from dataclasses import dataclass, field
 
 from ..core import LinearProblem, Solution
 from ..parser import MultiLPParser
@@ -20,13 +19,13 @@ class ProblemResult:
     build_time: float = 0.0
     solve_time: float = 0.0
     total_time: float = 0.0
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
 class MultiSolverResult:
     """Result of solving multiple problems."""
-    results: List[ProblemResult] = field(default_factory=list)
+    results: list[ProblemResult] = field(default_factory=list)
     total_parse_time: float = 0.0
     total_build_time: float = 0.0
     total_solve_time: float = 0.0
@@ -34,10 +33,10 @@ class MultiSolverResult:
     verbose: bool = False
     solver_name: str = "unknown"
 
-    def get_successful_results(self) -> List[ProblemResult]:
+    def get_successful_results(self) -> list[ProblemResult]:
         return [r for r in self.results if r.error is None]
 
-    def get_failed_results(self) -> List[ProblemResult]:
+    def get_failed_results(self) -> list[ProblemResult]:
         return [r for r in self.results if r.error is not None]
 
 
@@ -59,7 +58,7 @@ class MultiSolver:
             raise ValueError(f"Solver '{solver_name}' no encontrado en el registro")
         self._solver_class = solver_class
 
-    def solve_all(self, problems: List[LinearProblem], time_limit: Optional[float] = None) -> MultiSolverResult:
+    def solve_all(self, problems: list[LinearProblem], time_limit: float | None = None) -> MultiSolverResult:
         """
         Solve all given problems.
 

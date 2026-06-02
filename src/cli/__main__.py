@@ -6,11 +6,11 @@ Maneja la interfaz de linea de comandos.
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional, TextIO
+from typing import TextIO
 
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 
 _console = Console()
 
@@ -55,7 +55,7 @@ complete -F _Path(sys.argv[0])name {Path(sys.argv[0]).name}"""
 class _RichArgumentParser(argparse.ArgumentParser):
     """Parser que muestra la ayuda con secciones en paneles Rich."""
 
-    def print_help(self, file: Optional[TextIO] = None) -> None:
+    def print_help(self, file: TextIO | None = None) -> None:
         """Imprime la ayuda formateada con paneles de Rich."""
         text = argparse.ArgumentParser.format_help(self)
         lines = text.split('\n')
@@ -368,7 +368,7 @@ def _print_banner() -> None:
     ))
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Punto de entrada principal."""
     parser = create_parser()
     args = parser.parse_args(argv)
@@ -474,11 +474,11 @@ def _parse_only(path: Path, verbose: bool = False, parser_name: str = "auto") ->
         return 1
 
     try:
-        with open(path, 'r') as f:
+        with open(path) as f:
             content = f.read()
 
-        from src.parser import get_parser_class
         from src.matrix import LPBuilder
+        from src.parser import get_parser_class
 
         parser_cls = get_parser_class(parser_name, content, path.suffix)
 

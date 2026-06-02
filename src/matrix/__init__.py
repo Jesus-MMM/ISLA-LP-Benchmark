@@ -5,8 +5,8 @@ y funciones principales que se desean exponer a los usuarios del paquete.
 """
 
 from .builder import LPBuilder
-from .matrix import PolarsLP
 from .converter import MatrixConverter
+from .matrix import PolarsLP
 
 __all__ = [
     "LPBuilder",

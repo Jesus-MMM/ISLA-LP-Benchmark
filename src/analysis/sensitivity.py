@@ -5,8 +5,7 @@ lados derechos de restricciones, y costos reducidos.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
-
+from typing import Any
 
 
 @dataclass
@@ -24,10 +23,10 @@ class SensitivityRange:
     """
     name: str
     current: float
-    lower: Optional[float] = None
-    upper: Optional[float] = None
-    reduced_cost: Optional[float] = None
-    dual_value: Optional[float] = None
+    lower: float | None = None
+    upper: float | None = None
+    reduced_cost: float | None = None
+    dual_value: float | None = None
 
 
 @dataclass
@@ -44,14 +43,14 @@ class SensitivityAnalysis:
     rhs_ranges: list[SensitivityRange] = field(default_factory=list)
     bound_ranges: list[SensitivityRange] = field(default_factory=list)
 
-    def get_objective_range(self, name: str) -> Optional[SensitivityRange]:
+    def get_objective_range(self, name: str) -> SensitivityRange | None:
         """Obtiene el rango de sensibilidad para una variable objetivo."""
         for r in self.objective_ranges:
             if r.name == name:
                 return r
         return None
 
-    def get_rhs_range(self, name: str) -> Optional[SensitivityRange]:
+    def get_rhs_range(self, name: str) -> SensitivityRange | None:
         """Obtiene el rango de sensibilidad para una restriccion."""
         for r in self.rhs_ranges:
             if r.name == name:
@@ -59,7 +58,7 @@ class SensitivityAnalysis:
         return None
 
 
-def extract_highs_sensitivity(hp: Any) -> Optional[SensitivityAnalysis]:
+def extract_highs_sensitivity(hp: Any) -> SensitivityAnalysis | None:
     """
     Extrae analisis de sensibilidad de un modelo HiGHS resuelto.
 
@@ -155,7 +154,7 @@ def extract_highs_sensitivity(hp: Any) -> Optional[SensitivityAnalysis]:
 
 
 def extract_glpk_sensitivity(prob: Any, variables_list: list[str],
-                             constraints: list[Any]) -> Optional[SensitivityAnalysis]:
+                             constraints: list[Any]) -> SensitivityAnalysis | None:
     """
     Extrae analisis de sensibilidad de un problema GLPK resuelto.
 
@@ -222,7 +221,7 @@ def extract_glpk_sensitivity(prob: Any, variables_list: list[str],
         return None
 
 
-def extract_gurobi_sensitivity(model: Any) -> Optional[SensitivityAnalysis]:
+def extract_gurobi_sensitivity(model: Any) -> SensitivityAnalysis | None:
     """
     Extrae analisis de sensibilidad de un modelo Gurobi resuelto.
 

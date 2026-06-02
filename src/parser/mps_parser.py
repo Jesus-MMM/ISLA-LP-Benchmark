@@ -4,9 +4,8 @@ Parser para problemas de programación lineal en formato MPS.
 
 import re
 from dataclasses import dataclass
-from typing import Optional
 
-from ..core import LinearProblem, LinearConstraint, VariableBound
+from ..core import LinearConstraint, LinearProblem, VariableBound
 
 ROW_TYPE_N = "N"
 ROW_TYPE_L = "L"
@@ -41,7 +40,7 @@ class _MPSEntry:
 class _MPSBound:
     bound_type: str
     variable: str
-    value: Optional[float] = None
+    value: float | None = None
 
 
 class MPSParser:
@@ -76,7 +75,7 @@ class MPSParser:
         return self._build_problem()
 
     def parse_file(self, path: str) -> LinearProblem:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             self.txt = f.read()
         return self.parse()
 

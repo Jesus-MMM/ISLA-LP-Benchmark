@@ -6,13 +6,12 @@ Almacena problemas parseados y resultados de solver en
 """
 
 from __future__ import annotations
-from typing import Optional
+
 import hashlib
 import json
 import pickle
 import time
 from pathlib import Path
-
 
 CACHE_DIR = Path.home() / ".cache" / "isla-lp-benchmark"
 PARSED_DIR = CACHE_DIR / "parsed"
@@ -68,7 +67,7 @@ class ProblemCache:
         content_hash = _content_hash(content)
         return PARSED_DIR / f"{content_hash}.pkl"
 
-    def get_parsed(self, content: str) -> Optional[object]:
+    def get_parsed(self, content: str) -> object | None:
         """Obtiene un problema parseado del cache.
 
         Args:
@@ -105,7 +104,7 @@ class ProblemCache:
         safe_name = solver_name.replace("/", "_").replace("\\", "_")
         return RESULTS_DIR / f"{content_hash}_{safe_name}.json"
 
-    def get_result(self, content: str, solver_name: str) -> Optional[dict]:
+    def get_result(self, content: str, solver_name: str) -> dict | None:
         """Obtiene un resultado de solver del cache.
 
         Args:
@@ -119,7 +118,7 @@ class ProblemCache:
         if not _is_fresh(path, self.ttl):
             return None
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 return json.load(f)
         except Exception:
             return None

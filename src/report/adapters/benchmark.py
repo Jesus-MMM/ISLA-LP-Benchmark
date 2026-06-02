@@ -2,18 +2,17 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from src.solver.benchmark import BenchmarkRunner
-from src.solver.multi_solver import ProblemResult
-from src.utils.logging import get_logger
-from src.report.adapters.types import ReportData
 from src.report.adapters.formatters import (
     _build_performance_matrix,
     _get_problem_from_result,
     _get_solver_version,
 )
-
+from src.report.adapters.types import ReportData
+from src.solver.benchmark import BenchmarkRunner
+from src.solver.multi_solver import ProblemResult
+from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -70,7 +69,7 @@ def _build_solver_note(r: ProblemResult) -> str:
 def adapt_benchmark(
     runner: BenchmarkRunner,
     system_info: dict[str, Any],
-    chart_dir: Optional[Path] = None,
+    chart_dir: Path | None = None,
     author_name: str = "",
     institution_name: str = "",
     abstract_text: str = "",
@@ -116,13 +115,13 @@ def adapt_benchmark(
     methodology_warning = ""
     if is_single_problem:
         methodology_warning = (
-            "ADVERTENCIA METODOLOGICA: Este benchmark evalua {} solvers sobre un "
+            f"ADVERTENCIA METODOLOGICA: Este benchmark evalua {num_solvers} solvers sobre un "
             "unico problema (N=1). Los resultados son indicativos del rendimiento y "
             "overhead para este caso especifico, pero NO son estadisticamente "
             "significativos para generalizar. Las pruebas de Friedman y ANOVA "
             "requieren N > 1 (multiples problemas) para calcular varianza entre "
             "grupos; por tanto, se reportan como N/A."
-        ).format(num_solvers)
+        )
 
     friedman_q = "N/A"
     friedman_p = "N/A"
@@ -130,8 +129,9 @@ def adapt_benchmark(
     anova_p = "N/A"
     if not is_single_problem:
         try:
-            from src.analysis.statistics import friedman_test, anova_one_way
             import numpy as np
+
+            from src.analysis.statistics import anova_one_way, friedman_test
             perf_matrix = _build_performance_matrix(runner, solvers)
             if perf_matrix.shape[0] > 1 and perf_matrix.shape[1] > 1:
                 f_results = friedman_test(perf_matrix)
@@ -198,10 +198,10 @@ def adapt_benchmark(
     )
 
     success_note = (
-        "Grafico de barras al 100% para los {} solvers. "
+        f"Grafico de barras al 100% para los {num_solvers} solvers. "
         "Nota: Todos los solvers alcanzaron el estado OPTIMAL "
         "(o tolerancia numerica equivalente)."
-    ).format(num_solvers)
+    )
 
     memory_text = (
         "Existe una discrepancia masiva entre la 'Memoria Promedio' (delta de memoria "
@@ -231,13 +231,13 @@ def adapt_benchmark(
         )
 
     correlation_text = (
-        "Con N={} (una observacion por solver), la correlacion de Pearson es altamente "
+        f"Con N={num_solvers} (una observacion por solver), la correlacion de Pearson es altamente "
         "inestable y no debe usarse para inferencias. El valor nan en presolve_reduction "
         "se debe a que la metrica no fue capturada o fue del 0% (constante), lo que anula "
         "la varianza matematica. La ligera correlacion negativa entre iterations y memory "
         "sugiere que los solvers basados en Simplex (0 iteraciones si usa presolve, mayor "
         "estructura) consumen mas memoria base que los iterativos ligeros (SCS/OSQP)."
-    ).format(num_solvers)
+    )
 
     outlier_behavioral = ""
     behavioral_outlier_rows = []
@@ -502,8 +502,9 @@ def adapt_benchmark(
     nemenyi_headers = ["Par de Solvers", "Diferencia de Rango", "CD", "Significativo"]
     nemenyi_rows = []
     try:
-        from src.analysis.statistics import nemenyi_posthoc
         import numpy as np
+
+        from src.analysis.statistics import nemenyi_posthoc
         perf_matrix = _build_performance_matrix(runner, solvers)
         if perf_matrix.shape[0] > 1 and perf_matrix.shape[1] > 1:
             f_results = None

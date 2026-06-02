@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-import tempfile
 import os
+import tempfile
 
-from src.report.styles import (
-    create_default_styles, get_style, merge_styles, load_styles_csv,
-)
-from src.report.core.types import StyleDefinition
 from src.report.core.exceptions import StyleNotFoundError
-
+from src.report.core.types import StyleDefinition
+from src.report.styles import (
+    create_default_styles,
+    get_style,
+    load_styles_csv,
+    merge_styles,
+)
 
 THEME_CSV = """\
 section,name,property,value

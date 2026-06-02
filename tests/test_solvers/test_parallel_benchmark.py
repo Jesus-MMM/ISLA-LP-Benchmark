@@ -2,11 +2,13 @@
 Tests para ParallelBenchmarkConfig y ParallelBenchmarkRunner.
 Usando el patrón existente del proyecto.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import matplotlib
+
 matplotlib.use('Agg')
 
 
@@ -15,7 +17,7 @@ class TestParallelBenchmarkConfig:
 
     def test_default_values(self):
         from src.solver.parallel_benchmark import ParallelBenchmarkConfig
-        
+
         config = ParallelBenchmarkConfig()
         assert config.warmup_runs == 1
         assert config.runs_per_problem == 1
@@ -24,7 +26,7 @@ class TestParallelBenchmarkConfig:
 
     def test_custom_values(self):
         from src.solver.parallel_benchmark import ParallelBenchmarkConfig
-        
+
         config = ParallelBenchmarkConfig(
             warmup_runs=3,
             runs_per_problem=5,
@@ -38,13 +40,13 @@ class TestParallelBenchmarkConfig:
 
     def test_time_limit_none_by_default(self):
         from src.solver.parallel_benchmark import ParallelBenchmarkConfig
-        
+
         config = ParallelBenchmarkConfig()
         assert config.time_limit is None
 
     def test_time_limit_custom(self):
         from src.solver.parallel_benchmark import ParallelBenchmarkConfig
-        
+
         config = ParallelBenchmarkConfig(time_limit=60.0)
         assert config.time_limit == 60.0
 
@@ -53,29 +55,29 @@ class TestParallelBenchmarkRunner:
     """Tests para ParallelBenchmarkRunner."""
 
     def test_init_default_config(self):
-        from src.solver.parallel_benchmark import ParallelBenchmarkRunner, ParallelBenchmarkConfig
-        
+        from src.solver.parallel_benchmark import ParallelBenchmarkConfig, ParallelBenchmarkRunner
+
         runner = ParallelBenchmarkRunner()
         assert isinstance(runner.config, ParallelBenchmarkConfig)
         assert len(runner.results) == 0
 
     def test_init_custom_config(self):
-        from src.solver.parallel_benchmark import ParallelBenchmarkRunner, ParallelBenchmarkConfig
-        
+        from src.solver.parallel_benchmark import ParallelBenchmarkConfig, ParallelBenchmarkRunner
+
         config = ParallelBenchmarkConfig(verbose=True)
         runner = ParallelBenchmarkRunner(config)
         assert runner.config.verbose is True
 
     def test_get_summary_empty(self):
         from src.solver.parallel_benchmark import ParallelBenchmarkRunner
-        
+
         runner = ParallelBenchmarkRunner()
         summary = runner.get_summary()
         assert summary == {}
 
     def test_print_summary_empty(self, capsys):
         from src.solver.parallel_benchmark import ParallelBenchmarkRunner
-        
+
         runner = ParallelBenchmarkRunner()
         runner.print_summary()
         captured = capsys.readouterr()
@@ -120,8 +122,8 @@ class TestParallelBenchmarkRunner:
         assert result.total_time == 0.11
 
     def test_get_summary_with_results(self):
-        from src.solver.parallel_benchmark import ParallelBenchmarkRunner
         from src.core import Solution
+        from src.solver.parallel_benchmark import ParallelBenchmarkRunner
 
         runner = ParallelBenchmarkRunner()
         runner.results = [
@@ -147,7 +149,7 @@ class TestParallelBenchmarkRunner:
                 "memory_used_mb": 1.5,
             })(),
         ]
-        
+
         summary = runner.get_summary()
         assert summary["total_benchmarks"] == 3
         assert summary["successful"] == 3
@@ -155,8 +157,8 @@ class TestParallelBenchmarkRunner:
         assert "highs" in summary["by_solver"]
 
     def test_get_summary_with_failures(self):
-        from src.solver.parallel_benchmark import ParallelBenchmarkRunner
         from src.core import Solution
+        from src.solver.parallel_benchmark import ParallelBenchmarkRunner
 
         runner = ParallelBenchmarkRunner()
         runner.results = [
@@ -175,14 +177,14 @@ class TestParallelBenchmarkRunner:
                 "memory_used_mb": 0.0,
             })(),
         ]
-        
+
         summary = runner.get_summary()
         assert summary["failed"] == 1
         assert len(summary["by_solver"]["highs"]["errors"]) == 1
 
     def test_print_summary_with_results(self, capsys):
-        from src.solver.parallel_benchmark import ParallelBenchmarkRunner
         from src.core import Solution
+        from src.solver.parallel_benchmark import ParallelBenchmarkRunner
 
         runner = ParallelBenchmarkRunner()
         runner.results = [
@@ -194,7 +196,7 @@ class TestParallelBenchmarkRunner:
                 "memory_used_mb": 1.0,
             })(),
         ]
-        
+
         runner.print_summary()
         captured = capsys.readouterr()
         assert "RESUMEN DE BENCHMARK PARALELO" in captured.out
@@ -212,7 +214,7 @@ class TestParallelBenchmarkRunner:
             "time_limit": None,
             "collect_solution_table": True,
         })
-        
+
         assert result["solver_name"] == "highs"
         assert result["problem_name"] == "test_prob"
         assert result["error"] is None or "no soporta" not in str(result.get("error", ""))
@@ -229,7 +231,7 @@ class TestParallelBenchmarkRunner:
             "time_limit": None,
             "collect_solution_table": False,
         })
-        
+
         assert result["error"] is not None
 
     def test_worker_execute_mip_unsupported(self):
@@ -244,7 +246,7 @@ class TestParallelBenchmarkRunner:
             "time_limit": None,
             "collect_solution_table": False,
         })
-        
+
         assert "status" in result["solution"]
 
     def test_run_with_solvers_list(self):
@@ -308,7 +310,7 @@ class TestParallelBenchmarkRunner:
             "time_limit": None,
             "collect_solution_table": True,
         })
-        
+
         assert result["solver_name"] == "highs"
         assert result["problem_name"] == "test_prob"
 
@@ -323,7 +325,7 @@ class TestParallelBenchmarkRunner:
             "time_limit": None,
             "collect_solution_table": False,
         })
-        
+
         assert result["error"] is not None
 
     def test_run_with_empty_solvers(self):

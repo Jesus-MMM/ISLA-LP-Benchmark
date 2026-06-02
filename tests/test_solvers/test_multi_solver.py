@@ -2,8 +2,9 @@
 Tests para MultiSolver y MultiSolverResult.
 Usando el patrón existente del proyecto.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import pytest
@@ -13,8 +14,8 @@ class TestProblemResult:
     """Tests para ProblemResult."""
 
     def test_init_default_values(self):
-        from src.solver.multi_solver import ProblemResult
         from src.core import LinearProblem, Solution
+        from src.solver.multi_solver import ProblemResult
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -24,15 +25,15 @@ class TestProblemResult:
             bounds={},
         )
         result = ProblemResult(problem=problem, solution=Solution(status="OK", objective_value=None, variables={}))
-        
+
         assert result.parse_time == 0.0
         assert result.build_time == 0.0
         assert result.total_time == 0.0
         assert result.error is None
 
     def test_init_custom_values(self):
-        from src.solver.multi_solver import ProblemResult
         from src.core import LinearProblem, Solution
+        from src.solver.multi_solver import ProblemResult
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -49,7 +50,7 @@ class TestProblemResult:
             solve_time=0.2,
             error="some error",
         )
-        
+
         assert result.parse_time == 0.1
         assert result.solve_time == 0.2
         assert result.error == "some error"
@@ -66,8 +67,8 @@ class TestMultiSolverResult:
         assert result.total_time == 0.0
 
     def test_get_successful_results(self):
-        from src.solver.multi_solver import MultiSolverResult, ProblemResult
         from src.core import LinearProblem, Solution
+        from src.solver.multi_solver import MultiSolverResult, ProblemResult
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -76,19 +77,19 @@ class TestMultiSolverResult:
             variables=["x"],
             bounds={},
         )
-        
+
         result = MultiSolverResult()
         result.results = [
             ProblemResult(problem=problem, solution=Solution(status="OPTIMAL", objective_value=42.0, variables={}), error=None),
             ProblemResult(problem=problem, solution=Solution(status="ERROR", objective_value=None, variables={}), error="failed"),
         ]
-        
+
         successful = result.get_successful_results()
         assert len(successful) == 1
 
     def test_get_failed_results(self):
-        from src.solver.multi_solver import MultiSolverResult, ProblemResult
         from src.core import LinearProblem, Solution
+        from src.solver.multi_solver import MultiSolverResult, ProblemResult
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -97,13 +98,13 @@ class TestMultiSolverResult:
             variables=["x"],
             bounds={},
         )
-        
+
         result = MultiSolverResult()
         result.results = [
             ProblemResult(problem=problem, solution=Solution(status="OPTIMAL", objective_value=42.0, variables={}), error=None),
             ProblemResult(problem=problem, solution=Solution(status="ERROR", objective_value=None, variables={}), error="failed"),
         ]
-        
+
         failed = result.get_failed_results()
         assert len(failed) == 1
 

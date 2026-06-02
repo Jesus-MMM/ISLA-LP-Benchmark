@@ -3,7 +3,6 @@ Validador de problemas de programación lineal.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ..core import LinearProblem
 
@@ -14,10 +13,10 @@ class ValidationIssue:
     severity: str  # ERROR, WARNING
     code: str
     message: str
-    location: Optional[str] = None  # "objective", "constraint", "bound", etc.
-    line: Optional[int] = None
-    column: Optional[int] = None
-    context: Optional[str] = None
+    location: str | None = None  # "objective", "constraint", "bound", etc.
+    line: int | None = None
+    column: int | None = None
+    context: str | None = None
 
 
 @dataclass
@@ -46,18 +45,18 @@ class ValidationResult:
         """Genera un resumen de la validación."""
         if self.is_valid and not self.issues:
             return "El problema es válido."
-        
+
         lines = []
         if self.has_errors():
             lines.append(f"ERRORES ({len(self.get_errors())}):")
             for issue in self.get_errors():
                 lines.append(f"  - [{issue.code}] {issue.message}")
-        
+
         if self.has_warnings():
             lines.append(f"ADVERTENCIAS ({len(self.get_warnings())}):")
             for issue in self.get_warnings():
                 lines.append(f"  - [{issue.code}] {issue.message}")
-        
+
         return "\n".join(lines)
 
 
@@ -242,7 +241,7 @@ def _validate_bounds(problem: LinearProblem) -> list[ValidationIssue]:
     unbound_vars = [
         v for v in problem.variables
         if v not in problem.bounds or (
-            problem.bounds[v].lower is None and 
+            problem.bounds[v].lower is None and
             problem.bounds[v].upper is None
         )
     ]

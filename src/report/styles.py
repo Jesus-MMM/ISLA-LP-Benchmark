@@ -3,11 +3,10 @@ from __future__ import annotations
 import csv
 import os
 import typing
-from typing import Any, Optional
+from typing import Any
 
-from .core.types import StyleDefinition, PageConfig
 from .core.exceptions import StyleNotFoundError
-
+from .core.types import PageConfig, StyleDefinition
 
 _STYLE_CACHE: dict[str, dict[str, StyleDefinition]] = {}
 
@@ -148,7 +147,7 @@ def load_theme_dir(directory: str) -> dict[str, StyleDefinition]:
     return merged
 
 
-def load_page_config_csv(file_path: str) -> Optional[PageConfig]:
+def load_page_config_csv(file_path: str) -> PageConfig | None:
     """Load page configuration from a theme CSV file.
 
     Extracts rows with ``section == page`` and maps them to a PageConfig.

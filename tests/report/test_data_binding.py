@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from src.report.core.types import ContentType, DataContext, DocumentModel, ReportElement
 from src.report.data_binding import (
-    resolve_variables, resolve_condition, DataBinder,
-    bind_data_to_element, bind_data_to_model,
+    DataBinder,
+    bind_data_to_element,
+    bind_data_to_model,
+    resolve_condition,
+    resolve_variables,
 )
-from src.report.core.types import DataContext, ReportElement, ContentType, DocumentModel
 
 
 def test_resolve_variables_simple():

@@ -9,17 +9,16 @@ try:
 except ImportError:
     _is_solver_available = False
 
-from typing import Optional
 
 from ..core import LinearProblem, Solution
-from .base import BaseSolver, SolverStats, SolverCapabilities
+from .base import BaseSolver, SolverCapabilities, SolverStats
 
 
 class ECOSSolver(BaseSolver):
     """Solver ECOS para problemas de programacion lineal.
     """
 
-    def __init__(self, problem: LinearProblem, config: Optional[BaseSolver.Config] = None):
+    def __init__(self, problem: LinearProblem, config: BaseSolver.Config | None = None):
         super().__init__(problem, config)
         self.capabilities = SolverCapabilities(
             lp=True,
@@ -63,8 +62,8 @@ class ECOSSolver(BaseSolver):
             )
 
         try:
-            import numpy as np
             import ecos
+            import numpy as np
             from scipy import sparse
         except ImportError as e:
             return Solution(

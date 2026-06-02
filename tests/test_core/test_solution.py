@@ -1,11 +1,12 @@
 """
 Tests for Solution and SolutionTable.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.core.solution import Solution, NumericalQuality, ProgressPoint
+from src.core.solution import NumericalQuality, ProgressPoint, Solution
 
 
 class TestSolution:
@@ -154,9 +155,9 @@ class TestSolutionTable:
 
     def test_to_solution_table(self):
         """Test to_solution_table function."""
-        from src.core.solution import to_solution_table
-        from src.core.problem import LinearProblem
         from src.core.constraint import LinearConstraint
+        from src.core.problem import LinearProblem
+        from src.core.solution import to_solution_table
 
         problem = LinearProblem(
             objective={"x": 3, "y": 4},
@@ -179,8 +180,8 @@ class TestSolutionTable:
 
     def test_to_solution_table_iis(self):
         """Test to_solution_table with IIS."""
-        from src.core.solution import to_solution_table
         from src.core.problem import LinearProblem
+        from src.core.solution import to_solution_table
 
         problem = LinearProblem(
             objective={"x": 1},
@@ -200,7 +201,7 @@ class TestSolutionTable:
 
     def test_to_solution_table_non_lp_problem(self):
         """Test to_solution_table with non-LinearProblem returns empty."""
-        from src.core.solution import to_solution_table, SolutionTable
+        from src.core.solution import SolutionTable, to_solution_table
 
         solution = Solution(status="OPTIMAL", objective_value=10.0, variables={"x": 1.0})
         table = to_solution_table(solution, problem=None)

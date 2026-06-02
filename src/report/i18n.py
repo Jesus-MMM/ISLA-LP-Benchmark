@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import csv
 import os
-from typing import Optional
 
 from .core.exceptions import LocalizationError
 from .core.types import LocaleDict
-
 
 _LOCALE_CACHE: dict[str, LocaleDict] = {}
 _FALLBACK_CHAIN: list[str] = []
@@ -159,7 +157,7 @@ class Localizer:
         locale_dict: LocaleDict,
         language: str = "en",
         fallback_language: str = "en",
-        locale_dir: Optional[str] = None,
+        locale_dir: str | None = None,
     ) -> None:
         """Inicializa el localizador con un diccionario de traducciones y configuración de idioma."""
         self.locale_dict = locale_dict
@@ -191,7 +189,7 @@ class Localizer:
         """Switch the current language."""
         self.language = language
 
-    def reload(self, locale_dir: Optional[str] = None) -> None:
+    def reload(self, locale_dir: str | None = None) -> None:
         """Reload locale data."""
         global _LOCALE_CACHE
         _LOCALE_CACHE = {}

@@ -2,14 +2,15 @@
 Tests para multi_analysis.py - MultiLPAnalysis.
 Usando el patrón existente del proyecto.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import tempfile
+
+from src.core import LinearConstraint, LinearProblem, Solution, VariableBound
 from src.solver.multi_solver import MultiSolverResult, ProblemResult
-from src.core import (LinearProblem, Solution, LinearConstraint, VariableBound
-)
 
 
 class TestMultiLPAnalysis:
@@ -148,7 +149,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_portada(pdf)
 
     def test_build_resumen(self):
@@ -161,7 +162,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_resumen(pdf)
 
     def test_build_tabla_resultados(self):
@@ -174,7 +175,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_tabla_resultados(pdf)
 
     def test_build_interpretacion(self):
@@ -187,7 +188,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_interpretacion(pdf)
 
     def test_build_estadisticas(self):
@@ -200,7 +201,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_estadisticas_resumen(pdf)
 
     def test_build_solucion(self):
@@ -224,7 +225,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_solucion(pdf, result)
 
     def test_build_sensibilidad(self):
@@ -254,7 +255,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_sensibilidad(pdf, result)
 
     def test_build_holguras(self):
@@ -278,7 +279,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_holguras(pdf, result)
 
     def test_build_tiempos_problema(self):
@@ -302,7 +303,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_tiempos_problema(pdf, result)
 
     def test_build_tiempos_resumen(self):
@@ -319,7 +320,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_tiempos_resumen(pdf)
 
     def test_calcular_holguras(self):
@@ -337,7 +338,7 @@ class TestMultiLPAnalysis:
 
         analysis = MultiLPAnalysis(MultiSolverResult())
         holguras = analysis._calcular_holguras(result)
-        
+
         # Slack = rhs - sum(coeff * var_value) = 10 - (1*5 + 1*5) = 0
         assert 0 in holguras
 
@@ -345,13 +346,13 @@ class TestMultiLPAnalysis:
         from src.analysis.multi_analysis import MultiLPAnalysis
 
         analysis = MultiLPAnalysis(MultiSolverResult())
-        
+
         # Less than 1 second
         assert analysis._format_tiempo(0.5) == "500.00 ms"
         # Very small time still formats
         result = analysis._format_tiempo(0.001)
         assert "ms" in result
-        
+
         # Greater or equal to 1 second
         assert analysis._format_tiempo(1.5) == "1.500 s"
         assert analysis._format_tiempo(2.0) == "2.000 s"
@@ -360,7 +361,7 @@ class TestMultiLPAnalysis:
         from src.analysis.multi_analysis import MultiLPAnalysis
 
         analysis = MultiLPAnalysis(MultiSolverResult())
-        
+
         # Positive coefficients
         obj1 = {"x": 1, "y": 2}
         result = analysis._format_objective(obj1)
@@ -370,7 +371,7 @@ class TestMultiLPAnalysis:
         from src.analysis.multi_analysis import MultiLPAnalysis
 
         analysis = MultiLPAnalysis(MultiSolverResult())
-        
+
         c = LinearConstraint(coefficients={"x": 1, "y": 2}, rhs=10, sense="<=")
         result = analysis._format_constraint(c)
         assert "x" in result and "y" in result
@@ -396,7 +397,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_error_problema(pdf, result)
 
     def test_build_funcion_objetivo_minimization(self):
@@ -420,7 +421,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_funcion_objetivo(pdf, result)
 
     def test_build_restricciones(self):
@@ -444,7 +445,7 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         analysis._build_restricciones(pdf, result)
 
     def test_build_grafico_no_matplotlib(self):
@@ -471,6 +472,6 @@ class TestMultiLPAnalysis:
         pdf.set_margins(20, 20, 20)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         # This will handle ImportError gracefully
         analysis._build_grafico(pdf, result)

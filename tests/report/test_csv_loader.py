@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-import tempfile
 import os
+import tempfile
 
 import pytest
 
-from src.report.csv_loader import (
-    load_csv, rows_to_elements, load_report_definition,
-    validate_csv_schema, parse_metadata,
-)
-from src.report.core.types import ContentType
 from src.report.core.exceptions import CSVParseError
-
+from src.report.core.types import ContentType
+from src.report.csv_loader import (
+    load_csv,
+    load_report_definition,
+    parse_metadata,
+    rows_to_elements,
+    validate_csv_schema,
+)
 
 SAMPLE_CSV = """type,id,content,style,language,visible,order,metadata
 title,main_title,report.title,apa_title,en,true,1,

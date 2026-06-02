@@ -3,7 +3,8 @@ from __future__ import annotations
 import os
 
 from src.utils.logging import get_logger
-from ..core.types import DocumentModel, ContentType
+
+from ..core.types import ContentType, DocumentModel
 from ..rich_text import strip_tags
 from .base import BaseRenderer, RenderResult
 

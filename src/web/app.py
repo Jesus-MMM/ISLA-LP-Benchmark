@@ -4,15 +4,13 @@ Aplicacion web FastAPI + HTMX para resolver problemas de PL.
 
 import time
 import uuid
-from typing import Optional
 
-from fastapi import FastAPI, UploadFile, Form
+from fastapi import FastAPI, Form, UploadFile
 from fastapi.responses import HTMLResponse
 
+from ..core import LinearProblem
 from ..parser import LPParser, MPSParser
 from ..solver import SolverConfig, SolverRegistry
-from ..core import LinearProblem
-
 
 _problems: dict[str, LinearProblem] = {}
 _solutions: dict[str, dict] = {}
@@ -143,7 +141,7 @@ def create_app() -> FastAPI:
         return HTML_TEMPLATE.format(content=content)
 
     @app.post("/upload")
-    async def upload(file: Optional[UploadFile] = None, text: str = Form("")):
+    async def upload(file: UploadFile | None = None, text: str = Form("")):
         if file and file.filename:
             content = (await file.read()).decode("utf-8")
         elif text.strip():

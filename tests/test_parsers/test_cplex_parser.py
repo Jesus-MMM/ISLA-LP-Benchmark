@@ -1,8 +1,9 @@
 """
 Tests para CPLEXParser.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.parser.cplex_parser import CPLEXParser
@@ -172,6 +173,7 @@ End
     def test_parse_lp_file(self):
         """Test funcion parse_lp_file."""
         import tempfile
+
         from src.parser.cplex_parser import parse_lp_file
 
         content = """

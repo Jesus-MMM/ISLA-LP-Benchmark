@@ -1,15 +1,17 @@
 """
 Tests para exportacion a formato MPS.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import tempfile
-from src.core.problem import LinearProblem
-from src.core.constraint import LinearConstraint
+
 from src.core.bound import VariableBound
-from src.utils.exporter import export_to_mps_format, export_to_mps_file
+from src.core.constraint import LinearConstraint
+from src.core.problem import LinearProblem
+from src.utils.exporter import export_to_mps_file, export_to_mps_format
 
 
 class TestExportToMPSFormat:
@@ -193,7 +195,7 @@ class TestExportToMPSFile:
             tmp_path = f.name
         try:
             export_to_mps_file(problem, tmp_path, "TEST")
-            with open(tmp_path, "r", encoding="utf-8") as f:
+            with open(tmp_path, encoding="utf-8") as f:
                 content = f.read()
             assert "NAME          TEST" in content
             assert "ENDATA" in content
@@ -215,7 +217,7 @@ class TestExportToMPSFile:
             tmp_path = f.name
         try:
             export_to_mps_file(problem, tmp_path)
-            with open(tmp_path, "r", encoding="utf-8") as f:
+            with open(tmp_path, encoding="utf-8") as f:
                 content = f.read()
             assert "ROWS" in content
             assert "COLUMNS" in content

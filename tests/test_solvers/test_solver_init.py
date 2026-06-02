@@ -2,8 +2,9 @@
 Tests para src.solver.__init__ - import fallback paths and SolverLP selection.
 Usando el patrón existente del proyecto.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 
@@ -21,7 +22,10 @@ class TestSolverImports:
 
     def test_all_exported_solvers_exist(self):
         from src.solver import (
-            BaseSolver, SolverStats, SolverRegistry, GurobiSolver,
+            BaseSolver,
+            GurobiSolver,
+            SolverRegistry,
+            SolverStats,
         )
         assert BaseSolver is not None
         assert SolverStats is not None
@@ -34,13 +38,13 @@ class TestSolverRegistryUnavailable:
 
     def test_get_unavailable_solver(self):
         from src.solver.base import SolverRegistry
-        
+
         solvers = SolverRegistry.list_solvers(available_only=False)
         assert isinstance(solvers, list)
 
     def test_get_unavailable_solver_returns_none_or_raises(self):
         from src.solver.base import SolverRegistry
-        
+
         result = SolverRegistry.get("nonexistent_solver_xyz")
         assert result is None
 

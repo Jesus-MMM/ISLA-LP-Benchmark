@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
 
-from .core.types import DocumentModel, ReportElement, ContentType, StyleDefinition
-from .core.exceptions import ValidationError, ReportError
-from .csv_loader import validate_csv_schema, load_csv
+from .core.exceptions import ReportError, ValidationError
+from .core.types import ContentType, DocumentModel, ReportElement, StyleDefinition
+from .csv_loader import load_csv, validate_csv_schema
 from .styles import get_style
 
 
@@ -164,9 +163,9 @@ class ReportValidator:
 
 def validate_report(
     csv_path: str,
-    styles: Optional[dict[str, StyleDefinition]] = None,
-    locale_dict: Optional[dict[str, dict[str, str]]] = None,
-    languages: Optional[list[str]] = None,
+    styles: dict[str, StyleDefinition] | None = None,
+    locale_dict: dict[str, dict[str, str]] | None = None,
+    languages: list[str] | None = None,
     strict: bool = False,
 ) -> ReportValidator:
     """Convenience function to run full validation on a report.

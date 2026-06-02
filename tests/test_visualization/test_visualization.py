@@ -2,11 +2,13 @@
 Tests para LinearVisualization - more comprehensive coverage.
 Usando el patrón existente del proyecto.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import matplotlib
+
 matplotlib.use('Agg')
 
 import pytest
@@ -16,16 +18,16 @@ class TestLinearVisualization:
     """Tests para LinearVisualization."""
 
     def test_init_with_two_variables(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=None), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=None),
                    "y": VariableBound(variable="y", lower=0, upper=None)},
         )
         viz = LinearVisualization(problem)
@@ -33,8 +35,8 @@ class TestLinearVisualization:
         assert viz.var_y == "y"
 
     def test_init_with_more_than_two_variables_raises(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 2, "z": 3},
@@ -47,8 +49,8 @@ class TestLinearVisualization:
             LinearVisualization(problem)
 
     def test_is_point_feasible_le_satisfied(self):
+        from src.core import LinearConstraint, LinearProblem
         from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -62,8 +64,8 @@ class TestLinearVisualization:
         assert is_feasible is True
 
     def test_is_point_feasible_le_violated(self):
+        from src.core import LinearConstraint, LinearProblem
         from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -77,8 +79,8 @@ class TestLinearVisualization:
         assert is_feasible is False
 
     def test_is_point_feasible_ge_satisfied(self):
+        from src.core import LinearConstraint, LinearProblem
         from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -92,8 +94,8 @@ class TestLinearVisualization:
         assert is_feasible is True
 
     def test_is_point_feasible_eq_satisfied(self):
+        from src.core import LinearConstraint, LinearProblem
         from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -107,32 +109,32 @@ class TestLinearVisualization:
         assert is_feasible is True
 
     def test_get_all_constraints(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=None), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=None),
                    "y": VariableBound(variable="y", lower=0, upper=None)},
         )
         constraints = LinearVisualization(problem)._get_all_constraints()
         assert len(constraints) >= 2
 
     def test_calculate_plot_range(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=None), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=None),
                    "y": VariableBound(variable="y", lower=0, upper=None)},
         )
         x_min, x_max, y_min, y_max = LinearVisualization(problem)._calculate_plot_range()
@@ -140,16 +142,16 @@ class TestLinearVisualization:
         assert y_min < y_max
 
     def test_find_feasible_vertices(self):
-        from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint
+        from src.core import LinearConstraint, LinearProblem
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1},
             sense="max",
             constraints=[LinearConstraint(coefficients={"x": 1, "y": 1}, rhs=10, sense="<=")],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=None), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=None),
                    "y": VariableBound(variable="y", lower=0, upper=None)},
         )
         all_constraints = LinearVisualization(problem)._get_all_constraints()
@@ -157,24 +159,24 @@ class TestLinearVisualization:
         assert len(vertices) >= 0
 
     def test_format_objective(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 2},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=None), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=None),
                    "y": VariableBound(variable="y", lower=0, upper=None)},
         )
         obj_str = LinearVisualization(problem)._format_objective()
         assert "x" in obj_str
 
     def test_find_intersection(self):
+        from src.core import LinearConstraint, LinearProblem
         from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -194,8 +196,8 @@ class TestLinearVisualization:
         assert result == (5.0, 3.0)
 
     def test_find_intersection_parallel_lines_returns_none(self):
+        from src.core import LinearConstraint, LinearProblem
         from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -212,16 +214,16 @@ class TestLinearVisualization:
         assert result is None
 
     def test_order_vertices_ccw(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=None), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=None),
                    "y": VariableBound(variable="y", lower=0, upper=None)},
         )
         viz = LinearVisualization(problem)
@@ -230,16 +232,16 @@ class TestLinearVisualization:
         assert len(ordered) == 4
 
     def test_plot_to_tempfile(self):
-        from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint, Solution
+        from src.core import LinearConstraint, LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
             sense="max",
             constraints=[LinearConstraint(coefficients={"x": 1, "y": 0}, rhs=10, sense="<=")],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=10), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=10),
                    "y": VariableBound(variable="y", lower=0, upper=10)},
         )
         solution = Solution(status="OPTIMAL", objective_value=10, variables={"x": 10, "y": 0})
@@ -249,8 +251,8 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_get_line_points_vertical_line(self):
+        from src.core import LinearConstraint, LinearProblem
         from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -267,8 +269,8 @@ class TestLinearVisualization:
         assert len(x_vals) == 100
 
     def test_get_line_points_horizontal_line(self):
+        from src.core import LinearConstraint, LinearProblem
         from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, LinearConstraint
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -285,16 +287,16 @@ class TestLinearVisualization:
         assert len(y_vals) == 100
 
     def test_plot_with_solution_y_only_objective(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 0, "y": 1},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=10), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=10),
                    "y": VariableBound(variable="y", lower=0, upper=10)},
         )
         solution = Solution(status="OPTIMAL", objective_value=10, variables={"x": 10, "y": 0})
@@ -304,16 +306,16 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_solution_x_only_objective(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=10), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=10),
                    "y": VariableBound(variable="y", lower=0, upper=10)},
         )
         solution = Solution(status="OPTIMAL", objective_value=10, variables={"x": 10, "y": 0})
@@ -323,9 +325,9 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_single_vertex(self):
-        from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, Solution, LinearConstraint
+        from src.core import LinearConstraint, LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 1},
@@ -334,7 +336,7 @@ class TestLinearVisualization:
                 LinearConstraint(coefficients={"x": 1, "y": 1}, rhs=0, sense=">="),
             ],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=10), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=10),
                    "y": VariableBound(variable="y", lower=0, upper=10)},
         )
         solution = Solution(status="OPTIMAL", objective_value=0, variables={"x": 0, "y": 0})
@@ -344,9 +346,9 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_two_vertices(self):
-        from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, Solution, LinearConstraint
+        from src.core import LinearConstraint, LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -355,7 +357,7 @@ class TestLinearVisualization:
                 LinearConstraint(coefficients={"x": 1, "y": 0}, rhs=10, sense="<="),
             ],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=10), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=10),
                    "y": VariableBound(variable="y", lower=0, upper=10)},
         )
         solution = Solution(status="OPTIMAL", objective_value=10, variables={"x": 10, "y": 5})
@@ -365,16 +367,16 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_negative_solution(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=None, upper=None), 
+            bounds={"x": VariableBound(variable="x", lower=None, upper=None),
                    "y": VariableBound(variable="y", lower=0, upper=10)},
         )
         solution = Solution(status="OPTIMAL", objective_value=10, variables={"x": -5, "y": 0})
@@ -384,16 +386,16 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_without_solution(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=10), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=10),
                    "y": VariableBound(variable="y", lower=0, upper=10)},
         )
         viz = LinearVisualization(problem, solution=None)
@@ -402,16 +404,16 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_show_true(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
             sense="max",
             constraints=[],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=10), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=10),
                    "y": VariableBound(variable="y", lower=0, upper=10)},
         )
         solution = Solution(status="OPTIMAL", objective_value=10, variables={"x": 10, "y": 0})
@@ -420,9 +422,9 @@ class TestLinearVisualization:
         assert tmp_path is None or os.path.exists(tmp_path)
 
     def test_plot_with_two_vertices_on_edge(self):
-        from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, Solution, LinearConstraint
+        from src.core import LinearConstraint, LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -432,7 +434,7 @@ class TestLinearVisualization:
                 LinearConstraint(coefficients={"x": 1, "y": 0}, rhs=0, sense=">="),
             ],
             variables=["x", "y"],
-            bounds={"x": VariableBound(variable="x", lower=0, upper=5), 
+            bounds={"x": VariableBound(variable="x", lower=0, upper=5),
                    "y": VariableBound(variable="y", lower=0, upper=5)},
         )
         solution = Solution(status="OPTIMAL", objective_value=10, variables={"x": 5, "y": 3})
@@ -442,9 +444,9 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_x_boundary_only(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -460,9 +462,9 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_y_boundary_only(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -478,9 +480,9 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_y_lower_only(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -497,9 +499,9 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_x_upper_only(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -516,9 +518,9 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_equality_constraint(self):
-        from src.visualization.visualization import LinearVisualization
-        from src.core import LinearProblem, Solution, LinearConstraint
+        from src.core import LinearConstraint, LinearProblem, Solution
         from src.core.bound import VariableBound
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},
@@ -537,8 +539,8 @@ class TestLinearVisualization:
         os.unlink(tmp_path)
 
     def test_plot_with_no_bounds(self):
-        from src.visualization.visualization import LinearVisualization
         from src.core import LinearProblem, Solution
+        from src.visualization.visualization import LinearVisualization
 
         problem = LinearProblem(
             objective={"x": 1, "y": 0},

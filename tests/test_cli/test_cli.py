@@ -1,11 +1,12 @@
 """
 Tests para el CLI argument parser y funciones auxiliares.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.cli.__main__ import create_parser, _version
+from src.cli.__main__ import _version, create_parser
 
 
 class TestCreateParser:

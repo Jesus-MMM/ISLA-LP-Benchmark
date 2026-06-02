@@ -2,8 +2,9 @@
 Tests para benchmark_report.py - BenchmarkReport y BenchmarkPDF.
 Usando el patrón existente del proyecto.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import tempfile
@@ -14,17 +15,17 @@ class TestBenchmarkPDF:
 
     def test_header_and_footer(self):
         from src.analysis.benchmark_report import BenchmarkPDF
-        
+
         pdf = BenchmarkPDF()
         pdf.set_margins(15, 15, 15)
         pdf.add_page()
-        
+
         # Test header does nothing (no exception)
         pdf.header()
-        
+
         # Test footer - set text and verify no exception
         pdf.footer()
-        
+
         # Page count may have increased due to auto footer behavior
         assert pdf.page_no() >= 1
 
@@ -33,8 +34,8 @@ class TestBenchmarkReport:
     """Tests para BenchmarkReport."""
 
     def _create_mock_runner(self, results=None):
-        from src.solver.benchmark import BenchmarkRunner
         from src.core import Solution
+        from src.solver.benchmark import BenchmarkRunner
 
         class MockStats:
             def __init__(self):
@@ -114,7 +115,7 @@ class TestBenchmarkReport:
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
-        
+
         assert report._has_charts() is True
 
     def test_has_charts_false(self):
@@ -122,11 +123,11 @@ class TestBenchmarkReport:
 
         runner = self._create_mock_runner(results=[])
         report = BenchmarkReport(runner)
-        
+
         assert report._has_charts() is False
 
     def test_cover_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -135,12 +136,12 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._cover(pdf)
         # Verify no exception raised
 
     def test_summary_stats_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -149,11 +150,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._summary_stats(pdf)
 
     def test_solver_comparison_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -162,11 +163,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._solver_comparison(pdf)
 
     def test_detailed_results_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -175,11 +176,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._detailed_results(pdf)
 
     def test_problem_definitions_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -188,11 +189,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._problem_definitions(pdf)
 
     def test_scalability_analysis_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -201,11 +202,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._scalability_analysis(pdf)
 
     def test_correlation_matrix_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -214,11 +215,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._correlation_matrix(pdf)
 
     def test_outliers_detection_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -227,11 +228,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._outliers_detection(pdf)
 
     def test_statistical_analysis_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         # Need at least 2 solvers and 2 problems for statistical analysis
         class MockStats:
@@ -248,8 +249,8 @@ class TestBenchmarkReport:
                 self.stats = MockStats()
                 self.total_time = time_val
 
-        from src.solver.benchmark import BenchmarkRunner
         from src.core import Solution
+        from src.solver.benchmark import BenchmarkRunner
 
         runner = BenchmarkRunner()
         runner.results = [
@@ -264,11 +265,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._statistical_analysis(pdf)
 
     def test_recommendations_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -277,11 +278,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._recommendations(pdf)
 
     def test_memory_analysis_page(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -290,11 +291,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._memory_analysis(pdf)
 
     def test_header_method(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -302,11 +303,11 @@ class TestBenchmarkReport:
         pdf = BenchmarkPDF()
         pdf.set_margins(15, 15, 15)
         pdf.add_page()
-        
+
         report._header(pdf, "TEST TITLE")
 
     def test_system_page_without_system_info(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner, system_info={})
@@ -315,7 +316,7 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._system(pdf)
 
     def test_generate_with_multiple_solvers_and_problems(self):
@@ -338,8 +339,8 @@ class TestBenchmarkReport:
                 self.peak_memory_mb = 2.0
                 self.error = None
 
-        from src.solver.benchmark import BenchmarkRunner
         from src.core import Solution
+        from src.solver.benchmark import BenchmarkRunner
 
         runner = BenchmarkRunner()
         runner.results = [
@@ -376,7 +377,7 @@ class TestBenchmarkReport:
             os.unlink(tmp_path)
 
     def test_generate_time_chart(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -385,11 +386,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._generate_time_chart(pdf)
 
     def test_generate_success_chart(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -398,11 +399,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._generate_success_chart(pdf)
 
     def test_generate_memory_chart(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -411,11 +412,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._generate_memory_chart(pdf)
 
     def test_performance_profiles_chart(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner()
         report = BenchmarkReport(runner)
@@ -424,11 +425,11 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._performance_profiles(pdf)
 
     def test_performance_profiles_no_data(self):
-        from src.analysis.benchmark_report import BenchmarkReport, BenchmarkPDF
+        from src.analysis.benchmark_report import BenchmarkPDF, BenchmarkReport
 
         runner = self._create_mock_runner(results=[])
         report = BenchmarkReport(runner)
@@ -437,5 +438,5 @@ class TestBenchmarkReport:
         pdf.set_margins(15, 15, 15)
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        
+
         report._performance_profiles(pdf)

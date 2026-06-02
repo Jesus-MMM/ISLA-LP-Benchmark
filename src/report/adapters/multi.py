@@ -2,22 +2,22 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from src.solver.multi_solver import ProblemResult
-from src.report.adapters.types import ReportData
 from src.report.adapters.formatters import _get_solver_version
+from src.report.adapters.types import ReportData
+from src.solver.multi_solver import ProblemResult
 
 
 def adapt_multi_problem(
     results: list[ProblemResult],
     solver_name: str,
-    system_info: Optional[dict[str, Any]] = None,
+    system_info: dict[str, Any] | None = None,
     author: str = "",
     institution_name: str = "",
     abstract_text: str = "",
     keywords_text: str = "",
-    chart_path: Optional[str] = None,
+    chart_path: str | None = None,
 ) -> ReportData:
     """Convertir resultados multi-problema en datos para el reporte.
 

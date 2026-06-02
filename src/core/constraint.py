@@ -14,7 +14,7 @@ class LinearConstraint:
     - sense: str - Tipo de restricción ("<=", ">=", "=").
     - name: str - Nombre de la restricción (autogenerado si no se da).
     """
-    
+
     coefficients: dict[str, float]
     rhs: float
     sense: str  # "<=", ">=", "="

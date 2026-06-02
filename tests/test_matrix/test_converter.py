@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from src.core import LinearProblem, LinearConstraint, VariableBound
+from src.core import LinearConstraint, LinearProblem, VariableBound
 from src.matrix.converter import MatrixConverter
 
 

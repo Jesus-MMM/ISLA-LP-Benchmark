@@ -2,16 +2,18 @@
 Tests para BenchmarkPlotter y PlotStyle.
 Usando el patrón existente del proyecto.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 # Use non-interactive backend for matplotlib
 import matplotlib
+
 matplotlib.use('Agg')
 
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
 
 class TestPlotStyle:
@@ -99,8 +101,8 @@ class TestBenchmarkPlotter:
         assert plotter.style.font_size == 14
 
     def test_plot_times_comparison_empty(self):
-        from src.visualization.benchmark_plots import BenchmarkPlotter
         from src.solver.benchmark import BenchmarkRunner
+        from src.visualization.benchmark_plots import BenchmarkPlotter
 
         runner = BenchmarkRunner()
         runner.results = []
@@ -108,8 +110,8 @@ class TestBenchmarkPlotter:
         plotter.plot_times_comparison()
 
     def test_plot_success_rate_empty(self):
-        from src.visualization.benchmark_plots import BenchmarkPlotter
         from src.solver.benchmark import BenchmarkRunner
+        from src.visualization.benchmark_plots import BenchmarkPlotter
 
         runner = BenchmarkRunner()
         runner.results = []
@@ -117,8 +119,8 @@ class TestBenchmarkPlotter:
         plotter.plot_success_rate()
 
     def test_plot_performance_profile_empty(self):
-        from src.visualization.benchmark_plots import BenchmarkPlotter
         from src.solver.benchmark import BenchmarkRunner
+        from src.visualization.benchmark_plots import BenchmarkPlotter
 
         runner = BenchmarkRunner()
         runner.results = []
@@ -126,8 +128,8 @@ class TestBenchmarkPlotter:
         plotter.plot_performance_profile()
 
     def test_plot_summary_dashboard_empty(self):
-        from src.visualization.benchmark_plots import BenchmarkPlotter
         from src.solver.benchmark import BenchmarkRunner
+        from src.visualization.benchmark_plots import BenchmarkPlotter
 
         runner = BenchmarkRunner()
         runner.results = []
@@ -139,7 +141,7 @@ class TestBenchmarkPlotter:
 
         runner = self._create_mock_runner()
         plotter = BenchmarkPlotter(runner)
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir)
             plotter.generate_all_plots(output_dir)

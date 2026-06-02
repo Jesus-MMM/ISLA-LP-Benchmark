@@ -1,14 +1,16 @@
 """
 Tests para LPBuilder.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import polars as pl
-from src.core.problem import LinearProblem
-from src.core.constraint import LinearConstraint
+
 from src.core.bound import VariableBound
+from src.core.constraint import LinearConstraint
+from src.core.problem import LinearProblem
 from src.matrix.builder import LPBuilder
 from src.matrix.matrix import PolarsLP
 

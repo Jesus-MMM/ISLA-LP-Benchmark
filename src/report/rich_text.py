@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 from src.utils.logging import get_logger
-from .core.exceptions import TagParseError
 
+from .core.exceptions import TagParseError
 
 logger = get_logger(__name__)
 
@@ -18,10 +17,10 @@ class TextSpan:
     bold: bool = False
     italic: bool = False
     underline: bool = False
-    color: Optional[str] = None
-    size: Optional[int] = None
-    alignment: Optional[str] = None
-    font: Optional[str] = None
+    color: str | None = None
+    size: int | None = None
+    alignment: str | None = None
+    font: str | None = None
     strikethrough: bool = False
     superscript: bool = False
     subscript: bool = False
@@ -31,7 +30,7 @@ class TextSpan:
 class StyledText:
     """Result of parsing rich text tags."""
     spans: list[TextSpan] = field(default_factory=list)
-    alignment: Optional[str] = None
+    alignment: str | None = None
     is_list: bool = False
     list_items: list[str] = field(default_factory=list)
     raw_text: str = ""
@@ -88,7 +87,7 @@ def parse_rich_text(text: str, strict: bool = False) -> StyledText:
     stack: list[dict] = []
     pos = 0
     current_span = TextSpan(text="")
-    alignment: Optional[str] = None
+    alignment: str | None = None
 
     def _push_span():
         nonlocal current_span

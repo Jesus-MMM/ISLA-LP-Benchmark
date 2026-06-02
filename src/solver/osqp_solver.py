@@ -9,18 +9,17 @@ try:
 except ImportError:
     _is_solver_available = False
 
-from typing import Optional
 
 from ..core import LinearProblem, Solution
 from ..matrix import MatrixConverter
-from .base import BaseSolver, SolverStats, SolverCapabilities
+from .base import BaseSolver, SolverCapabilities, SolverStats
 
 
 class OSQPSolver(BaseSolver):
     """Solver OSQP para problemas de programacion lineal.
     """
 
-    def __init__(self, problem: LinearProblem, config: Optional[BaseSolver.Config] = None):
+    def __init__(self, problem: LinearProblem, config: BaseSolver.Config | None = None):
         super().__init__(problem, config)
         self.capabilities = SolverCapabilities(
             lp=True,

@@ -5,11 +5,14 @@ import os
 from fpdf import FPDF
 from fpdf.enums import Align, XPos, YPos
 
-from ..core.types import (
-    DocumentModel, ReportElement, ContentType, StyleDefinition,
-    PageConfig,
-)
 from ..core.exceptions import RenderError, StyleNotFoundError
+from ..core.types import (
+    ContentType,
+    DocumentModel,
+    PageConfig,
+    ReportElement,
+    StyleDefinition,
+)
 from ..rich_text import parse_rich_text
 from ..styles import get_style
 from .base import BaseRenderer, RenderResult
@@ -234,17 +237,7 @@ class PDFRenderer(BaseRenderer):
         except StyleNotFoundError:
             style = get_style("default", styles)
 
-        if element.content_type == ContentType.TITLE:
-            pdf.ln(style.spacing_before)
-            pdf.write_styled_text(element.content, style)
-            pdf.ln(style.spacing_after)
-
-        elif element.content_type == ContentType.SUBTITLE:
-            pdf.ln(style.spacing_before)
-            pdf.write_styled_text(element.content, style)
-            pdf.ln(style.spacing_after)
-
-        elif element.content_type == ContentType.HEADING:
+        if element.content_type == ContentType.TITLE or element.content_type == ContentType.SUBTITLE or element.content_type == ContentType.HEADING:
             pdf.ln(style.spacing_before)
             pdf.write_styled_text(element.content, style)
             pdf.ln(style.spacing_after)
@@ -287,12 +280,7 @@ class PDFRenderer(BaseRenderer):
             pdf.write_styled_text(element.content, style)
             pdf.ln(style.spacing_after)
 
-        elif element.content_type == ContentType.CAPTION:
-            pdf.ln(style.spacing_before)
-            pdf.write_styled_text(element.content, style)
-            pdf.ln(style.spacing_after)
-
-        elif element.content_type == ContentType.NOTE:
+        elif element.content_type == ContentType.CAPTION or element.content_type == ContentType.NOTE:
             pdf.ln(style.spacing_before)
             pdf.write_styled_text(element.content, style)
             pdf.ln(style.spacing_after)

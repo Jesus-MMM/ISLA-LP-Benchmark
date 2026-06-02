@@ -1,15 +1,16 @@
 """
 Tests para verificacion de soluciones: verify_solution y compare_solutions.
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+from src.core.bound import VariableBound
+from src.core.constraint import LinearConstraint
 from src.core.problem import LinearProblem
 from src.core.solution import Solution
-from src.core.constraint import LinearConstraint
-from src.core.bound import VariableBound
-from src.core.verification import verify_solution, compare_solutions
+from src.core.verification import compare_solutions, verify_solution
 
 
 class TestVerifySolution:

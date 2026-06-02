@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-import tempfile
 import os
+import tempfile
 
 import pytest
 
+from src.report.core.exceptions import LocalizationError
 from src.report.i18n import (
-    load_translations_csv, load_locale_dir, get_text, Localizer,
+    Localizer,
+    get_text,
+    load_locale_dir,
+    load_translations_csv,
     set_fallback_chain,
 )
-from src.report.core.exceptions import LocalizationError
-
 
 EN_ES_CSV = """\
 key,en,es
