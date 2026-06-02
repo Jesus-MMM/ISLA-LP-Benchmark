@@ -5,11 +5,6 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-# Prevent circular import by pre-patching visualization
-import unittest.mock as mock
-sys.modules['src.visualization'] = mock.MagicMock()
-sys.modules['src.visualization.LinearVisualization'] = mock.MagicMock()
-
 from pathlib import Path  # noqa: E402
 from unittest.mock import patch, MagicMock  # noqa: E402
 
@@ -170,7 +165,7 @@ class TestSolveSingle:
 
             with patch("src.cli.solve.SolverRegistry") as mock_reg:
                 mock_reg.get.return_value = lambda p, c: mock_solver
-                with patch("src.cli.solve.LinearVisualization") as mock_viz:
+                with patch("src.visualization.LinearVisualization") as mock_viz:
                     mock_viz_instance = MagicMock()
                     mock_viz.return_value = mock_viz_instance
                     rc = solve_single(Path(tmp), visualize=True)
@@ -310,8 +305,8 @@ class TestSolveMulti:
             mock_solver.solve.return_value.variables = {"x": 1.0}
             mock_solver.solve.return_value.status = "optimal"
 
-            with patch("src.parser.MultiLPParser") as mock_mp:
-                mock_mp.return_value.parse_all.return_value = [mock_problem, mock_problem]
+            with patch("src.parser.LPParser") as mock_lp:
+                mock_lp.return_value.parse.return_value = mock_problem
                 with patch("src.cli.solve.SolverRegistry") as mock_reg:
                     mock_reg.get.return_value = lambda p, c: mock_solver
                     rc = solve_multi(Path(tmp))
@@ -335,8 +330,8 @@ class TestSolveMulti:
             mock_solver.solve.return_value.variables = {"x": 1.0}
             mock_solver.solve.return_value.status = "optimal"
 
-            with patch("src.parser.MultiLPParser") as mock_mp:
-                mock_mp.return_value.parse_all.return_value = [mock_problem]
+            with patch("src.parser.LPParser") as mock_lp:
+                mock_lp.return_value.parse.return_value = mock_problem
                 with patch("src.cli.solve.SolverRegistry") as mock_reg:
                     mock_reg.get.return_value = lambda p, c: mock_solver
                     with patch("src.cli.solve._console") as mock_console:
@@ -362,15 +357,15 @@ class TestSolveMulti:
             mock_solver.solve.return_value.variables = {"x": 1.0, "y": 0.5}
             mock_solver.solve.return_value.status = "optimal"
 
-            with patch("src.parser.MultiLPParser") as mock_mp:
-                mock_mp.return_value.parse_all.return_value = [mock_problem]
+            with patch("src.parser.LPParser") as mock_lp:
+                mock_lp.return_value.parse.return_value = mock_problem
                 with patch("src.cli.solve.SolverRegistry") as mock_reg:
                     mock_reg.get.return_value = lambda p, c: mock_solver
-                with patch("src.visualization.LinearVisualization", return_value=MagicMock()) as mock_viz:
-                    mock_viz.return_value.plot.return_value = None
-                    rc = solve_multi(Path(tmp), visualize=True)
-                    assert rc == 0
-                    mock_viz.return_value.plot.assert_called_once()
+                    with patch("src.visualization.LinearVisualization", return_value=MagicMock()) as mock_viz:
+                        mock_viz.return_value.plot.return_value = None
+                        rc = solve_multi(Path(tmp), visualize=True)
+                        assert rc == 0
+                        mock_viz.return_value.plot.assert_called_once()
         finally:
             os.unlink(tmp)
 
@@ -390,8 +385,8 @@ class TestSolveMulti:
             mock_solver.solve.return_value.variables = {"x": 1.0}
             mock_solver.solve.return_value.status = "optimal"
 
-            with patch("src.parser.MultiLPParser") as mock_mp:
-                mock_mp.return_value.parse_all.return_value = [mock_problem]
+            with patch("src.parser.LPParser") as mock_lp:
+                mock_lp.return_value.parse.return_value = mock_problem
                 with patch("src.cli.solve.SolverRegistry") as mock_reg:
                     mock_reg.get.return_value = lambda p, c: mock_solver
                     with patch("src.cli.solve._render_report") as mock_render:
@@ -415,8 +410,8 @@ class TestSolveMulti:
             def failing_solver(problem, config):
                 raise RuntimeError("solver failed")
 
-            with patch("src.parser.MultiLPParser") as mock_mp:
-                mock_mp.return_value.parse_all.return_value = [mock_problem]
+            with patch("src.parser.LPParser") as mock_lp:
+                mock_lp.return_value.parse.return_value = mock_problem
                 with patch("src.cli.solve.SolverRegistry") as mock_reg:
                     mock_reg.get.return_value = failing_solver
                     rc = solve_multi(Path(tmp))
@@ -453,8 +448,8 @@ class TestSolveMulti:
             mock_solver.solve.return_value.is_optimal.return_value = False
             mock_solver.solve.return_value.status = "infeasible"
 
-            with patch("src.parser.MultiLPParser") as mock_mp:
-                mock_mp.return_value.parse_all.return_value = [mock_problem]
+            with patch("src.parser.LPParser") as mock_lp:
+                mock_lp.return_value.parse.return_value = mock_problem
                 with patch("src.cli.solve.SolverRegistry") as mock_reg:
                     mock_reg.get.return_value = lambda p, c: mock_solver
                     with patch("src.cli.solve._console") as mock_console:
@@ -481,8 +476,8 @@ class TestSolveMulti:
             mock_solver.solve.return_value.variables = {"x": 1.0}
             mock_solver.solve.return_value.status = "optimal"
 
-            with patch("src.parser.MultiLPParser") as mock_mp:
-                mock_mp.return_value.parse_all.return_value = [mock_problem]
+            with patch("src.parser.LPParser") as mock_lp:
+                mock_lp.return_value.parse.return_value = mock_problem
                 with patch("src.cli.solve.SolverRegistry") as mock_reg:
                     mock_reg.get.return_value = lambda p, c: mock_solver
                     with patch("src.cli.solve._render_report") as mock_render:

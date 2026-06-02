@@ -12,8 +12,6 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from src.cli import solve, benchmark
-
 _console = Console()
 
 
@@ -140,6 +138,8 @@ Ejemplos de uso
     %(prog)s problema.txt -s cbc
     %(prog)s problema.txt -s highs -v -p -t
     %(prog)s problema.txt -T 30                   (timeout 30s)
+    %(prog)s problema.txt -P mps                   (formato MPS)
+    %(prog)s problema.txt -P cplex                 (formato LP/CPLEX)
 
   Multi-problema (separador --- en el archivo):
     %(prog)s problema.txt -m
@@ -150,6 +150,8 @@ Ejemplos de uso
     %(prog)s -b problemas.txt -a
     %(prog)s -b problemas.txt -S cbc glpk -r 5
     %(prog)s -b problemas.txt -a -C
+    %(prog)s -b problema.mps -P mps                (benchmark con MPS)
+    %(prog)s -b problemas.txt --parallel           (benchmark paralelo)
 
   Salida estructurada:
     %(prog)s problema.txt -j                (JSON a stdout)
@@ -157,6 +159,7 @@ Ejemplos de uso
 
   Solo parsear (diagnostico):
     %(prog)s problema.txt -n
+    %(prog)s problema.mps -n -P mps                (parsear MPS)
 
   Informacion:
     %(prog)s --list-solvers
@@ -172,7 +175,7 @@ Para mas ayuda sobre un modo concreto, combine las opciones:
     parser.add_argument(
         'input',
         nargs='?',
-        help='Archivo con el problema de PL en formato LP estandar'
+        help='Archivo con el problema de PL (LP, CPLEX LP o MPS)'
     )
 
     # --- General / Informacion ---
@@ -214,6 +217,16 @@ Para mas ayuda sobre un modo concreto, combine las opciones:
         '--repl',
         action='store_true',
         help='Iniciar modo REPL interactivo'
+    )
+
+    # --- Seleccion de parser ---
+    parser_group = parser.add_argument_group('Seleccion de parser')
+    parser_group.add_argument(
+        '--parser', '-P',
+        type=str,
+        default='auto',
+        choices=['auto', 'lp', 'cplex', 'mps'],
+        help='Formato del archivo de entrada: auto (detecta por extension/contenido), lp (libre), cplex (CPLEX LP), mps (MPS)'
     )
 
     # --- Seleccion de solver ---
@@ -296,6 +309,11 @@ Para mas ayuda sobre un modo concreto, combine las opciones:
         type=str,
         metavar='ARCHIVO',
         help='Exportar resultados del benchmark a un archivo CSV'
+    )
+    bench_group.add_argument(
+        '--parallel',
+        action='store_true',
+        help='Ejecutar benchmark en procesos paralelos aislados (evita interferencias entre solvers)'
     )
 
     # --- Salida ---
@@ -398,12 +416,13 @@ def main(argv: Optional[list[str]] = None) -> int:
         report_format = "pdf"
 
     if args.benchmark:
+        from src.cli.benchmark import run_benchmark
         from src.solver import SolverRegistry
         solvers = args.solvers or ['gurobi']
         if args.all_solvers:
             solvers = SolverRegistry.list_solvers(available_only=True)
 
-        return benchmark.run_benchmark(
+        return run_benchmark(
             input_path=Path(args.input) if args.input else None,
             solvers=solvers,
             repetitions=args.repetitions,
@@ -415,11 +434,13 @@ def main(argv: Optional[list[str]] = None) -> int:
             report_format=report_format,
             quiet=args.quiet,
             time_limit=args.timeout,
+            parser_name=args.parser,
+            parallel=args.parallel,
         )
 
     if args.input:
         if args.no_solve:
-            return _parse_only(Path(args.input), verbose=args.verbose)
+            return _parse_only(Path(args.input), verbose=args.verbose, parser_name=args.parser)
 
         kwargs = dict(
             solver_name=solver_name,
@@ -431,19 +452,22 @@ def main(argv: Optional[list[str]] = None) -> int:
             quiet=args.quiet,
             json_output=args.json,
             time_limit=args.timeout,
+            parser_name=args.parser,
         )
 
         if args.multi:
-            return solve.solve_multi(Path(args.input), **kwargs)
+            from src.cli.solve import solve_multi
+            return solve_multi(Path(args.input), **kwargs)
         else:
-            return solve.solve_single(Path(args.input), **kwargs)
+            from src.cli.solve import solve_single
+            return solve_single(Path(args.input), **kwargs)
 
     _print_banner()
     parser.print_help()
     return 0
 
 
-def _parse_only(path: Path, verbose: bool = False) -> int:
+def _parse_only(path: Path, verbose: bool = False, parser_name: str = "auto") -> int:
     """Solo parsea y muestra informacion del problema sin resolver."""
     if not path.exists():
         _console.print(f"[red]Error:[/red] Archivo no encontrado: {path}")
@@ -453,12 +477,16 @@ def _parse_only(path: Path, verbose: bool = False) -> int:
         with open(path, 'r') as f:
             content = f.read()
 
-        from src.parser import LPParser, MultiLPParser
+        from src.parser import get_parser_class
         from src.matrix import LPBuilder
 
+        parser_cls = get_parser_class(parser_name, content, path.suffix)
+
         if '---' in content:
-            parser = MultiLPParser(content)
-            problems = parser.parse_all()
+            import re
+            sections = re.split(r'(?:---+|===+|___+)\s*\n', content)
+            sections = [s.strip() for s in sections if s.strip()]
+            problems = [parser_cls(s).parse() for s in sections]
             _console.print(Panel(
                 f"[bold cyan]Problemas encontrados:[/bold cyan] {len(problems)}",
                 border_style="blue",
@@ -476,8 +504,7 @@ def _parse_only(path: Path, verbose: bool = False) -> int:
                 tbl.add_row("Matriz", f"{n_rows}x{n_cols} (Polars LP)")
                 _console.print(tbl)
         else:
-            parser_obj = LPParser(content)
-            problem = parser_obj.parse()
+            problem = parser_cls(content).parse()
             lp = LPBuilder(problem).build()
             tbl = Table(title=f"Problema: {path.name}", show_header=False)
             tbl.add_column("Atributo", style="cyan")

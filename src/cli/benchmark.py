@@ -11,15 +11,10 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
 
-from src.parser import MultiLPParser
 from src.solver import (
     BenchmarkRunner, BenchmarkConfig
 )
-from src.analysis import export_benchmark_results
-from src.cli import get_system_info
-from src.visualization.benchmark_plots import BenchmarkPlotter as BenchmarkVisualizer
-from src.report.core.types import ContentType, DocumentModel
-from src.report.adapters import ReportData
+
 
 _console = Console()
 
@@ -72,6 +67,8 @@ def run_benchmark(
     report_format: Optional[str] = None,
     quiet: bool = False,
     time_limit: Optional[float] = None,
+    parser_name: str = "auto",
+    parallel: bool = False,
 ) -> int:
     """Ejecuta el modo benchmark."""
     solvers = solvers or ['gurobi']
@@ -79,6 +76,7 @@ def run_benchmark(
 
     problems = []
 
+    from src.cli import get_system_info
     system_info = get_system_info()
 
     if input_path and input_path.exists():
@@ -86,9 +84,12 @@ def run_benchmark(
             content = f.read()
 
         if '---' in content:
-            parser = MultiLPParser(content)
-            parsed_problems = parser.parse_all()
-            for i, p in enumerate(parsed_problems, 1):
+            import re
+            from src.parser import get_parser_class
+            parser_cls = get_parser_class(parser_name, content, input_path.suffix)
+            sections = re.split(r'(?:---+|===+|___+)\s*\n', content)
+            for i, section in enumerate([s.strip() for s in sections if s.strip()], 1):
+                p = parser_cls(section).parse()
                 problems.append((f"Problema_{i}", _problem_to_text(p)))
         else:
             problems.append((input_path.stem, content))
@@ -117,7 +118,25 @@ def run_benchmark(
         runs_per_problem=repetitions,
         time_limit=time_limit,
     )
-    runner = BenchmarkRunner(config)
+
+    if parallel:
+        from src.solver import ParallelBenchmarkRunner, ParallelBenchmarkConfig
+        pconfig = ParallelBenchmarkConfig(
+            warmup_runs=0,
+            runs_per_problem=repetitions,
+            verbose=verbose,
+            time_limit=time_limit,
+            collect_memory=True,
+            collect_solution_table=True,
+        )
+        runner = ParallelBenchmarkRunner(pconfig, parser_name=parser_name)
+        _results = runner.run(problems, solvers, timeout=time_limit or 300)
+        # Re-wrap into BenchmarkRunner for downstream compatibility
+        runner_wrapper = BenchmarkRunner(config, parser_name=parser_name)
+        runner_wrapper.results = _results
+        runner = runner_wrapper
+    else:
+        runner = BenchmarkRunner(config, parser_name=parser_name)
 
     total_tasks = len(problems) * len(solvers) * repetitions
     with Progress(
@@ -131,7 +150,8 @@ def run_benchmark(
         task = progress.add_task("Running benchmark...", total=total_tasks)
         def _on_result(_result):
             progress.update(task, advance=1)
-        runner.run(problems, solvers, on_result=_on_result)
+        if not parallel:
+            runner.run(problems, solvers, on_result=_on_result)
 
     if not quiet:
         _console.print()
@@ -142,6 +162,7 @@ def run_benchmark(
         _console.print(f"\n[green]CSV exported to:[/green] {output_csv}")
 
     if plot_comparison or visualize:
+        from src.visualization.benchmark_plots import BenchmarkPlotter as BenchmarkVisualizer
         _console.print("\n[blue]Generating plots...[/blue]")
         viz = BenchmarkVisualizer(runner)
         viz.generate_all_plots(output_dir_val)
@@ -182,6 +203,7 @@ def run_benchmark(
         fmt_path = output_dir_path / f"report{ext}"
         _render_report(engine, model, str(fmt_path), report_format, quiet, _console)
 
+    from src.analysis import export_benchmark_results
     export_benchmark_results(runner, output_dir_val, formats=['json', 'csv', 'md'])
     _console.print(f"\n[green]Full results saved to:[/green] {output_dir_val}")
 

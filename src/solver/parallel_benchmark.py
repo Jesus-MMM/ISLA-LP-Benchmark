@@ -14,10 +14,10 @@ from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing
 
-from ..parser import LPParser
+from ..parser import get_parser_class
 from ..core import Solution
 from ..core.solution import to_solution_table
-from .base import SolverRegistry
+from .base import SolverRegistry, SolverStats
 
 from .benchmark import BenchmarkResult
 
@@ -39,6 +39,7 @@ def _worker_execute(
     problem_name: str,
     problem_text: str,
     config_dict: dict,
+    parser_name: str = "auto",
 ) -> dict:
     """Ejecuta un solver contra un problema en un proceso aislado.
 
@@ -75,8 +76,10 @@ def _worker_execute(
     }
 
     try:
+        ext = Path(problem_name).suffix if problem_name else ""
         parse_start = time.perf_counter()
-        problem = LPParser(problem_text).parse()
+        parser_cls = get_parser_class(parser_name, problem_text, ext)
+        problem = parser_cls(problem_text).parse()
         result_dict["parse_time"] = time.perf_counter() - parse_start
 
         solver_class = SolverRegistry.get(solver_name)
@@ -201,10 +204,11 @@ class ParallelBenchmarkRunner:
         )
     """
 
-    def __init__(self, config: Optional[ParallelBenchmarkConfig] = None):
+    def __init__(self, config: Optional[ParallelBenchmarkConfig] = None, parser_name: str = "auto"):
         """Inicializa el runner con configuracion opcional."""
         self.config = config or ParallelBenchmarkConfig()
         self.results: List[BenchmarkResult] = []
+        self.parser_name = parser_name
 
     def run(
         self,
@@ -237,7 +241,7 @@ class ParallelBenchmarkRunner:
         for problem_name, problem_text in problems:
             for solver_name in solvers:
                 for _ in range(self.config.runs_per_problem):
-                    tasks.append((solver_name, problem_name, problem_text, config_dict))
+                    tasks.append((solver_name, problem_name, problem_text, config_dict, self.parser_name))
 
         if not tasks:
             return self.results
@@ -262,7 +266,7 @@ class ParallelBenchmarkRunner:
                         problem_name="unknown",
                         problem_text="",
                         solution=Solution(status="TIMEOUT", objective_value=None, variables={}),
-                        stats=type("Stats", (), {"solve_time": 0.0})(),
+                        stats=SolverStats(solve_time=0.0),
                         error="Timeout excedido",
                         total_time=timeout,
                     ))
@@ -272,7 +276,7 @@ class ParallelBenchmarkRunner:
                         problem_name="unknown",
                         problem_text="",
                         solution=Solution(status="ERROR", objective_value=None, variables={}),
-                        stats=type("Stats", (), {"solve_time": 0.0})(),
+                        stats=SolverStats(solve_time=0.0),
                         error=str(e),
                     ))
 

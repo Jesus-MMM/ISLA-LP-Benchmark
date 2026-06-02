@@ -3,9 +3,10 @@ Módulo para parsear múltiples problemas de programación lineal.
 Los problemas deben estar separados por una línea con '---' o '==='.
 """
 
-from typing import List
-from .lp_parser import LPParser
+
 from ..core import LinearProblem
+from ..core.exceptions import LPParseError
+from .lp_parser import LPParser
 
 
 class MultiLPParser:
@@ -23,7 +24,7 @@ class MultiLPParser:
         """
         self.txt = txt
 
-    def parse_all(self) -> List[LinearProblem]:
+    def parse_all(self) -> list[LinearProblem]:
         """
         Parsea todos los problemas encontrados en el texto.
 
@@ -33,7 +34,7 @@ class MultiLPParser:
         # Dividir el texto por delimitadores
         sections = self._split_by_delimiter(self.txt)
 
-        problems: List[LinearProblem] = []
+        problems: list[LinearProblem] = []
         problem_count = 0
 
         for section in sections:
@@ -61,14 +62,16 @@ class MultiLPParser:
                 problem_count += 1
                 problem.name = f"Problema {problem_count}"
                 problems.append(problem)
+            except LPParseError:
+                raise
             except Exception as e:
-                logger = __import__('logging').getLogger(__name__)
-                logger.warning(f"Error al parsear problema {problem_count + 1}: {e}")
-                continue
+                raise LPParseError(
+                    f"Error al parsear problema {problem_count + 1}: {e}"
+                ) from e
 
         return problems
 
-    def _split_by_delimiter(self, txt: str) -> List[str]:
+    def _split_by_delimiter(self, txt: str) -> list[str]:
         """
         Divide el texto usando cualquier delimitador reconocido.
 

@@ -11,11 +11,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from src.parser import LPParser
+from src.parser import get_parser_class
 from src.solver import SolverConfig, SolverRegistry
-from src.visualization import LinearVisualization
-from src.report.core.types import ContentType, DocumentModel, ReportElement
-from src.report.adapters import ReportData
 
 
 _console = Console()
@@ -110,6 +107,7 @@ def solve_single(
     quiet: bool = False,
     json_output: bool = False,
     time_limit: Optional[float] = None,
+    parser_name: str = "auto",
 ) -> int:
     """Resuelve un problema individual."""
     if not input_path.exists():
@@ -130,19 +128,20 @@ def solve_single(
         problem_hash = _compute_file_hash(input_path)
 
         start_parse = time.perf_counter()
-        problem = LPParser(problem_text).parse()
+        parser_cls = get_parser_class(parser_name, problem_text, input_path.suffix)
+        problem = parser_cls(problem_text).parse()
         parse_time = time.perf_counter() - start_parse
 
-        start_build = time.perf_counter()
-        build_time = time.perf_counter() - start_build
-
         config = SolverConfig(verbose=verbose, time_limit=time_limit)
-        start_solve = time.perf_counter()
+        start_build = time.perf_counter()
         try:
             solver = solver_class(problem, config)
         except TypeError:
             solver = solver_class(problem)
             solver.config = config
+        build_time = time.perf_counter() - start_build
+
+        start_solve = time.perf_counter()
         solution = solver.solve()
         solve_time = time.perf_counter() - start_solve
 
@@ -192,6 +191,7 @@ def solve_single(
                 _console.print(f"[yellow]Status:[/yellow] {solution.status}")
 
         if visualize and len(problem.variables) == 2:
+            from src.visualization import LinearVisualization
             output_path = output or str(input_path.with_suffix('.png'))
             viz = LinearVisualization(problem, solution)
             viz.plot(save_path=str(output_path), show=False)
@@ -307,6 +307,7 @@ def solve_multi(
     quiet: bool = False,
     json_output: bool = False,
     time_limit: Optional[float] = None,
+    parser_name: str = "auto",
 ) -> int:
     """Resuelve multiples problemas."""
     if not input_path.exists():
@@ -322,9 +323,11 @@ def solve_multi(
         with open(input_path, 'r') as f:
             content = f.read()
 
-        from src.parser import MultiLPParser
-        parser = MultiLPParser(content)
-        problems = parser.parse_all()
+        import re
+        parser_cls = get_parser_class(parser_name, content, input_path.suffix)
+        sections = re.split(r'(?:---+|===+|___+)\s*\n', content)
+        sections = [s.strip() for s in sections if s.strip()]
+        problems = [parser_cls(s).parse() for s in sections]
 
         if not quiet:
             _console.print(Panel(

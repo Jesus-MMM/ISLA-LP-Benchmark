@@ -5,8 +5,15 @@ Implementa la interfaz BaseSolver para soportar multiples solvers.
 
 from dataclasses import dataclass
 from typing import Optional
-import gurobipy as gp
-from gurobipy import GRB
+
+try:
+    import gurobipy as gp
+    from gurobipy import GRB
+    _GUROBIPY_AVAILABLE = True
+except ImportError:
+    gp = None
+    GRB = None
+    _GUROBIPY_AVAILABLE = False
 
 from ..matrix import LPBuilder
 from ..core import Solution, LinearProblem

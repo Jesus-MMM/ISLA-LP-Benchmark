@@ -7,8 +7,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import pytest
 
+try:
+    import fastapi  # noqa: F401
+    import httpx  # noqa: F401
+    _FASTAPI_AVAILABLE = True
+except ImportError:
+    _FASTAPI_AVAILABLE = False
 
-@pytest.mark.skipif(True, reason="FastAPI no instalado en este entorno")
+
+@pytest.mark.skipif(not _FASTAPI_AVAILABLE, reason="FastAPI/httpx no instalado")
 class TestWebApp:
     """Tests para la aplicacion web."""
 

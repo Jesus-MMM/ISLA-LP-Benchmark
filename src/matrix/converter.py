@@ -9,7 +9,6 @@ import numpy as np
 
 from ..core import LinearProblem
 
-
 INF = 1e30
 
 
@@ -141,61 +140,108 @@ class MatrixConverter:
         """
         Convierte a matrices CVXOPT (c, G, h, A, b).
 
+        Construye usando coordenadas COO (solo no-ceros) para evitar
+        la lista de listas densa intermedia. CVXOPT recibe matrices densas.
         CVXOPT solo minimiza; objetivos max se niegan.
         Returns:
             dict con: c, G, h, A, b, constraint_order, sense
         """
+        from scipy import sparse
+
         variables = list(problem.variables)
+        n = len(variables)
         c = np.array([problem.objective.get(v, 0.0) for v in variables], dtype=float)
         if problem.sense.lower() == "max":
             c = -c
 
-        G_rows: list[list[float]] = []
+        g_data: list[float] = []
+        g_rows: list[int] = []
+        g_cols: list[int] = []
         h_vals: list[float] = []
         constraint_order: list[str] = []
+        n_ineq = 0
 
         for constr in problem.constraints:
-            coeffs = [constr.coefficients.get(v, 0.0) for v in variables]
             name = constr.name or f"R{problem.constraints.index(constr)}"
             if constr.sense == "=":
                 continue
+            for var, coeff in constr.coefficients.items():
+                if abs(coeff) > 1e-14:
+                    try:
+                        j = variables.index(var)
+                    except ValueError:
+                        continue
+                    actual = -coeff if constr.sense in (">=", ">") else coeff
+                    g_data.append(actual)
+                    g_rows.append(n_ineq)
+                    g_cols.append(j)
             if constr.sense in (">=", ">"):
-                G_rows.append([-x for x in coeffs])
                 h_vals.append(-constr.rhs)
             else:
-                G_rows.append(coeffs)
                 h_vals.append(constr.rhs)
             constraint_order.append(name)
+            n_ineq += 1
 
-        n = len(variables)
         for var in variables:
             bound = problem.bounds.get(var)
             if bound:
                 idx = variables.index(var)
                 if bound.lower is not None:
-                    row = [0.0] * n
-                    row[idx] = -1.0
-                    G_rows.append(row)
+                    g_data.append(-1.0)
+                    g_rows.append(n_ineq)
+                    g_cols.append(idx)
                     h_vals.append(-bound.lower)
+                    n_ineq += 1
                 if bound.upper is not None:
-                    row = [0.0] * n
-                    row[idx] = 1.0
-                    G_rows.append(row)
+                    g_data.append(1.0)
+                    g_rows.append(n_ineq)
+                    g_cols.append(idx)
                     h_vals.append(bound.upper)
+                    n_ineq += 1
 
-        A_rows: list[list[float]] = []
+        if n_ineq > 0:
+            g_mat = sparse.csc_matrix((g_data, (g_rows, g_cols)), shape=(n_ineq, n))
+            g_mat = g_mat.toarray()
+            h = np.array(h_vals, dtype=float)
+        else:
+            g_mat = None
+            h = None
+
+        a_data: list[float] = []
+        a_rows: list[int] = []
+        a_cols: list[int] = []
         b_vals: list[float] = []
+        n_eq = 0
+
         for constr in problem.constraints:
-            if constr.sense == "=":
-                A_rows.append([constr.coefficients.get(v, 0.0) for v in variables])
-                b_vals.append(constr.rhs)
+            if constr.sense != "=":
+                continue
+            for var, coeff in constr.coefficients.items():
+                if abs(coeff) > 1e-14:
+                    try:
+                        j = variables.index(var)
+                    except ValueError:
+                        continue
+                    a_data.append(coeff)
+                    a_rows.append(n_eq)
+                    a_cols.append(j)
+            b_vals.append(constr.rhs)
+            n_eq += 1
+
+        if n_eq > 0:
+            a_mat = sparse.csc_matrix((a_data, (a_rows, a_cols)), shape=(n_eq, n))
+            a_mat = a_mat.toarray()
+            b = np.array(b_vals, dtype=float)
+        else:
+            a_mat = None
+            b = None
 
         return {
             "c": c,
-            "G": np.array(G_rows, dtype=float) if G_rows else None,
-            "h": np.array(h_vals, dtype=float) if h_vals else None,
-            "A": np.array(A_rows, dtype=float) if A_rows else None,
-            "b": np.array(b_vals, dtype=float) if b_vals else None,
+            "G": g_mat,
+            "h": h,
+            "A": a_mat,
+            "b": b,
             "constraint_order": constraint_order,
             "sense": problem.sense,
         }
@@ -205,12 +251,13 @@ class MatrixConverter:
         """
         Convierte a datos OSQP (P, q, A, l, u).
 
+        Construye usando coordenadas COO (solo no-ceros) para evitar
+        la lista de listas densa intermedia.
         Returns:
             dict con: P, q, A, l, u (sparse CSC arrays numpy), constraint_order
         """
-        from scipy import sparse
-
         import numpy as np
+        from scipy import sparse
 
         variables = list(problem.variables)
         n = len(variables)
@@ -219,54 +266,64 @@ class MatrixConverter:
         if problem.sense.lower() == "max":
             q = -q
 
-        A_rows: list[list[float]] = []
+        a_data: list[float] = []
+        a_rows: list[int] = []
+        a_cols: list[int] = []
         l_vals: list[float] = []
         u_vals: list[float] = []
         constraint_order: list[str] = []
+        n_rows = 0
 
-        for constr in problem.constraints:
-            coeffs = [constr.coefficients.get(v, 0.0) for v in variables]
-            name = constr.name or f"R{problem.constraints.index(constr)}"
+        for i, constr in enumerate(problem.constraints):
+            name = constr.name or f"R{i}"
+            for var, coeff in constr.coefficients.items():
+                if abs(coeff) > 1e-14:
+                    try:
+                        j = variables.index(var)
+                    except ValueError:
+                        continue
+                    a_data.append(coeff)
+                    a_rows.append(n_rows)
+                    a_cols.append(j)
             if constr.sense == "=":
-                A_rows.append(coeffs)
                 l_vals.append(constr.rhs)
                 u_vals.append(constr.rhs)
             elif constr.sense in ("<=", "<"):
-                A_rows.append(coeffs)
                 l_vals.append(-np.inf)
                 u_vals.append(constr.rhs)
             else:
-                A_rows.append(coeffs)
                 l_vals.append(constr.rhs)
                 u_vals.append(np.inf)
             constraint_order.append(name)
+            n_rows += 1
 
         for var in variables:
             bound = problem.bounds.get(var)
             if bound:
-                row = [0.0] * n
-                row[variables.index(var)] = 1.0
-                A_rows.append(row)
+                a_data.append(1.0)
+                a_rows.append(n_rows)
+                a_cols.append(variables.index(var))
                 lb = bound.lower if bound.lower is not None else -np.inf
                 ub = bound.upper if bound.upper is not None else np.inf
                 l_vals.append(lb)
                 u_vals.append(ub)
+                n_rows += 1
 
-        if A_rows:
-            A = sparse.csc_matrix(np.array(A_rows, dtype=float))
+        if n_rows > 0:
+            a_mat = sparse.csc_matrix((a_data, (a_rows, a_cols)), shape=(n_rows, n))
             lb_array = np.array(l_vals, dtype=float)
             u = np.array(u_vals, dtype=float)
         else:
-            A = sparse.csc_matrix((0, n))
+            a_mat = sparse.csc_matrix((0, n))
             lb_array = np.array([])
             u = np.array([])
 
-        P = sparse.csc_matrix((n, n))
+        p_mat = sparse.csc_matrix((n, n))
 
         return {
-            "P": P,
+            "P": p_mat,
             "q": q,
-            "A": A,
+            "A": a_mat,
             "l": lb_array,
             "u": u,
             "constraint_order": constraint_order,
@@ -281,9 +338,8 @@ class MatrixConverter:
         Returns:
             dict con: c, A_ub, b_ub, A_eq, b_eq, bounds
         """
-        from scipy import sparse
-
         import numpy as np
+        from scipy import sparse
 
         variables = list(problem.variables)
 
@@ -291,21 +347,21 @@ class MatrixConverter:
         if problem.sense.lower() == "max":
             c = -c
 
-        A_ub_rows: list[list[float]] = []
+        a_ub_rows: list[list[float]] = []
         b_ub_vals: list[float] = []
-        A_eq_rows: list[list[float]] = []
+        a_eq_rows: list[list[float]] = []
         b_eq_vals: list[float] = []
 
         for constr in problem.constraints:
             coeffs = [constr.coefficients.get(v, 0.0) for v in variables]
             if constr.sense in ("<=", "<"):
-                A_ub_rows.append(coeffs)
+                a_ub_rows.append(coeffs)
                 b_ub_vals.append(constr.rhs)
             elif constr.sense in (">=", ">"):
-                A_ub_rows.append([-x for x in coeffs])
+                a_ub_rows.append([-x for x in coeffs])
                 b_ub_vals.append(-constr.rhs)
             else:
-                A_eq_rows.append(coeffs)
+                a_eq_rows.append(coeffs)
                 b_eq_vals.append(constr.rhs)
 
         bounds: list[tuple[float | None, float | None]] = []
@@ -318,9 +374,9 @@ class MatrixConverter:
 
         return {
             "c": c,
-            "A_ub": sparse.csr_matrix(np.array(A_ub_rows, dtype=float)) if A_ub_rows else None,
+            "A_ub": sparse.csr_matrix(np.array(a_ub_rows, dtype=float)) if a_ub_rows else None,
             "b_ub": np.array(b_ub_vals, dtype=float) if b_ub_vals else None,
-            "A_eq": sparse.csr_matrix(np.array(A_eq_rows, dtype=float)) if A_eq_rows else None,
+            "A_eq": sparse.csr_matrix(np.array(a_eq_rows, dtype=float)) if a_eq_rows else None,
             "b_eq": np.array(b_eq_vals, dtype=float) if b_eq_vals else None,
             "bounds": bounds,
         }
