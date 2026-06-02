@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from collections.abc import Callable
 from typing import Any, Optional
 
 from src.report.core.exceptions import ReportError
@@ -60,6 +61,17 @@ class StyleDefinition:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> StyleDefinition:
+        """Crea una instancia de StyleDefinition a partir de un diccionario.
+
+        Filtra las claves del diccionario para incluir solo aquellas
+        que corresponden a campos válidos de la dataclass.
+
+        Args:
+            data: Diccionario con valores de estilo.
+
+        Returns:
+            Nueva instancia de StyleDefinition con los valores proporcionados.
+        """
         valid_keys = cls.__dataclass_fields__.keys()
         filtered = {k: v for k, v in data.items() if k in valid_keys}
         return cls(**filtered)
@@ -158,7 +170,23 @@ class ReportElement:
     condition: Optional[str] = None
     order: int = 0
 
-    def resolve_content(self, localization_fn, data_context: DataContext) -> str:
+    def resolve_content(
+        self,
+        localization_fn: Optional[Callable[[str], str]] = None,
+        data_context: Optional[DataContext] = None,
+    ) -> str:
+        """Resuelve el contenido del elemento aplicando localización y contexto de datos.
+
+        Primero aplica la función de localización (si se proporciona) y luego
+        resuelve las variables de plantilla del contexto de datos.
+
+        Args:
+            localization_fn: Función opcional para traducir/localizar el texto.
+            data_context: Contexto de datos opcional para resolver variables.
+
+        Returns:
+            El contenido resuelto como cadena de texto.
+        """
         text = self.content
         if localization_fn:
             text = localization_fn(text)
@@ -181,6 +209,17 @@ class DataContext:
     references: dict[str, ReferenceDefinition] = field(default_factory=dict)
 
     def resolve(self, text: str) -> str:
+        """Resuelve variables de plantilla en el texto dado.
+
+        Reemplaza los marcadores {{variable}} con sus valores
+        correspondientes del diccionario de variables.
+
+        Args:
+            text: Texto que puede contener marcadores de variable.
+
+        Returns:
+            Texto con las variables resueltas.
+        """
         import re
         def _replace(match):
             key = match.group(1).strip()
@@ -191,6 +230,15 @@ class DataContext:
         return re.sub(r'\{\{(\w+)\}\}', _replace, text)
 
     def get_or_default(self, key: str, default: Any = "") -> Any:
+        """Obtiene el valor de una variable o un valor por defecto.
+
+        Args:
+            key: Clave de la variable a buscar.
+            default: Valor por defecto si la clave no existe.
+
+        Returns:
+            Valor de la variable o el valor por defecto.
+        """
         return self.variables.get(key, default)
 
 
@@ -208,12 +256,27 @@ class RenderContext:
     errors: list[ReportError] = field(default_factory=list)
 
     def add_warning(self, message: str) -> None:
+        """Añade un mensaje de advertencia al contexto de renderizado.
+
+        Args:
+            message: Mensaje de advertencia.
+        """
         self.warnings.append(message)
 
     def add_error(self, error: ReportError) -> None:
+        """Añade un error al contexto de renderizado.
+
+        Args:
+            error: Instancia de ReportError.
+        """
         self.errors.append(error)
 
     def add_diagnostic(self, message: str) -> None:
+        """Añade un mensaje de diagnóstico al contexto de renderizado.
+
+        Args:
+            message: Mensaje de diagnóstico.
+        """
         self.diagnostics.append(message)
 
 
@@ -232,16 +295,42 @@ class DocumentModel:
     citations: list[CitationDefinition] = field(default_factory=list)
 
     def add_element(self, element: ReportElement) -> None:
+        """Añade un elemento al modelo de documento.
+
+        Args:
+            element: Elemento del reporte a añadir.
+        """
         self.elements.append(element)
 
     def get_elements_by_type(self, content_type: ContentType) -> list[ReportElement]:
+        """Obtiene todos los elementos del tipo de contenido especificado.
+
+        Args:
+            content_type: Tipo de contenido a filtrar.
+
+        Returns:
+            Lista de elementos que coinciden con el tipo.
+        """
         return [e for e in self.elements if e.content_type == content_type]
 
     def get_element_by_id(self, element_id: str) -> Optional[ReportElement]:
+        """Busca un elemento por su identificador único.
+
+        Args:
+            element_id: Identificador del elemento.
+
+        Returns:
+            El elemento encontrado o None si no existe.
+        """
         for e in self.elements:
             if e.element_id == element_id:
                 return e
         return None
 
     def remove_element(self, element_id: str) -> None:
+        """Elimina un elemento del modelo de documento por su identificador.
+
+        Args:
+            element_id: Identificador del elemento a eliminar.
+        """
         self.elements = [e for e in self.elements if e.element_id != element_id]

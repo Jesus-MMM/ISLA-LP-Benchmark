@@ -6,7 +6,7 @@ Maneja la interfaz de linea de comandos.
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TextIO
 
 from rich.console import Console
 from rich.table import Table
@@ -21,7 +21,8 @@ class CustomHelpFormatter(
     argparse.RawDescriptionHelpFormatter,
     argparse.ArgumentDefaultsHelpFormatter,
 ):
-    """Formateador combinado: preserva saltos de linea + muestra valores por defecto."""
+    """Personaliza la salida de ayuda de argparse combinando la preservación de saltos de línea
+    con la muestra de valores por defecto."""
 
 
 def _version() -> str:
@@ -56,7 +57,8 @@ complete -F _Path(sys.argv[0])name {Path(sys.argv[0]).name}"""
 class _RichArgumentParser(argparse.ArgumentParser):
     """Parser que muestra la ayuda con secciones en paneles Rich."""
 
-    def print_help(self, file=None):
+    def print_help(self, file: Optional[TextIO] = None) -> None:
+        """Imprime la ayuda formateada con paneles de Rich."""
         text = argparse.ArgumentParser.format_help(self)
         lines = text.split('\n')
         sections = []
@@ -118,7 +120,8 @@ class _RichArgumentParser(argparse.ArgumentParser):
             border_style="bright_blue",
         ))
 
-    def format_help(self):
+    def format_help(self) -> str:
+        """Retorna el texto de ayuda estándar de argparse."""
         return argparse.ArgumentParser.format_help(self)
 
 

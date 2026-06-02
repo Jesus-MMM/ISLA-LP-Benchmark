@@ -36,6 +36,29 @@ def adapt_single_solution(
     executive_interpretation: Optional[str] = None,
     problem_description: str = "",
 ) -> ReportData:
+    """Convertir una solucion LP individual en datos para el reporte.
+
+    Args:
+        problem: El modelo de problema LP.
+        solution: La solucion resuelta.
+        times: Desglose de tiempos de ejecucion.
+        system_info: Diccionario de informacion del sistema/plataforma.
+        solver_name: Nombre del solver utilizado.
+        solver_config: Diccionario de parametros de configuracion del solver.
+        feasible_region_path: Ruta al grafico PNG de la region factible (opcional).
+        objective_progression_path: Ruta al grafico PNG de progresion del objetivo (opcional).
+        solver_log: Salida raw del log del solver.
+        author: Nombre del autor del reporte.
+        institution_name: Nombre de la institucion u organizacion.
+        abstract_text: Texto de resumen/abstract para el reporte.
+        keywords_text: Palabras clave separadas por comas.
+        problem_file_hash: Hash SHA256 del archivo del problema.
+        executive_interpretation: Texto de interpretacion ejecutiva.
+        problem_description: Descripcion semantica del contexto del problema.
+
+    Returns:
+        ReportData con variables, tablas e imagenes listas para el motor.
+    """
     data = ReportData()
     plat = system_info.get("platform", {})
     has_charts = feasible_region_path is not None

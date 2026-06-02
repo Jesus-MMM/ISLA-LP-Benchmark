@@ -18,7 +18,13 @@ from .base import BaseRenderer, RenderResult
 class ReportPDF(FPDF):
     """Extended FPDF class for the report engine."""
 
-    def __init__(self, page_config: PageConfig, styles: dict[str, StyleDefinition]):
+    def __init__(self, page_config: PageConfig, styles: dict[str, StyleDefinition]) -> None:
+        """Inicializa el documento PDF con la configuración de página y estilos dados.
+
+        Args:
+            page_config: Configuración de página (orientación, tamaño, márgenes).
+            styles: Diccionario de definiciones de estilo.
+        """
         orientation = "P" if page_config.orientation == "portrait" else "L"
         fmt = page_config.size if page_config.size in ("letter", "legal", "a4") else "letter"
         super().__init__(orientation=orientation, format=fmt, unit="mm")
@@ -30,14 +36,16 @@ class ReportPDF(FPDF):
             page_config.margin_right,
         )
 
-    def header(self):
+    def header(self) -> None:
+        """Genera el encabezado de cada página del PDF."""
         if not self.page_config.header_enabled:
             return
         self.set_font("Helvetica", "I", 7)
         self.set_text_color(128, 128, 128)
         self.cell(0, 5, "", align=Align.R)
 
-    def footer(self):
+    def footer(self) -> None:
+        """Genera el pie de página de cada página del PDF con el número de página."""
         if not self.page_config.footer_enabled:
             return
         self.set_y(-15)

@@ -12,6 +12,15 @@ class HTMLRenderer(BaseRenderer):
     """Renders document models to HTML."""
 
     def render(self, model: DocumentModel, output_path: str) -> RenderResult:
+        """Renderiza un modelo de documento a HTML y lo escribe en un archivo.
+
+        Args:
+            model: Modelo del documento a renderizar.
+            output_path: Ruta del archivo de salida.
+
+        Returns:
+            RenderResult con el resultado de la renderización.
+        """
         try:
             html = self._build_html(model, output_path)
             with open(output_path, "w", encoding="utf-8") as f:
@@ -21,6 +30,14 @@ class HTMLRenderer(BaseRenderer):
             return RenderResult(success=False, errors=[str(e)])
 
     def render_to_string(self, model: DocumentModel) -> str:
+        """Renderiza un modelo de documento a HTML y devuelve el resultado como cadena.
+
+        Args:
+            model: Modelo del documento a renderizar.
+
+        Returns:
+            Cadena con el contenido HTML generado.
+        """
         return self._build_html(model, "")
 
     def _build_html(self, model: DocumentModel, output_path: str = "") -> str:

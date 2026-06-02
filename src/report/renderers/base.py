@@ -22,7 +22,12 @@ class RenderResult:
 class BaseRenderer(ABC):
     """Abstract base class for all report renderers."""
 
-    def __init__(self, context: Optional[RenderContext] = None):
+    def __init__(self, context: Optional[RenderContext] = None) -> None:
+        """Inicializa el renderizador base con un contexto opcional.
+
+        Args:
+            context: Contexto de renderizado opcional.
+        """
         self.context = context or RenderContext()
 
     @abstractmethod

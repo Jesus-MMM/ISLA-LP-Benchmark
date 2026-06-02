@@ -11,6 +11,15 @@ class MarkdownRenderer(BaseRenderer):
     """Renders document models to Markdown."""
 
     def render(self, model: DocumentModel, output_path: str) -> RenderResult:
+        """Renderiza un modelo de documento a Markdown y lo escribe en un archivo.
+
+        Args:
+            model: Modelo del documento a renderizar.
+            output_path: Ruta del archivo de salida.
+
+        Returns:
+            RenderResult con el resultado de la renderización.
+        """
         try:
             md = self._build_markdown(model, output_path)
             with open(output_path, "w", encoding="utf-8") as f:
@@ -20,6 +29,14 @@ class MarkdownRenderer(BaseRenderer):
             return RenderResult(success=False, errors=[str(e)])
 
     def render_to_string(self, model: DocumentModel) -> str:
+        """Renderiza un modelo de documento a Markdown y devuelve el resultado como cadena.
+
+        Args:
+            model: Modelo del documento a renderizar.
+
+        Returns:
+            Cadena con el contenido Markdown generado.
+        """
         return self._build_markdown(model, "")
 
     def _build_markdown(self, model: DocumentModel, output_path: str = "") -> str:

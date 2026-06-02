@@ -19,6 +19,21 @@ def adapt_multi_problem(
     keywords_text: str = "",
     chart_path: Optional[str] = None,
 ) -> ReportData:
+    """Convertir resultados multi-problema en datos para el reporte.
+
+    Args:
+        results: Lista de ProblemResult de la resolucion de multiples problemas.
+        solver_name: Nombre del solver utilizado.
+        system_info: Informacion opcional del sistema.
+        author: Nombre del autor del reporte.
+        institution_name: Nombre de la institucion u organizacion.
+        abstract_text: Texto de resumen/abstract para el reporte.
+        keywords_text: Palabras clave separadas por comas.
+        chart_path: Ruta opcional al grafico de tiempos.
+
+    Returns:
+        ReportData para la plantilla multi_report.csv.
+    """
     import statistics
 
     data = ReportData()

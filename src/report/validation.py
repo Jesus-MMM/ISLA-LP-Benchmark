@@ -12,7 +12,8 @@ from .styles import get_style
 class ReportValidator:
     """Validates report definitions, styles, and data integrity."""
 
-    def __init__(self, strict: bool = False):
+    def __init__(self, strict: bool = False) -> None:
+        """Inicializa el validador de informes."""
         self.strict = strict
         self.issues: list[str] = []
         self.warnings: list[str] = []
@@ -134,9 +135,11 @@ class ReportValidator:
         return issues
 
     def has_errors(self) -> bool:
+        """Devuelve True si se han registrado errores de validación."""
         return bool(self.errors)
 
     def summary(self) -> str:
+        """Genera un resumen con todos los errores, advertencias y problemas encontrados."""
         lines: list[str] = []
         if self.errors:
             lines.append(f"Errors ({len(self.errors)}):")

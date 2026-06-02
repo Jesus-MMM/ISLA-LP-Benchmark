@@ -72,6 +72,20 @@ def adapt_benchmark(
     abstract_text: str = "",
     keywords_text: str = "",
 ) -> ReportData:
+    """Convertir resultados del benchmark en datos para el reporte.
+
+    Args:
+        runner: El BenchmarkRunner con resultados completados.
+        system_info: Informacion del sistema/plataforma.
+        chart_dir: Directorio que contiene los graficos PNG pre-generados.
+        author_name: Nombre del autor del reporte.
+        institution_name: Nombre de la institucion u organizacion.
+        abstract_text: Texto de resumen/abstract para el reporte.
+        keywords_text: Palabras clave separadas por comas.
+
+    Returns:
+        ReportData para la plantilla benchmark_report.csv.
+    """
     data = ReportData()
     summary = runner.get_summary()
 

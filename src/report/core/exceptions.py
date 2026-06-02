@@ -4,7 +4,13 @@ from typing import Optional
 class ReportError(Exception):
     """Base exception for all report engine errors."""
 
-    def __init__(self, message: str, details: Optional[dict] = None):
+    def __init__(self, message: str, details: Optional[dict] = None) -> None:
+        """Excepción base para todos los errores del motor de informes.
+
+        Args:
+            message: Mensaje descriptivo del error.
+            details: Diccionario opcional con detalles adicionales del error.
+        """
         self.message = message
         self.details = details or {}
         super().__init__(self.message)
@@ -13,7 +19,14 @@ class ReportError(Exception):
 class CSVParseError(ReportError):
     """Error parsing CSV report definition."""
 
-    def __init__(self, message: str, row: Optional[int] = None, file_path: Optional[str] = None):
+    def __init__(self, message: str, row: Optional[int] = None, file_path: Optional[str] = None) -> None:
+        """Error al analizar un archivo CSV de definición de informes.
+
+        Args:
+            message: Mensaje descriptivo del error.
+            row: Número de fila donde ocurrió el error, si aplica.
+            file_path: Ruta del archivo CSV donde ocurrió el error, si aplica.
+        """
         details = {}
         if row is not None:
             details["row"] = row
@@ -25,7 +38,14 @@ class CSVParseError(ReportError):
 class LocalizationError(ReportError):
     """Error resolving localization key."""
 
-    def __init__(self, key: str, language: str, message: Optional[str] = None):
+    def __init__(self, key: str, language: str, message: Optional[str] = None) -> None:
+        """Error al resolver una clave de localización.
+
+        Args:
+            key: Clave de localización que no pudo resolverse.
+            language: Idioma en el que se buscó la clave.
+            message: Mensaje personalizado opcional.
+        """
         details = {"key": key, "language": language}
         msg = message or f"Missing localization key '{key}' for language '{language}'"
         super().__init__(msg, details)
@@ -34,7 +54,14 @@ class LocalizationError(ReportError):
 class TagParseError(ReportError):
     """Error parsing rich text tags."""
 
-    def __init__(self, message: str, position: Optional[int] = None, tag: Optional[str] = None):
+    def __init__(self, message: str, position: Optional[int] = None, tag: Optional[str] = None) -> None:
+        """Error al analizar etiquetas de texto enriquecido.
+
+        Args:
+            message: Mensaje descriptivo del error.
+            position: Posición dentro del texto donde ocurrió el error, si aplica.
+            tag: Etiqueta que causó el error, si aplica.
+        """
         details = {}
         if position is not None:
             details["position"] = position
@@ -46,7 +73,13 @@ class TagParseError(ReportError):
 class DataBindingError(ReportError):
     """Error resolving data binding."""
 
-    def __init__(self, key: str, message: Optional[str] = None):
+    def __init__(self, key: str, message: Optional[str] = None) -> None:
+        """Error al resolver un enlace de datos.
+
+        Args:
+            key: Clave del enlace de datos que no pudo resolverse.
+            message: Mensaje personalizado opcional.
+        """
         details = {"key": key}
         msg = message or f"Missing data binding key '{key}'"
         super().__init__(msg, details)
@@ -55,14 +88,25 @@ class DataBindingError(ReportError):
 class StyleNotFoundError(ReportError):
     """Requested style not found."""
 
-    def __init__(self, style_name: str):
+    def __init__(self, style_name: str) -> None:
+        """Error cuando no se encuentra un estilo solicitado.
+
+        Args:
+            style_name: Nombre del estilo que no se encontró.
+        """
         super().__init__(f"Style '{style_name}' not found", {"style": style_name})
 
 
 class RenderError(ReportError):
     """Error during rendering."""
 
-    def __init__(self, message: str, element_id: Optional[str] = None):
+    def __init__(self, message: str, element_id: Optional[str] = None) -> None:
+        """Error durante el renderizado de un elemento.
+
+        Args:
+            message: Mensaje descriptivo del error.
+            element_id: Identificador del elemento que falló al renderizar, si aplica.
+        """
         details = {}
         if element_id is not None:
             details["element_id"] = element_id
@@ -72,6 +116,12 @@ class RenderError(ReportError):
 class ValidationError(ReportError):
     """Report validation error."""
 
-    def __init__(self, message: str, issues: Optional[list[str]] = None):
+    def __init__(self, message: str, issues: Optional[list[str]] = None) -> None:
+        """Error de validación de un informe.
+
+        Args:
+            message: Mensaje descriptivo del error.
+            issues: Lista opcional de problemas de validación encontrados.
+        """
         details = {"issues": issues or []}
         super().__init__(message, details)

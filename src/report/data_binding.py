@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from .core.types import DataContext, ReportElement, DocumentModel
 
@@ -174,17 +174,26 @@ def bind_data_to_model(
 class DataBinder:
     """High-level data binding pipeline."""
 
-    def __init__(self, data: Optional[DataContext] = None):
+    def __init__(self, data: Optional[DataContext] = None) -> None:
+        """Inicializa el binder con un contexto de datos opcional."""
         self.data = data or DataContext()
 
     def set_variable(self, key: str, value: Any) -> None:
+        """Asigna una variable individual en el contexto de datos."""
         self.data.variables[key] = value
 
     def set_variables(self, variables: dict[str, Any]) -> None:
+        """Asigna múltiples variables en el contexto de datos."""
         self.data.variables.update(variables)
 
     def set_table(self, key: str, rows: list[list[str]]) -> None:
+        """Almacena una tabla en el contexto de datos bajo una clave."""
         self.data.tables[key] = rows
 
-    def bind(self, model: DocumentModel, localization_fn=None) -> DocumentModel:
+    def bind(
+        self,
+        model: DocumentModel,
+        localization_fn: Optional[Callable[[str], str]] = None,
+    ) -> DocumentModel:
+        """Ejecuta el enlace de datos completo sobre un modelo de documento."""
         return bind_data_to_model(model, self.data, localization_fn)

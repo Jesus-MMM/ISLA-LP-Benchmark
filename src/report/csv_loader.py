@@ -39,7 +39,7 @@ CONTENT_TYPE_MAP: dict[str, ContentType] = {
 
 
 def parse_metadata(metadata_str: str) -> dict[str, Any]:
-    """Parse metadata field from CSV into a dictionary."""
+    """Analiza el campo de metadatos de una fila CSV y lo convierte en un diccionario."""
     if not metadata_str or metadata_str.strip() == "":
         return {}
     result: dict[str, Any] = {}
@@ -55,11 +55,12 @@ def parse_metadata(metadata_str: str) -> dict[str, Any]:
 
 
 def parse_bool(value: str) -> bool:
-    """Parse string boolean value."""
+    """Interpreta una cadena como un valor booleano."""
     return value.strip().lower() in ("true", "yes", "1", "t", "y")
 
 
 def parse_int(value: str, default: int = 0) -> int:
+    """Convierte una cadena a entero; devuelve el valor por defecto si falla."""
     try:
         return int(value.strip())
     except (ValueError, AttributeError):

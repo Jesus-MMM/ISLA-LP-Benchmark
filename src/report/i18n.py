@@ -160,7 +160,8 @@ class Localizer:
         language: str = "en",
         fallback_language: str = "en",
         locale_dir: Optional[str] = None,
-    ):
+    ) -> None:
+        """Inicializa el localizador con un diccionario de traducciones y configuración de idioma."""
         self.locale_dict = locale_dict
         self.language = language
         self.fallback_language = fallback_language
