@@ -5,6 +5,9 @@ from typing import Any, Optional
 from src.core.problem import LinearProblem
 from src.core.solution import Solution
 from src.solver.benchmark import BenchmarkRunner
+from src.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def _format_coefficient(coeff: float, var: str) -> str:
@@ -198,7 +201,7 @@ def _get_problem_from_result(result: Any) -> Optional[LinearProblem]:
             _problem_cache[text] = p
             return p
         except Exception:
-            pass
+            logger.warning("Failed to parse LP text for caching")
     return None
 
 

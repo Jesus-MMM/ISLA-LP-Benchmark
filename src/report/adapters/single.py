@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
 
+from src.utils.logging import get_logger
 from src.core.problem import LinearProblem
 from src.core.solution import Solution
 from src.analysis.analysis import ExecutionTimes
@@ -16,6 +17,8 @@ from src.report.adapters.formatters import (
     _build_objective_with_vars,
     _build_problem_data_text,
 )
+
+logger = get_logger(__name__)
 
 
 def adapt_single_solution(
@@ -297,7 +300,7 @@ def adapt_single_solution(
                     if i < len(vals):
                         dual = vals[i]
                 except Exception:
-                    pass
+                    logger.warning("Could not extract dual value at index %d", i)
 
         dual_str = f"{dual:.4f}" if dual is not None else "N/A"
         is_active = "Activa" if abs(slack) < 1e-6 else "Inactiva"

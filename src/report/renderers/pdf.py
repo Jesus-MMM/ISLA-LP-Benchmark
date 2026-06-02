@@ -174,6 +174,16 @@ class PDFRenderer(BaseRenderer):
     # ------------------------------------------------------------------ #
 
     def render(self, model: DocumentModel, output_path: str) -> RenderResult:
+        """
+        Renderiza el modelo de documento a PDF.
+
+        Args:
+            model: Modelo del documento a renderizar.
+            output_path: Ruta de salida para el archivo PDF.
+
+        Returns:
+            Resultado del renderizado.
+        """
         result = RenderResult(success=False, output_path=output_path)
         try:
             model = self.pre_render(model)

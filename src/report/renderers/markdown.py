@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import os
 
+from src.utils.logging import get_logger
 from ..core.types import DocumentModel, ContentType
 from ..rich_text import strip_tags
 from .base import BaseRenderer, RenderResult
+
+logger = get_logger(__name__)
 
 
 class MarkdownRenderer(BaseRenderer):
@@ -84,7 +87,7 @@ class MarkdownRenderer(BaseRenderer):
                     rel = os.path.relpath(img_abs, out_dir)
                     src = rel.replace("\\", "/")
                 except (ValueError, OSError):
-                    pass
+                    logger.warning("Could not compute relative path for image: %s", src)
             return f"![{alt}]({src})\n"
         elif element.content_type == ContentType.TABLE:
             return self._render_table_md(element)

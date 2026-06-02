@@ -46,7 +46,19 @@ class ReportEngine:
         locale_dir: Optional[str] = None,
         theme_dir: Optional[str] = None,
         page_config: Optional[PageConfig] = None,
-    ):
+    ) -> None:
+        """
+        Inicializa el motor de reportes.
+
+        Configura el idioma, estilos, localización y binding de datos.
+
+        Args:
+            language: Idioma principal del reporte.
+            fallback_language: Idioma de respaldo si falta traducción.
+            locale_dir: Directorio de traducciones opcional.
+            theme_dir: Directorio de tema/estilos opcional.
+            page_config: Configuración de página opcional.
+        """
         self.language = language
         self.fallback_language = fallback_language
         self.page_config = page_config or PageConfig()

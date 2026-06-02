@@ -6,12 +6,16 @@ from typing import Any, Optional
 
 from src.solver.benchmark import BenchmarkRunner
 from src.solver.multi_solver import ProblemResult
+from src.utils.logging import get_logger
 from src.report.adapters.types import ReportData
 from src.report.adapters.formatters import (
     _build_performance_matrix,
     _get_problem_from_result,
     _get_solver_version,
 )
+
+
+logger = get_logger(__name__)
 
 
 def _build_solver_note(r: ProblemResult) -> str:
@@ -138,7 +142,7 @@ def adapt_benchmark(
                 anova_f = f"{a_results.get('statistic', 0):.4f}"
                 anova_p = f"{a_results.get('p_value', 0):.6f}"
         except Exception:
-            pass
+            logger.warning("Failed to compute statistical tests for performance matrix")
 
     overhead_text = ""
     overhead_headers = ["Solver", "solve_time (s)", "total_time (s)", "overhead (s)", "overhead %"]
@@ -507,7 +511,7 @@ def adapt_benchmark(
                 from src.analysis.statistics import friedman_test
                 f_results = friedman_test(perf_matrix)
             except Exception:
-                pass
+                logger.warning("Failed to run Friedman test for performance matrix")
             if f_results:
                 avg_ranks = np.array(f_results.get("avg_ranks", []))
                 if len(avg_ranks) == len(solvers):
@@ -524,7 +528,7 @@ def adapt_benchmark(
                                 "Si" if diff > cd_val else "No",
                             ])
     except Exception:
-        pass
+        logger.warning("Failed to compute Nemenyi post-hoc test")
     if not nemenyi_rows:
         nemenyi_rows.append(["N/A", "N/A", "N/A", "N/A"])
     data.tables["nemenyi_table"] = (nemenyi_headers, nemenyi_rows)
@@ -576,7 +580,7 @@ def adapt_benchmark(
                 row_vals = [m_name] + ["N/A (varianza cero)"] * len(active_metrics)
                 corr_rows.append(row_vals)
     except Exception:
-        pass
+        logger.warning("Failed to compute correlation table")
     if not corr_rows:
         corr_rows.append(["N/A" for _ in corr_headers])
     data.tables["correlation_table"] = (corr_headers, corr_rows)
@@ -606,7 +610,7 @@ def adapt_benchmark(
                                     f"{z:.2f}",
                                 ])
     except Exception:
-        pass
+        logger.warning("Failed to compute outlier detection")
     for row in behavioral_outlier_rows:
         outlier_rows.append(row)
     if not outlier_rows:

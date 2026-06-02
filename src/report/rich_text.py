@@ -4,7 +4,11 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional
 
+from src.utils.logging import get_logger
 from .core.exceptions import TagParseError
+
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -113,7 +117,7 @@ def parse_rich_text(text: str, strict: bool = False) -> StyledText:
                 try:
                     span.size = int(tag["value"])
                 except (ValueError, TypeError):
-                    pass
+                    logger.warning("Invalid size value: %s", tag.get("value"))
             elif tagname == "font":
                 span.font = tag.get("value")
         return span
