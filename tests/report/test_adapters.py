@@ -7,16 +7,13 @@ from src.core.bound import VariableBound
 from src.analysis.analysis import ExecutionTimes
 from src.report.adapters import (
     adapt_single_solution,
-    adapt_benchmark,
     adapt_multi_problem,
     ReportData,
     _format_coefficient,
     _format_expression,
     _format_objective,
-    _format_constraint_text,
     _format_bound,
     _compute_slack,
-    _build_problem_data_text,
 )
 
 

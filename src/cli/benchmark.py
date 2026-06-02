@@ -4,7 +4,7 @@ Handler para el modo benchmark.
 
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from rich.console import Console
 from rich.table import Table
@@ -18,7 +18,7 @@ from src.solver import (
 from src.analysis import export_benchmark_results
 from src.cli import get_system_info
 from src.visualization.benchmark_plots import BenchmarkPlotter as BenchmarkVisualizer
-from src.report.core.types import ContentType, DocumentModel, ReportElement
+from src.report.core.types import ContentType, DocumentModel
 from src.report.adapters import ReportData
 
 _console = Console()

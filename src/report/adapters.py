@@ -1574,11 +1574,11 @@ def _build_recommendations(summary: dict, solvers: list[str]) -> str:
         f"2. Para maxima confiabilidad: {reliable.upper()} resolvio exitosamente el "
         f"{reliable_rate*100:.1f}% de los problemas. Es la opcion mas robusta.",
         "",
-        f"3. Para MILP: Si el problema incluye variables enteras o binarias, "
-        f"se recomienda Gurobi (comercial) o CBC/SCIP (open-source).",
+        "3. Para MILP: Si el problema incluye variables enteras o binarias, "
+        "se recomienda Gurobi (comercial) o CBC/SCIP (open-source).",
         "",
-        f"4. Para problemas de gran escala: HiGHS y Gurobi demostraron el mejor "
-        f"rendimiento en problemas con muchas variables y restricciones.",
+        "4. Para problemas de gran escala: HiGHS y Gurobi demostraron el mejor "
+        "rendimiento en problemas con muchas variables y restricciones.",
         "",
         "Nota: La seleccion final del solver debe considerar el equilibrio entre "
         "velocidad, confiabilidad, licencia y soporte de caracteristicas MILP.",
